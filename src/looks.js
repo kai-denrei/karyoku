@@ -4,9 +4,9 @@
 // glow bleed. Everything visual that is not a model lives here, so a tab
 // asks for the look rather than owning a palette.
 import * as THREE from '../vendor/three.module.js';
-import { makeBloom } from './postfx.js?v=2b5e6f89';
-import { tintModel, addEdgeOutlines } from './glbmodels.js?v=2b5e6f89';
-import { query } from './url.js?v=2b5e6f89';
+import { makeBloom } from './postfx.js?v=71b390d7';
+import { tintModel, addEdgeOutlines } from './glbmodels.js?v=71b390d7';
+import { query } from './url.js?v=71b390d7';
 
 // TWO LOOKS. 'colony' is the Tron-and-TD-board look; 'battlezone' is the
 // 1980 vector display: black, one green, every shape an edge. `?look=`
@@ -65,7 +65,10 @@ export const PALETTE = BZ ? BATTLEZONE : COLONY;
 // One black fill for everything solid (it occludes; a vector display did
 // not, and that is the one liberty taken), one green line, one green wire
 // for skinned meshes whose edges cannot follow their bones.
-export const BZ_BLACK = new THREE.MeshBasicMaterial({ color: 0x000000 });
+// DoubleSide: the NASA gantry is authored with double-sided materials and
+// faces that wind inward; a front-only black fill left it hollow, every
+// edge showing through (operator's screenshot, 2026-09-07 00:21).
+export const BZ_BLACK = new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.DoubleSide });
 export const BZ_WIRE = new THREE.MeshBasicMaterial({ color: G.mid, wireframe: true });
 export const BZ_EDGE_ANGLE = 28;
 

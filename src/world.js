@@ -10,12 +10,12 @@
 // and the hull samples it where it stands, so the two cannot disagree
 // beyond the mesh's own faceting, and a plate sits on ground that is
 // exactly zero because the mask says so, not because a vertex was edited.
-import { mulberry32 } from './rng.js?v=2b5e6f89';
-import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=2b5e6f89';
-import { generateMesh, relax } from './organic-grid.js?v=2b5e6f89';
-import { valueNoise2D } from './noise.js?v=2b5e6f89';
-import { generatePlate, makePlateParams, CELL_M, DIRS, yawOfSide, KIND } from './plate.js?v=2b5e6f89';
-import { makeGates, makeSentries, blockedAt, losClear, buildingAt, gateCentre } from './drive.js?v=2b5e6f89';
+import { mulberry32 } from './rng.js?v=71b390d7';
+import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=71b390d7';
+import { generateMesh, relax } from './organic-grid.js?v=71b390d7';
+import { valueNoise2D } from './noise.js?v=71b390d7';
+import { generatePlate, makePlateParams, CELL_M, DIRS, yawOfSide, KIND } from './plate.js?v=71b390d7';
+import { makeGates, makeSentries, blockedAt, losClear, buildingAt, gateCentre } from './drive.js?v=71b390d7';
 
 export const ROAD_CLEAR_M = 7;
 export const WORLD_TUNE = {

@@ -5,18 +5,18 @@
 import * as THREE from '../vendor/three.module.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { generatePlate, makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M } from './plate.js?v=2b5e6f89';
+import { generatePlate, makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M } from './plate.js?v=71b390d7';
 import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, blockedAt, makeGates, stepGates,
-  spawnFor, makeSentries, stepSentries, losClear, stepTracers, rayStop, fireHull, damageAt, makeBodies, stepBodies, shotRangeFor } from './drive.js?v=2b5e6f89';
-import { PALETTE, LOOK, LOOKS } from './looks.js?v=2b5e6f89';
-import { withParam } from './url.js?v=2b5e6f89';
-import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=2b5e6f89';
-import { query, loadCatalog } from './plate-tab.js?v=2b5e6f89';
-import { modelledIds } from './catalog.js?v=2b5e6f89';
-import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS, makeMobileShell, mobileShell } from './drive-rig.js?v=2b5e6f89';
-import { makeCrew, stepCrew, stepSquash } from './crew.js?v=2b5e6f89';
-import { makeCrewScene } from './crew-scene.js?v=2b5e6f89';
-import { mulberry32 } from './rng.js?v=2b5e6f89';
+  spawnFor, makeSentries, stepSentries, losClear, stepTracers, rayStop, fireHull, damageAt, makeBodies, stepBodies, shotRangeFor } from './drive.js?v=71b390d7';
+import { PALETTE, LOOK, LOOKS } from './looks.js?v=71b390d7';
+import { withParam } from './url.js?v=71b390d7';
+import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=71b390d7';
+import { query, loadCatalog } from './plate-tab.js?v=71b390d7';
+import { modelledIds } from './catalog.js?v=71b390d7';
+import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS, makeMobileShell, mobileShell } from './drive-rig.js?v=71b390d7';
+import { makeCrew, stepCrew, stepSquash } from './crew.js?v=71b390d7';
+import { makeCrewScene } from './crew-scene.js?v=71b390d7';
+import { mulberry32 } from './rng.js?v=71b390d7';
 
 export function initDriveTab(root) {
   const { renderer, scene, camera, hud, notice, resize, render, setGroups, post } = makeViewer(root);
@@ -64,6 +64,9 @@ export function initDriveTab(root) {
     if (q.get('aim') === 'wall') { const g = plate.gates[0]; if (g.side === 'N' || g.side === 'S') sp.x += 6 * CELL_M; else sp.z += 6 * CELL_M; }
     hull = makeHull(sp.x, sp.z, sp.heading, P);
     if (q.get('elev') !== null) hull.elev = Number(q.get('elev')); // a probe's muzzle
+    // ?at=x,z and ?heading=deg park a probe's hull anywhere on the plate
+    if (q.get('at')) { const [ax, az] = q.get('at').split(',').map(Number); if (Number.isFinite(ax) && Number.isFinite(az)) { hull.x = ax; hull.z = az; } }
+    if (q.get('heading') !== null) hull.heading = Number(q.get('heading'));
     camera.userData.placed = false;
     window.__drive = { hull, gates, sentries, tracers, get hits() { return hits; } };
   }
