@@ -108,7 +108,10 @@ before it.
    centred on the side with a seeded offset, never within two cells of a
    corner. A gate replaces three wall cells (its 3 by 2 plot straddles the
    ring: one row is the wall line, one row is inside the plate) and records
-   an inward road port.
+   an inward road port. Gate centres sit at least six cells from a corner
+   so the flank sentry sockets clear the corner sockets; a 12-cell side
+   allows five, and there a flank that would overlap a corner socket is
+   not placed.
 2. **Roads.** A spine is laid through the plate centre: a cross of two
    road corridors, each 2 cells wide, spanning the plate interior. From each
    gate's road port a corridor runs straight inward until it meets the spine.
@@ -120,13 +123,14 @@ before it.
    spine ends in `road_end`. Roads are 2 by 2 pieces, so corridors and the
    spine are laid on even cell coordinates.
 3. **Blocks.** Interior cells not on a road flood-fill into rectangular
-   blocks bounded by roads and the ring. Each block gets a zone from its
-   position: the block containing the plate centre or nearest to it is
-   `command`; blocks touching a gate corridor are `logistics`; blocks
-   touching the ring are split between `defense` and `utility` by seed; the
-   single largest remaining block is `air` if it fits an 8 by 8 pad,
-   otherwise `personnel`; any leftover block is `personnel` or `industry`
-   by seed.
+   blocks bounded by roads and the ring. Every road end is extended to the
+   wall with 1 by 1 pedestrian corridor cells first, so a spine arm that
+   stops a cell short cannot let two blocks merge. Zones are assigned in
+   this order: the block nearest the plate centre is `command`; for each
+   gate, the largest block beside its corridor is `logistics`; the largest
+   remaining block is `air` if an 8 by 8 pad fits and `personnel`
+   otherwise; the remaining blocks that touch the ring are `defense` or
+   `utility` by seed, and the rest `personnel` or `industry` by seed.
 4. **Packing.** Each block draws from its zone's building list, largest
    footprint first, placing at seeded positions inside the block where the
    piece fits and at least one edge of its plot touches a road cell. The
@@ -147,6 +151,13 @@ corner sentry covers neither adjacent wall's midpoint, so on every default
 plate there are perimeter cells no sentry can bear on. The invariant below
 asserts this rather than trusting the arithmetic.
 
+**Orientation.** North is -Z and east is +X, the three.js habit, so a
+camera looking straight down with north up puts east on the right and the
+3D view agrees with the ASCII map. The base kit labels its +Z socket "N";
+that is a socket name, absorbed by the corner and gate rotations. `rot` is
+quarter turns clockwise seen from above, applied as `rotation.y = -rot *
+PI/2`. Yaw 0 is north, 90 is east.
+
 **Output.** A `Plate` object:
 
 ```
@@ -154,7 +165,9 @@ asserts this rather than trusting the arithmetic.
   w, h, seed,
   cells:    Uint8Array (w*h) of cell kind: 0 foundation, 1 wall, 2 gate,
             3 road, 4 building, 5 prop, 6 sentry
-  pieces:   [{ id, x, z, rot (0..3 quarter turns), state (0..3), zone }]
+  pieces:   [{ id, x, z, pw, ph, rot (0..3 quarter turns), state (0..3), zone,
+              offset: [ox, oz] cells — the gate's is half a cell outward,
+              because the kit's gate model puts the wall line through its centre }]
   roads:    { nodes: [cellIndex], edges: [[a, b]] }
   gates:    [{ x, z, side, rot, pieceIndex }]
   sentries: [{ x, z, family, tier, yawDeg, arcDeg, pieceIndex }]
@@ -163,8 +176,8 @@ asserts this rather than trusting the arithmetic.
 }
 ```
 
-ASCII legend: `#` wall, `G` gate, `=` road, `B` building, `.` foundation,
-`o` prop, `S` sentry. The ASCII map is what tests compare and what the
+ASCII legend: `#` wall, `G` gate, `=` road or pedestrian corridor, `B`
+building, `.` foundation, `o` prop, `S` sentry. Row 0 is the north edge. The ASCII map is what tests compare and what the
 viewer's overlay shows.
 
 **Failure policy.** A step that cannot satisfy its own rule (a gate that
