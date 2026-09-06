@@ -4,6 +4,31 @@ Newest first. Each entry: what landed, then how it works, for programmers.
 Decisions and dead ends in more detail live in `.deban/` (local, not
 published).
 
+## 0075ead — sound, and what a hit looks like
+
+The reference's audio engine (`audio.js`, `audiomix.js`, `audiogate.js`)
+came across verbatim with its tests; `audiomanifest.js` is cut to what
+karyoku fires and extended. `sfx.js` is the one game-facing file: the
+thruster bed is a LOOP whose gain and rate follow the throttle every frame
+(a null handle means "not decoded yet", retried next frame — the
+reference's lesson); the shot is `tank_main`; each sentry family fires its
+own round through `SENTRY_FIRE`, faded by distance from the hull with the
+falloff constant re-based to metres (45 m is half); the assembly machines
+carry two faint beds, hydraulics and an electric hum built with ffmpeg
+from the reference's masters, keyed per machine and faded by distance.
+The context is born on a gesture, never at init, so a headless run shows a
+healthy ledger and hears nothing.
+
+Impacts are the reference's `impactfx.js` recipes: `shell` (flash, spark
+shower, shockwave ring, debris chunks, scorch) at every strike, oriented
+along the surface normal — the reverse of the shell's flight on a wall,
+the ground's normal on a landing — and sized 2.6 for a 4 m cell; a breach
+adds a bigger burst and the rubble sound; a lob landing gets the recipe
+with the aoe thump; a sentry round on the hull gets the `light` recipe.
+Battlezone colours the sparks green. `?autofire=1` keeps the gun firing
+live for a probe, and `fx=` in the probe line counts live effects.
+
+
 ## e1e0581 — a hollow gantry
 
 Operator's screenshot: one structure in the green look rendered as a

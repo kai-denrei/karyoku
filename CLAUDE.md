@@ -260,6 +260,19 @@ no build step, Node invariant suites).
   get the hash first, then append. `.deban/` is the local decision vault
   (gitignored): sync it after meaningful sessions.
 
+## Sound and impacts (2026-09-07)
+- `sfx.js` is the only file that knows what the game sounds like; audio.js,
+  audiomix.js, audiogate.js are the reference's engine, copied. Keys:
+  `tank_main`, `tank_thruster` (a loop set from speed), `SENTRY_FIRE[family]`
+  with `dist`, `assembly_hydraulics` / `assembly_electric` (loops per machine,
+  faded by distance), `impact_shell` / `impact_rubble` / `impact_hit`.
+  `DISTANCE_K` is 45 METRES. The context needs a gesture (`arm()`).
+- Impacts: `sfx.impact(recipe, point, normal, dist, size, sound)` wraps
+  impactfx.js's `makeImpactBurst` + `orientImpact`; groups tick in `sfx.tick`.
+  Sizes: shell 2.6, breach 4.5, lob landing 3.2, hull hit 2.
+- Lob shells call `blockedRay(tx, tz, t)` with `t.landed` on landing so a tab
+  can draw and play it. `?autofire=1` fires live; `fx=` in the drive probe.
+
 ## Verify
 - `npm run serve` then `http://localhost:8150/#plate?seed=7&ascii=1`.
   `?seed= ?w= ?h= ?gates= ?arc= ?density= ?tier=` override the knobs;
