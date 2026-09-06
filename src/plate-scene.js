@@ -5,9 +5,9 @@
 // as clones with their YAW pivot exposed, and everything else as a labelled
 // placeholder box of its footprint.
 import * as THREE from '../vendor/three.module.js';
-import { KIND, CELL_M, ringCoverage } from './plate.js?v=0d4c92de';
-import { fileFor, SECTION_COLOR, PLACEHOLDER_HEIGHT_M } from './catalog.js?v=0d4c92de';
-import { loadGlb, loadGlbWithClips, mergeByMaterial, fitModel } from './glbmodels.js?v=0d4c92de';
+import { KIND, CELL_M, ringCoverage } from './plate.js?v=979b8ccb';
+import { fileFor, SECTION_COLOR, PLACEHOLDER_HEIGHT_M } from './catalog.js?v=979b8ccb';
+import { loadGlb, loadGlbWithClips, mergeByMaterial, fitModel } from './glbmodels.js?v=979b8ccb';
 
 const labelCache = new Map();
 function labelTexture(text) {
