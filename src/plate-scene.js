@@ -5,12 +5,14 @@
 // as clones with their YAW pivot exposed, and everything else as a labelled
 // placeholder box of its footprint.
 import * as THREE from '../vendor/three.module.js';
-import { KIND, CELL_M, ringCoverage } from './plate.js?v=ad2b0ef0';
-import { fileFor, fitFor, SECTION_COLOR, PLACEHOLDER_HEIGHT_M } from './catalog.js?v=ad2b0ef0';
-import { LOB_FAMILIES, LOB_ELEV_DEG } from './drive.js?v=ad2b0ef0';
-import { PALETTE, neonBox } from './looks.js?v=ad2b0ef0';
-import { prepFor, ladderTint, dressMetal } from './casts.js?v=ad2b0ef0';
-import { loadGlb, loadGlbWithClips, mergeByMaterial, fitModel } from './glbmodels.js?v=ad2b0ef0';
+import { KIND, CELL_M, ringCoverage } from './plate.js?v=7033258d';
+import { fileFor, fitFor, SECTION_COLOR, PLACEHOLDER_HEIGHT_M } from './catalog.js?v=7033258d';
+import { LOB_FAMILIES, LOB_ELEV_DEG } from './drive.js?v=7033258d';
+import { PALETTE, neonBox } from './looks.js?v=7033258d';
+import { prepFor, ladderTint, dressMetal } from './casts.js?v=7033258d';
+import { tintModel } from './glbmodels.js?v=7033258d';
+import { BODY_IDS } from './drive.js?v=7033258d';
+import { loadGlb, loadGlbWithClips, mergeByMaterial, fitModel } from './glbmodels.js?v=7033258d';
 
 const labelCache = new Map();
 function labelTexture(text) {
@@ -43,7 +45,13 @@ export function proto(url, pivots = [], fit = null, tint = null) {
     if (prep) prep(scene);
     const merged = mergeByMaterial(scene, pivots);
     const fitted = fit ? fitModel(merged, fit) : merged;
-    if (tint !== null) { ladderTint(fitted, tint); dressMetal(fitted); }
+    // THE KIT KEEPS ITS PAINT. Its materials are authored colours — blue
+    // steel, graphite, amber caution, mint status — and the grey ladder
+    // painted over all of them. A faint emissive wash by side is all it gets.
+    if (tint !== null) {
+      if (url.startsWith('assets/base-kit/')) tintModel(fitted, tint, { wash: 0.10 });
+      else { ladderTint(fitted, tint); dressMetal(fitted); }
+    }
     return fitted;
   });
   protos.set(key, p);
@@ -161,6 +169,7 @@ export function buildPlateGroup({ plate, catalog, wallState = 0, showArcs = true
   const group = new THREE.Group();
   const sentryYaws = new Map();   // sentry index -> the node to turn
   const gateRigs = [];            // { index, obj, mixer, action, duration }
+  const dynamic = new Map();      // piece index -> its own object, for the bodies the drive moves
   const pending = [];
   const W = plate.w * CELL_M, H = plate.h * CELL_M;
 
@@ -207,12 +216,24 @@ export function buildPlateGroup({ plate, catalog, wallState = 0, showArcs = true
     if (!url) { fallback(piece); continue; }
     const fit = fitOf(entry, state);
     const mkey = fit ? url + JSON.stringify(fit) : url;
+    if (BODY_IDS.has(piece.id)) {
+      // a body is one object of its own, never an instance: the drive moves it
+      const pi = plate.pieces.indexOf(piece);
+      pending.push(proto(url, [], fit, tint).then((root) => {
+        if (!root) { fallback(piece); return; }
+        const obj = root.clone();
+        placePiece(obj, piece);
+        group.add(obj);
+        dynamic.set(pi, obj);
+      }));
+      continue;
+    }
     if (animatedGates && piece.kind === KIND.GATE) {
       const gi = plate.gates.findIndex((g) => g.pieceIndex === plate.pieces.indexOf(piece));
       pending.push(animProto(url).then((res) => {
         if (!res) { fallback(piece); return; }
         const obj = res.root.clone();
-        ladderTint(obj, tint); dressMetal(obj);
+        tintModel(obj, tint, { wash: 0.10 });
         placePiece(obj, piece);
         group.add(obj);
         const clip = res.clips.find((c) => /open/i.test(c.name)) || res.clips[0];
@@ -263,5 +284,5 @@ export function buildPlateGroup({ plate, catalog, wallState = 0, showArcs = true
     }
   }
   console.log('[plate] models', byModel.size + wallModels, 'pieces', plate.pieces.length, 'sentries', plate.sentries.length, 'warnings', plate.warnings.length);
-  return { group, sentryYaws, gateRigs, ready: Promise.all(pending), rebuildWalls: drawWalls };
+  return { group, sentryYaws, gateRigs, dynamic, ready: Promise.all(pending), rebuildWalls: drawWalls };
 }

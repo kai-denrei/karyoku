@@ -13,9 +13,9 @@
 // `rotation.y = -rot * PI/2`. Yaw is compass degrees, 0 = N, 90 = E.
 // Plate width and depth are EVEN, because roads are 2 x 2 pieces laid on
 // even coordinates and a gate's road port has to land on one.
-import { mulberry32 } from './rng.js?v=ad2b0ef0';
-import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=ad2b0ef0';
-import { specById } from './catalog-spec.js?v=ad2b0ef0';
+import { mulberry32 } from './rng.js?v=7033258d';
+import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=7033258d';
+import { specById } from './catalog-spec.js?v=7033258d';
 
 export const CELL_M = 4;
 
@@ -24,11 +24,12 @@ export const ASCII_OF_KIND = ['.', '#', 'G', '=', 'B', 'o', 'S'];
 
 export const PLATE_TUNE = {
   seed: 1,
-  w: 32,          // cells, including the ring; even — a 7.8 m hull needs room
-  h: 26,          // cells, including the ring; even
+  w: 40,          // cells, including the ring; even — a 7.8 m hull needs room
+  h: 32,          // cells, including the ring; even
   gates: 2,
   moat: 4,        // cells of open ground between the outer perimeter and the base wall; 0 = one ring
-  density: 0.55,  // fraction of a block the packer tries to fill; the rest is manoeuvring room
+  density: 0.4,   // fraction of a block the packer tries to fill; the rest is manoeuvring room
+  gap: 2,         // cells kept clear around every building inside its block: a lane the hull fits
   arc: 110,       // sentry traverse, degrees
   tier: 1,        // sentry tier
 };
@@ -39,7 +40,8 @@ export const PLATE_KNOBS = [
   { key: 'h', label: 'depth (cells)', group: 'plate', min: 12, max: 60, step: 2 },
   { key: 'gates', label: 'gates', group: 'plate', min: 1, max: 3, step: 1 },
   { key: 'moat', label: 'perimeter band (cells)', group: 'plate', min: 0, max: 8, step: 1 },
-  { key: 'density', label: 'build density', group: 'packing', min: 0.3, max: 1.0, step: 0.05 },
+  { key: 'density', label: 'build density', group: 'packing', min: 0.1, max: 1.0, step: 0.05 },
+  { key: 'gap', label: 'lane around buildings (cells)', group: 'packing', min: 0, max: 4, step: 1 },
   { key: 'arc', label: 'sentry arc (deg)', group: 'sentries', min: 60, max: 180, step: 5 },
   { key: 'tier', label: 'sentry tier', group: 'sentries', min: 1, max: 3, step: 1 },
 ];
@@ -539,6 +541,24 @@ function rectFree(s, block, x, z, pw, ph) {
   return true;
 }
 
+// The lane: `gap` cells around a rect must hold no other building or prop
+// of this block. Cells outside the block (roads, the ring) do not count —
+// a building may stand against a road, that is the point of it.
+function laneClear(s, block, x, z, pw, ph, gap) {
+  if (!gap) return true;
+  for (let dz = -gap; dz < ph + gap; dz++) {
+    for (let dx = -gap; dx < pw + gap; dx++) {
+      if (dx >= 0 && dx < pw && dz >= 0 && dz < ph) continue;
+      const cx = x + dx, cz = z + dz;
+      if (!inside(s, cx, cz)) continue;
+      const i = idx(s, cx, cz);
+      if (!block.cellSet.has(i)) continue;
+      if (s.owner[i] !== -1) return false;
+    }
+  }
+  return true;
+}
+
 // Which sides of a rect have a road cell directly beyond them.
 function roadSides(s, x, z, pw, ph) {
   const out = new Set();
@@ -571,6 +591,7 @@ function findSpot(s, rng, block, def) {
     for (const [x, z] of order) {
       if (x + pw - 1 > block.x1 || z + ph - 1 > block.z1) continue;
       if (!rectFree(s, block, x, z, pw, ph)) continue;
+      if (!laneClear(s, block, x, z, pw, ph, s.params.gap)) continue;
       const sides = roadSides(s, x, z, pw, ph);
       if (sides.size === 0) continue;
       const rot = rots.find((r) => sides.has(rotSide('S', r)));
@@ -613,6 +634,45 @@ function packBlock(s, rng, block) {
 
 function stepPacking(s, rng) {
   for (const block of s.blocks) packBlock(s, rng, block);
+  stepBand(s, rng);
+}
+
+// --- the band: containers as dressing ------------------------------------------
+// Firepower's outer yard was not empty: crates and containers stood about
+// in it, and you drove around them. Containers here are the movable solids
+// of drive.js — they are placed as pieces so the scene draws them, and the
+// drive frees their cells and pushes them about. One cell clear of roads,
+// gates and sockets so nothing is boxed in at birth.
+export const BAND_PROP = 'logistics_container';
+function stepBand(s, rng) {
+  if (s.inset === 0) return;
+  const R = innerRect(s);
+  const inBand = (x, z) => x > 0 && z > 0 && x < s.w - 1 && z < s.h - 1 && (x < R.x0 || z < R.z0 || x > R.x1 || z > R.z1);
+  const spec = specById(BAND_PROP);
+  const want = Math.round((s.w + s.h) / 8);
+  const spots = [];
+  for (let z = 1; z < s.h - 1; z++) for (let x = 1; x < s.w - 1; x++) if (inBand(x, z)) spots.push([x, z]);
+  const order = shuffled(rng, spots);
+  let placed = 0;
+  for (const [x, z] of order) {
+    if (placed >= want) break;
+    const swap = rng() < 0.5;
+    const pw = swap ? spec.plot[1] : spec.plot[0], ph = swap ? spec.plot[0] : spec.plot[1];
+    let ok = true;
+    for (let dz = -1; dz <= ph && ok; dz++) {
+      for (let dx = -1; dx <= pw && ok; dx++) {
+        const cx = x + dx, cz = z + dz;
+        if (!inside(s, cx, cz)) { ok = false; break; }
+        const body = dx >= 0 && dx < pw && dz >= 0 && dz < ph;
+        const k = s.cells[idx(s, cx, cz)];
+        if (body) { if (!inBand(cx, cz) || k !== KIND.FOUNDATION || s.owner[idx(s, cx, cz)] !== -1) ok = false; }
+        else if (k === KIND.ROAD || k === KIND.GATE || k === KIND.SENTRY || k === KIND.BUILDING) ok = false;
+      }
+    }
+    if (!ok) continue;
+    place(s, BAND_PROP, x, z, pw, ph, swap ? 1 : 0, KIND.BUILDING, { zone: 'band' });
+    placed++;
+  }
 }
 
 // --- step 5: sentries ---------------------------------------------------------

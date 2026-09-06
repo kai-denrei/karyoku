@@ -1,6 +1,6 @@
 import { generatePlate, makePlateParams, PLATE_TUNE, KIND, CELL_M, blindCells } from '../src/plate.js';
 import { DRIVE_TUNE, driveKnobProblems, makeHull, stepHull, blockedAt, makeGates, stepGates, spawnFor,
-  makeSentries, stepSentries, losClear, stepTracers, buildingAt, bearingTo, lobHeight, LOB_FAMILIES, fireHull, rayStop, damageAt, autopilotInput } from '../src/drive.js';
+  makeSentries, stepSentries, losClear, stepTracers, buildingAt, bearingTo, lobHeight, LOB_FAMILIES, fireHull, rayStop, damageAt, autopilotInput, makeBodies, stepBodies, bodyAt, BODY_IDS } from '../src/drive.js';
 import { check, near, done } from './check.mjs';
 
 check('knob table is sound', driveKnobProblems().length === 0, driveKnobProblems().join('; '));
@@ -218,5 +218,36 @@ for (let seed = 1; seed <= 50; seed++) {
   while (Math.hypot(h.x - last[0], h.z - last[1]) > 6 && steps < 3000) { const r = autopilotInput(h, pts, idx); idx = r.idx; stepHull(h, r.input, DT, noBlock); steps++; }
   check('the autopilot drives the polyline to its end', Math.hypot(h.x - last[0], h.z - last[1]) < 10, `ended ${h.x.toFixed(1)},${h.z.toFixed(1)}`);
   check('it turned rather than teleported', steps > 60);
+}
+// --- movable solids -------------------------------------------------------------
+{
+  const p3 = generatePlate(makePlateParams({ ...PLATE_TUNE, seed: 7 }));
+  const g3 = makeGates(p3);
+  const bodies = makeBodies(p3);
+  check('the band holds containers as bodies', bodies.length >= 4, `got ${bodies.length}`);
+  const b0 = bodies[0];
+  check('a body\'s cells are freed for the hull', !blockedAt(p3, g3, b0.x, b0.z));
+  check('bodyAt sees the body', bodyAt(bodies, b0.x, b0.z) && !bodyAt(bodies, b0.x + 40, b0.z + 40));
+  // push a lone body on open ground: it gives way
+  const lone = [{ pieceIndex: -1, plate: p3, x: 500, z: 500, hw: 5.8, hd: 1.8, rot: 0 }];
+  const h = makeHull(500, 500 + 1.8 + 2 + 0.5, 0); // just south of the long side, facing it
+  const z0 = lone[0].z;
+  for (let i = 0; i < 60; i++) { stepHull(h, { fwd: true }, DT, noBlock); stepBodies(lone, h, noBlock); }
+  check('the hull pushes a free container', lone[0].z < z0 - 5, `moved ${(z0 - lone[0].z).toFixed(2)} m`);
+  check('the hull is never inside the body', !bodyAt(lone, h.x, h.z));
+  // a body pinned against a wall: the hull stops
+  const pinned = [{ pieceIndex: -1, plate: p3, x: 500, z: 500, hw: 5.8, hd: 1.8, rot: 0 }];
+  const wallZ = 500 - 1.8 - 0.5; // a wall line just north of the body
+  const wallBlocked = (x, z) => z < wallZ;
+  const h2 = makeHull(500, 500 + 1.8 + 2.5, 0);
+  for (let i = 0; i < 60; i++) { stepHull(h2, { fwd: true }, DT, wallBlocked); stepBodies(pinned, h2, wallBlocked); }
+  check('a container against a wall stops the hull', Math.abs(pinned[0].z - 500) < 0.6 && h2.z > 500 + 1.8 + 1.5, `body z ${pinned[0].z.toFixed(2)} hull z ${h2.z.toFixed(2)}`);
+  // shots stop on a body and do it no harm
+  const shot = fireHull(makeHull(500, 530, 0));
+  const shots = [shot];
+  let steps = 0;
+  while (shots.length && steps < 400) { stepTracers(shots, h, DT, rayStop(p3, g3, lone)); steps++; }
+  check('a shot stops on a container', steps < 400 && shot.z > lone[0].z - 3, `z ${shot.z.toFixed(1)} body z ${lone[0].z.toFixed(1)}`);
+  check('containers are the only bodies', BODY_IDS.has('logistics_container') && BODY_IDS.size === 1);
 }
 done();

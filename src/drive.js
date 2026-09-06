@@ -11,8 +11,8 @@
 // THE ANTI-AIMBOT NUMBERS are yawRate and the arc: a sentry cannot point
 // outside its arc, and inside it turns at yawRate, so a hull that crosses
 // the arc fast, or stays in the blind sector, is never fired on.
-import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=ad2b0ef0';
-import { KIND, CELL_M, wrapDeg, dirOfYaw, DIRS, yawOfSide, rotSide } from './plate.js?v=ad2b0ef0';
+import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=7033258d';
+import { KIND, CELL_M, wrapDeg, dirOfYaw, DIRS, yawOfSide, rotSide } from './plate.js?v=7033258d';
 
 export const DRIVE_TUNE = {
   speed: 12,        // m/s forward
@@ -129,6 +129,85 @@ export function autopilotInput(hull, points, idx, reach = 8, tune = DRIVE_TUNE) 
   const input = { fwd: Math.abs(d) < 70 };
   if (d > 4) input.right = true; else if (d < -4) input.left = true;
   return { input, idx };
+}
+
+// --- movable solids: the containers -------------------------------------------
+// A container is solid, takes no damage, and moves when the hull pushes it.
+// It is not part of the cells: makeBodies frees the cells its piece claimed
+// so blockedAt lets the hull reach it, and stepBodies settles the contact —
+// the container gives way if it can, and the hull stops if it cannot.
+export const BODY_IDS = new Set(['logistics_container']);
+export function makeBodies(plate, ox = 0, oz = 0) {
+  const out = [];
+  plate.pieces.forEach((pc, pieceIndex) => {
+    if (!BODY_IDS.has(pc.id)) return;
+    for (let dz = 0; dz < pc.ph; dz++) for (let dx = 0; dx < pc.pw; dx++) {
+      const i = (pc.z + dz) * plate.w + pc.x + dx;
+      plate.cells[i] = KIND.FOUNDATION; plate.owner[i] = -1;
+    }
+    // half extents in the piece's own frame; rot 1 and 3 swap the placed dims back
+    const swap = pc.rot % 2 === 1;
+    out.push({
+      pieceIndex, plate,
+      x: ox + (pc.x + pc.pw / 2 + pc.offset[0]) * CELL_M, z: oz + (pc.z + pc.ph / 2 + pc.offset[1]) * CELL_M,
+      hw: (swap ? pc.ph : pc.pw) * CELL_M / 2 - 0.2, hd: (swap ? pc.pw : pc.ph) * CELL_M / 2 - 0.2,
+      rot: pc.rot,
+    });
+  });
+  return out;
+}
+// rotation.y = -rot * PI/2 in the scene; the same turn here
+const bodyTheta = (b) => -b.rot * Math.PI / 2;
+function toLocal(b, x, z) {
+  const t = -bodyTheta(b), dx = x - b.x, dz = z - b.z;
+  return [dx * Math.cos(t) + dz * Math.sin(t), -dx * Math.sin(t) + dz * Math.cos(t)];
+}
+function toWorld(b, lx, lz) {
+  const t = bodyTheta(b);
+  return [b.x + lx * Math.cos(t) + lz * Math.sin(t), b.z - lx * Math.sin(t) + lz * Math.cos(t)];
+}
+export function bodyContains(b, x, z) {
+  const [lx, lz] = toLocal(b, x, z);
+  return Math.abs(lx) <= b.hw && Math.abs(lz) <= b.hd;
+}
+export const bodyAt = (bodies, x, z) => bodies.some((b) => bodyContains(b, x, z));
+function bodySamples(b, x, z) {
+  const pts = [];
+  for (const lx of [-b.hw, 0, b.hw]) for (const lz of [-b.hd, 0, b.hd]) { if (lx === 0 && lz === 0) continue; const [wx, wz] = toWorld({ ...b, x, z }, lx, lz); pts.push([wx, wz]); }
+  return pts;
+}
+// may this body stand at (x, z)? nothing static under its outline, and no
+// other body's outline under its corners (or its under theirs)
+function bodyFits(b, x, z, bodies, blocked) {
+  for (const [wx, wz] of bodySamples(b, x, z)) if (blocked(wx, wz)) return false;
+  const moved = { ...b, x, z };
+  for (const o of bodies) {
+    if (o === b) continue;
+    for (const [wx, wz] of bodySamples(moved, x, z)) if (bodyContains(o, wx, wz)) return false;
+    for (const [wx, wz] of bodySamples(o, o.x, o.z)) if (bodyContains(moved, wx, wz)) return false;
+  }
+  return true;
+}
+// Settle the hull against every body. Returns how many bodies moved.
+export function stepBodies(bodies, hull, blocked, tune = DRIVE_TUNE) {
+  let moved = 0;
+  for (const b of bodies) {
+    const [lx, lz] = toLocal(b, hull.x, hull.z);
+    const cx = Math.max(-b.hw, Math.min(b.hw, lx)), cz = Math.max(-b.hd, Math.min(b.hd, lz));
+    const [px, pz] = toWorld(b, cx, cz);
+    let nx = hull.x - px, nz = hull.z - pz;
+    let d = Math.hypot(nx, nz);
+    if (d >= tune.hullR) continue;
+    if (d < 1e-6) {
+      // the hull centre is inside the box: push out along the hull's own motion, reversed
+      const [dx, dz] = dirOfYaw(hull.heading);
+      nx = -dx * Math.sign(hull.speed || 1); nz = -dz * Math.sign(hull.speed || 1); d = 0;
+    } else { nx /= d; nz /= d; }
+    const pen = tune.hullR - d + 0.02;
+    if (bodyFits(b, b.x - nx * pen, b.z - nz * pen, bodies, blocked)) { b.x -= nx * pen; b.z -= nz * pen; moved++; }
+    else { hull.x += nx * pen; hull.z += nz * pen; hull.vx = 0; hull.vz = 0; }
+  }
+  return moved;
 }
 
 // --- occupancy ---------------------------------------------------------------
@@ -309,4 +388,4 @@ export const buildingAt = (plate, x, z) => cellKind(plate, toCell(x), toCell(z))
 // what a hull shot stops on: anything that is not ground, road or an open lane
 export const solidAt = (plate, gates, x, z) => blockedAt(plate, gates, x, z);
 // the predicate for stepTracers: shots stop on solids, sentry rounds on buildings only
-export const rayStop = (plate, gates) => (x, z, t) => (t && t.kind === 'shot') ? solidAt(plate, gates, x, z) : buildingAt(plate, x, z);
+export const rayStop = (plate, gates, bodies = []) => (x, z, t) => (t && t.kind === 'shot') ? (solidAt(plate, gates, x, z) || bodyAt(bodies, x, z)) : buildingAt(plate, x, z);

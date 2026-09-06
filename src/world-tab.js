@@ -5,13 +5,13 @@
 import * as THREE from '../vendor/three.module.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { makePlateParams, clampPlateParams, PLATE_KNOBS } from './plate.js?v=ad2b0ef0';
-import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, stepGates, stepSentries, stepTracers, fireHull, damageAt, autopilotInput } from './drive.js?v=ad2b0ef0';
-import { WORLD_KNOBS, makeWorldParams, clampWorldParams, makeWorld, worldBlocked, worldBuildingAt, worldLosFor, worldSentries, worldGates, terrainNormal, splitQuad, groundAt } from './world.js?v=ad2b0ef0';
-import { PALETTE, terrainMeshes, floraMeshes } from './looks.js?v=ad2b0ef0';
-import { buildPlateGroup, yawRotation } from './plate-scene.js?v=ad2b0ef0';
-import { query, loadCatalog } from './plate-tab.js?v=ad2b0ef0';
-import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS } from './drive-rig.js?v=ad2b0ef0';
+import { makePlateParams, clampPlateParams, PLATE_KNOBS } from './plate.js?v=7033258d';
+import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, stepGates, stepSentries, stepTracers, fireHull, damageAt, autopilotInput, makeBodies, stepBodies, bodyAt } from './drive.js?v=7033258d';
+import { WORLD_KNOBS, makeWorldParams, clampWorldParams, makeWorld, worldBlocked, worldBuildingAt, worldLosFor, worldSentries, worldGates, terrainNormal, splitQuad, groundAt } from './world.js?v=7033258d';
+import { PALETTE, terrainMeshes, floraMeshes } from './looks.js?v=7033258d';
+import { buildPlateGroup, yawRotation } from './plate-scene.js?v=7033258d';
+import { query, loadCatalog } from './plate-tab.js?v=7033258d';
+import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS } from './drive-rig.js?v=7033258d';
 
 const ARRIVE_M = 8;
 
@@ -31,7 +31,7 @@ export function initWorldTab(root) {
   scene.add(hullObj);
   const pool = makeTracerPool(scene);
 
-  let catalog = null, world = null, group = null, rigs = [], gates = [], sentries = [], tracers = [], hull = null;
+  let catalog = null, world = null, group = null, rigs = [], gates = [], sentries = [], tracers = [], hull = null, bodies = [];
   let hits = 0, simT = 0, lastLog = 0, arrivedAt = -1, lastDt = 0.016, breached = 0;
 
   function build() {
@@ -55,6 +55,7 @@ export function initWorldTab(root) {
     scene.add(group);
     gates = worldGates(world);
     sentries = worldSentries(world);
+    bodies = world.plates.flatMap((p) => makeBodies(p.plate, p.ox, p.oz));
     tracers = [];
     hits = 0; simT = 0; lastLog = 0; arrivedAt = -1; breached = 0;
     hull = makeHull(world.spawn.x, world.spawn.z, world.spawn.heading);
@@ -67,13 +68,15 @@ export function initWorldTab(root) {
 
   function step(dt, input) {
     stepHull(hull, input, dt, (x, z) => worldBlocked(world, x, z), P);
+    stepBodies(bodies, hull, (x, z) => worldBlocked(world, x, z), P);
     if (input.fire) { const shot = fireHull(hull, P); if (shot) tracers.push(shot); }
-    for (const p of world.plates) {
-      if (!p.hostile) stepGates(p.gates, hull, dt, P);
-      else for (const t of stepSentries(p.sentries, hull, dt, worldLosFor(p), P)) tracers.push(t);
-    }
+    // every gate opens for the hull, both rings, both plates (operator: for
+    // now); only the hostile plate's sentries fire
+    stepGates(gates, hull, dt, P);
+    for (const p of world.plates) if (p.hostile) for (const t of stepSentries(p.sentries, hull, dt, worldLosFor(p), P)) tracers.push(t);
     hits += stepTracers(tracers, hull, dt, (x, z, t) => {
       if (t && t.kind === 'shot') {
+        if (bodyAt(bodies, x, z)) return true; // solid, unharmed
         if (!worldBlocked(world, x, z)) return false;
         world.plates.forEach((p, pi) => { const pc = damageAt(p.plate, x - p.ox, z - p.oz); if (pc) { if (pc.state >= 3) breached++; rigs[pi].rebuildWalls(); } });
         return true;
@@ -94,6 +97,11 @@ export function initWorldTab(root) {
       p.sentries.forEach((s, i) => { const node = rigs[pi].sentryYaws.get(i); if (node) node.rotation.y = yawRotation(s.yaw); });
       for (const gr of rigs[pi].gateRigs) { const g = p.gates[gr.index]; if (g && gr.mixer) gr.mixer.setTime(g.open * gr.duration); }
     });
+    for (const b of bodies) {
+      const pi = world.plates.findIndex((p) => p.plate === b.plate);
+      const obj = pi >= 0 ? rigs[pi].dynamic.get(b.pieceIndex) : null;
+      if (obj) obj.position.set(b.x - world.plates[pi].ox, 0, b.z - world.plates[pi].oz);
+    }
     pool.sync(tracers, (x, z) => world.heightAt(x, z), lastDt, P.splashR);
     followCamera(camera, controls, hull, y, view.camera, lastDt, (x, z) => groundAt(world, x, z).y, { cx: world.size / 2, cz: world.size / 2, span: world.size });
     hud.textContent = `goal ${goalDist().toFixed(0)} m${arrivedAt >= 0 ? ` · ARRIVED at ${arrivedAt.toFixed(1)} s` : ''} · hits ${hits} · shots ${hull.shots} · breached ${breached} · cam ${view.camera} · WASD drive · SPACE fire · 1 top 2 chase 3 orbit 4 overview · R regenerate`;

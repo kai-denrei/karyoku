@@ -4,13 +4,13 @@
 // hit. The rules are drive.js; this file wires the rig around them.
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { generatePlate, makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M } from './plate.js?v=ad2b0ef0';
+import { generatePlate, makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M } from './plate.js?v=7033258d';
 import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, blockedAt, makeGates, stepGates,
-  spawnFor, makeSentries, stepSentries, losClear, stepTracers, rayStop, fireHull, damageAt } from './drive.js?v=ad2b0ef0';
-import { PALETTE } from './looks.js?v=ad2b0ef0';
-import { buildPlateGroup, yawRotation } from './plate-scene.js?v=ad2b0ef0';
-import { query, loadCatalog } from './plate-tab.js?v=ad2b0ef0';
-import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS } from './drive-rig.js?v=ad2b0ef0';
+  spawnFor, makeSentries, stepSentries, losClear, stepTracers, rayStop, fireHull, damageAt, makeBodies, stepBodies } from './drive.js?v=7033258d';
+import { PALETTE } from './looks.js?v=7033258d';
+import { buildPlateGroup, yawRotation } from './plate-scene.js?v=7033258d';
+import { query, loadCatalog } from './plate-tab.js?v=7033258d';
+import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS } from './drive-rig.js?v=7033258d';
 
 export function initDriveTab(root) {
   const { renderer, scene, camera, hud, notice, resize, render, setGroups } = makeViewer(root);
@@ -26,7 +26,7 @@ export function initDriveTab(root) {
   scene.add(hullObj);
   const pool = makeTracerPool(scene);
 
-  let catalog = null, plate = null, rig = null, gates = [], sentries = [], tracers = [], hull = null;
+  let catalog = null, plate = null, rig = null, gates = [], sentries = [], tracers = [], hull = null, bodies = [];
   let hits = 0, simT = 0, lastLog = 0, lastDt = 0.016, breached = 0;
 
   function build() {
@@ -39,6 +39,7 @@ export function initDriveTab(root) {
     setGroups(() => [['tank', [hullObj]], ['towers', [rig.group]]]);
     gates = makeGates(plate);
     sentries = makeSentries(plate);
+    bodies = makeBodies(plate);
     tracers = [];
     hits = 0; simT = 0; lastLog = 0; breached = 0;
     const sp = spawnFor(plate, plate.gates[0]);
@@ -52,10 +53,11 @@ export function initDriveTab(root) {
 
   function step(dt, input) {
     stepHull(hull, input, dt, (x, z) => blockedAt(plate, gates, x, z), P);
+    stepBodies(bodies, hull, (x, z) => blockedAt(plate, gates, x, z), P);
     if (input.fire) { const shot = fireHull(hull, P); if (shot) tracers.push(shot); }
     stepGates(gates, hull, dt, P);
     for (const t of stepSentries(sentries, hull, dt, (ax, az, bx, bz) => losClear(plate, ax, az, bx, bz), P)) tracers.push(t);
-    const stop = rayStop(plate, gates);
+    const stop = rayStop(plate, gates, bodies);
     hits += stepTracers(tracers, hull, dt, (x, z, t) => {
       if (!stop(x, z, t)) return false;
       if (t && t.kind === 'shot') { const pc = damageAt(plate, x, z); if (pc) { if (pc.state >= 3) breached++; rig.rebuildWalls(); } }
@@ -71,6 +73,7 @@ export function initDriveTab(root) {
     hullObj.userData.setPose(hull, 0);
     sentries.forEach((s, i) => { const node = rig.sentryYaws.get(i); if (node) node.rotation.y = yawRotation(s.yaw); });
     for (const gr of rig.gateRigs) { const g = gates[gr.index]; if (g && gr.mixer) gr.mixer.setTime(g.open * gr.duration); }
+    for (const b of bodies) { const obj = rig.dynamic.get(b.pieceIndex); if (obj) obj.position.set(b.x, 0, b.z); }
     pool.sync(tracers, () => 0, lastDt, P.splashR);
     followCamera(camera, controls, hull, 0, view.camera, lastDt, null, { cx: plate.w * CELL_M / 2, cz: plate.h * CELL_M / 2, span: Math.max(plate.w, plate.h) * CELL_M });
     hud.textContent = `hits ${hits} · shots ${hull.shots} · breached ${breached} · gates ${gateWord()} · cam ${view.camera} · WASD drive · SPACE fire · 1 top 2 chase 3 orbit 4 overview · R regenerate`;

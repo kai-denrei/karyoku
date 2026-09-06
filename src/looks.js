@@ -4,8 +4,8 @@
 // glow bleed. Everything visual that is not a model lives here, so a tab
 // asks for the look rather than owning a palette.
 import * as THREE from '../vendor/three.module.js';
-import { makeBloom } from './postfx.js?v=ad2b0ef0';
-import { tintModel } from './glbmodels.js?v=ad2b0ef0';
+import { makeBloom } from './postfx.js?v=7033258d';
+import { tintModel } from './glbmodels.js?v=7033258d';
 
 export const PALETTE = {
   bg: 0x0d1017,                   // the TD board's mainBg

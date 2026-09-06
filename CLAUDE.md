@@ -139,6 +139,20 @@ no build step, Node invariant suites).
   `logistics_container` and the terraformer (the Stalheart) to
   `command_hq`; it loads last so it beats the NASA stand-ins.
 
+## Yard, bodies, gates (operator, 2026-09-06 late night, round two)
+- Plates default 40 x 32, density 0.4, and a `gap` of 2 cells kept clear
+  around every building inside its block (`laneClear`): the hull needs lanes.
+- The band holds CONTAINERS as dressing (`stepBand`, zone 'band'); they are
+  BODIES in the drive (`makeBodies` frees their cells, `stepBodies` settles
+  the hull against them): solid, no damage, and they give way when pushed
+  unless something static or another body is behind them. Shots stop on
+  them. The scene keeps each one as its own object (`rig.dynamic`).
+- EVERY gate opens for the hull — both rings, both plates — for now; only
+  the hostile plate's sentries fire.
+- The kit has no image textures: its look is authored material colours,
+  and the grey ladder painted over them. Kit URLs get a 0.10 emissive wash
+  only; house and NASA casts get the ladder and the metal.
+
 ## Verify
 - `npm run serve` then `http://localhost:8150/#plate?seed=7&ascii=1`.
   `?seed= ?w= ?h= ?gates= ?arc= ?density= ?tier=` override the knobs;

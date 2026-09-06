@@ -32,11 +32,14 @@ function checkRing(p, label) {
     for (let z = n; z <= p.h - 1 - n; z++) for (const x of [n, p.w - 1 - n]) { const k = cellAt(p, x, z); if (k !== KIND.WALL && k !== KIND.GATE) return false; }
     return true;
   })());
-  check(`${label}: the band holds no buildings`, (() => {
+  check(`${label}: the band holds only containers`, (() => {
     const n = p.inset; if (n === 0) return true;
     for (let z = 1; z < p.h - 1; z++) for (let x = 1; x < p.w - 1; x++) {
       const inBand = x < n || z < n || x > p.w - 1 - n || z > p.h - 1 - n;
-      if (inBand && (cellAt(p, x, z) === KIND.BUILDING || cellAt(p, x, z) === KIND.PROP)) return false;
+      if (!inBand) continue;
+      const k = cellAt(p, x, z);
+      if (k === KIND.PROP) return false;
+      if (k === KIND.BUILDING && p.pieces[p.owner[z * p.w + x]].id !== 'logistics_container') return false;
     }
     return true;
   })());
@@ -96,7 +99,8 @@ const ROAD_TOUCH = (p, pc) => {
 function checkPacking(p, label, minBuildings = 3) {
   const buildings = p.pieces.filter((pc) => pc.kind === KIND.BUILDING);
   check(`${label}: has buildings`, buildings.length >= minBuildings, `got ${buildings.length}`);
-  check(`${label}: every building touches a road`, buildings.every((pc) => ROAD_TOUCH(p, pc)));
+  check(`${label}: every building touches a road`, buildings.filter((pc) => pc.zone !== 'band').every((pc) => ROAD_TOUCH(p, pc)));
+  check(`${label}: band containers stay in the band`, buildings.filter((pc) => pc.zone === 'band').every((pc) => p.inset > 0 && (pc.x < p.inset || pc.z < p.inset || pc.x + pc.pw > p.w - p.inset || pc.z + pc.ph > p.h - p.inset)));
   check(`${label}: every piece is inside the plate`, p.pieces.every((pc) => pc.x >= 0 && pc.z >= 0 && pc.x + pc.pw <= p.w && pc.z + pc.ph <= p.h));
   const claimed = new Map();
   for (let i = 0; i < p.cells.length; i++) if (p.owner[i] >= 0) claimed.set(p.owner[i], (claimed.get(p.owner[i]) || 0) + 1);
