@@ -6,12 +6,12 @@
 import * as THREE from '../vendor/three.module.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { generatePlate, makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M } from './plate.js?v=9868bf29';
+import { generatePlate, makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M } from './plate.js?v=0d4c92de';
 import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, blockedAt, makeGates, stepGates,
-  spawnFor, makeSentries, stepSentries, losClear, stepTracers, buildingAt } from './drive.js?v=9868bf29';
-import { buildPlateGroup, yawRotation } from './plate-scene.js?v=9868bf29';
-import { query, loadCatalog } from './plate-tab.js?v=9868bf29';
-import { loadGlb, mergeByMaterial } from './glbmodels.js?v=9868bf29';
+  spawnFor, makeSentries, stepSentries, losClear, stepTracers, buildingAt } from './drive.js?v=0d4c92de';
+import { buildPlateGroup, yawRotation } from './plate-scene.js?v=0d4c92de';
+import { query, loadCatalog } from './plate-tab.js?v=0d4c92de';
+import { loadGlb, mergeByMaterial } from './glbmodels.js?v=0d4c92de';
 
 const HULL_URL = 'assets/models/mkcx2.glb';
 // The nodes that must keep moving through the merge, and the ones that
