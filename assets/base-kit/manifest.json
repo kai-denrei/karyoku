@@ -1,0 +1,744 @@
+{
+  "version": 1,
+  "units": "meters",
+  "up": "+Y",
+  "forward": "+Z",
+  "assets": [
+    {
+      "id": "wall_standard_d0",
+      "name": "Armored wall",
+      "state": "Intact",
+      "file": "wall_standard_d0.glb",
+      "plot_m": [
+        4,
+        4
+      ],
+      "description": "Layered armor with replaceable panels and service rail.",
+      "sockets": [
+        {
+          "id": "WALL_W",
+          "kind": "wall",
+          "position_m": [
+            -2,
+            0,
+            0
+          ],
+          "normal": [
+            -1,
+            0,
+            0
+          ],
+          "available": true,
+          "width_m": 0.8
+        },
+        {
+          "id": "WALL_E",
+          "kind": "wall",
+          "position_m": [
+            2,
+            0,
+            0
+          ],
+          "normal": [
+            1,
+            0,
+            0
+          ],
+          "available": true,
+          "width_m": 0.8
+        }
+      ],
+      "colliders": [
+        {
+          "id": "wall",
+          "center_m": [
+            0,
+            1.6,
+            0
+          ],
+          "size_m": [
+            4,
+            3.2,
+            1.2
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [],
+      "animations": [],
+      "triangles": 5856,
+      "bytes": 362676
+    },
+    {
+      "id": "wall_standard_d1",
+      "name": "Armored wall",
+      "state": "Damaged",
+      "file": "wall_standard_d1.glb",
+      "plot_m": [
+        4,
+        4
+      ],
+      "description": "Scored armor, cracks and fault indicator; wall still blocks.",
+      "sockets": [
+        {
+          "id": "WALL_W",
+          "kind": "wall",
+          "position_m": [
+            -2,
+            0,
+            0
+          ],
+          "normal": [
+            -1,
+            0,
+            0
+          ],
+          "available": true,
+          "width_m": 0.8
+        },
+        {
+          "id": "WALL_E",
+          "kind": "wall",
+          "position_m": [
+            2,
+            0,
+            0
+          ],
+          "normal": [
+            1,
+            0,
+            0
+          ],
+          "available": true,
+          "width_m": 0.8
+        }
+      ],
+      "colliders": [
+        {
+          "id": "wall",
+          "center_m": [
+            0,
+            1.6,
+            0
+          ],
+          "size_m": [
+            4,
+            3.2,
+            1.2
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [],
+      "animations": [],
+      "triangles": 9680,
+      "bytes": 638160
+    },
+    {
+      "id": "wall_standard_d2",
+      "name": "Armored wall",
+      "state": "Breached",
+      "file": "wall_standard_d2.glb",
+      "plot_m": [
+        4,
+        4
+      ],
+      "description": "Central breach with exposed core; 1.2 m pedestrian clearance.",
+      "sockets": [
+        {
+          "id": "WALL_W",
+          "kind": "wall",
+          "position_m": [
+            -2,
+            0,
+            0
+          ],
+          "normal": [
+            -1,
+            0,
+            0
+          ],
+          "available": true,
+          "width_m": 0.8
+        },
+        {
+          "id": "WALL_E",
+          "kind": "wall",
+          "position_m": [
+            2,
+            0,
+            0
+          ],
+          "normal": [
+            1,
+            0,
+            0
+          ],
+          "available": true,
+          "width_m": 0.8
+        }
+      ],
+      "colliders": [
+        {
+          "id": "remnant_-1",
+          "center_m": [
+            -1.4,
+            1.6,
+            0
+          ],
+          "size_m": [
+            1.2,
+            3.2,
+            1.2
+          ],
+          "condition": "always"
+        },
+        {
+          "id": "remnant_1",
+          "center_m": [
+            1.4,
+            1.6,
+            0
+          ],
+          "size_m": [
+            1.2,
+            3.2,
+            1.2
+          ],
+          "condition": "always"
+        },
+        {
+          "id": "lintel",
+          "center_m": [
+            0,
+            2.97,
+            0
+          ],
+          "size_m": [
+            1.6,
+            0.46,
+            1.2
+          ],
+          "condition": "always"
+        },
+        {
+          "id": "rubble_-1",
+          "center_m": [
+            -1.4,
+            0.2,
+            0.85
+          ],
+          "size_m": [
+            1.1,
+            0.4,
+            1.3
+          ],
+          "condition": "always"
+        },
+        {
+          "id": "rubble_1",
+          "center_m": [
+            1.4,
+            0.2,
+            0.85
+          ],
+          "size_m": [
+            1.1,
+            0.4,
+            1.3
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [
+        {
+          "kind": "walk",
+          "center_m": [
+            0,
+            1.2,
+            0
+          ],
+          "size_m": [
+            1.2,
+            2.4,
+            4
+          ],
+          "condition": "always"
+        }
+      ],
+      "animations": [],
+      "triangles": 6446,
+      "bytes": 446944
+    },
+    {
+      "id": "wall_standard_d3",
+      "name": "Armored wall",
+      "state": "Destroyed",
+      "file": "wall_standard_d3.glb",
+      "plot_m": [
+        4,
+        4
+      ],
+      "description": "Broken end footings and bounded rubble; central pedestrian passage.",
+      "sockets": [
+        {
+          "id": "WALL_W",
+          "kind": "wall",
+          "position_m": [
+            -2,
+            0,
+            0
+          ],
+          "normal": [
+            -1,
+            0,
+            0
+          ],
+          "available": false,
+          "width_m": 0.8
+        },
+        {
+          "id": "WALL_E",
+          "kind": "wall",
+          "position_m": [
+            2,
+            0,
+            0
+          ],
+          "normal": [
+            1,
+            0,
+            0
+          ],
+          "available": false,
+          "width_m": 0.8
+        }
+      ],
+      "colliders": [
+        {
+          "id": "remnant_-1",
+          "center_m": [
+            -1.4,
+            0.5,
+            0
+          ],
+          "size_m": [
+            1.2,
+            1.0,
+            1.2
+          ],
+          "condition": "always"
+        },
+        {
+          "id": "remnant_1",
+          "center_m": [
+            1.4,
+            0.5,
+            0
+          ],
+          "size_m": [
+            1.2,
+            1.0,
+            1.2
+          ],
+          "condition": "always"
+        },
+        {
+          "id": "rubble_-1",
+          "center_m": [
+            -1.4,
+            0.2,
+            0.85
+          ],
+          "size_m": [
+            1.1,
+            0.4,
+            1.3
+          ],
+          "condition": "always"
+        },
+        {
+          "id": "rubble_1",
+          "center_m": [
+            1.4,
+            0.2,
+            0.85
+          ],
+          "size_m": [
+            1.1,
+            0.4,
+            1.3
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [
+        {
+          "kind": "walk",
+          "center_m": [
+            0,
+            1.2,
+            0
+          ],
+          "size_m": [
+            1.2,
+            2.4,
+            4
+          ],
+          "condition": "always"
+        }
+      ],
+      "animations": [],
+      "triangles": 1832,
+      "bytes": 151936
+    },
+    {
+      "id": "wall_corner_d0",
+      "name": "Armored corner",
+      "state": "Intact",
+      "file": "wall_corner_d0.glb",
+      "plot_m": [
+        4,
+        4
+      ],
+      "description": "Two matching half sections turn the wall boundary by 90 degrees.",
+      "sockets": [
+        {
+          "id": "WALL_E",
+          "kind": "wall",
+          "position_m": [
+            2,
+            0,
+            0
+          ],
+          "normal": [
+            1,
+            0,
+            0
+          ],
+          "available": true,
+          "width_m": 0.8
+        },
+        {
+          "id": "WALL_N",
+          "kind": "wall",
+          "position_m": [
+            0,
+            0,
+            2
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": true,
+          "width_m": 0.8
+        }
+      ],
+      "colliders": [
+        {
+          "id": "east_leg",
+          "center_m": [
+            1,
+            1.6,
+            0
+          ],
+          "size_m": [
+            2,
+            3.2,
+            1.2
+          ],
+          "condition": "always"
+        },
+        {
+          "id": "north_leg",
+          "center_m": [
+            0,
+            1.6,
+            1
+          ],
+          "size_m": [
+            1.2,
+            3.2,
+            2
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [],
+      "animations": [],
+      "triangles": 9212,
+      "bytes": 577228
+    },
+    {
+      "id": "gate_vehicle_d0",
+      "name": "Telescopic vehicle gate",
+      "state": "Intact",
+      "file": "gate_vehicle_d0.glb",
+      "plot_m": [
+        12,
+        8
+      ],
+      "description": "Four armored slats telescope into the header, leaving an 8 m-wide vehicle opening.",
+      "sockets": [
+        {
+          "id": "WALL_W",
+          "kind": "wall",
+          "position_m": [
+            -6,
+            0,
+            0
+          ],
+          "normal": [
+            -1,
+            0,
+            0
+          ],
+          "available": true,
+          "width_m": 0.8
+        },
+        {
+          "id": "WALL_E",
+          "kind": "wall",
+          "position_m": [
+            6,
+            0,
+            0
+          ],
+          "normal": [
+            1,
+            0,
+            0
+          ],
+          "available": true,
+          "width_m": 0.8
+        },
+        {
+          "id": "ROAD_S",
+          "kind": "road",
+          "position_m": [
+            0,
+            0,
+            -4
+          ],
+          "normal": [
+            0,
+            0,
+            -1
+          ],
+          "available": true,
+          "width_m": 8
+        },
+        {
+          "id": "ROAD_N",
+          "kind": "road",
+          "position_m": [
+            0,
+            0,
+            4
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": true,
+          "width_m": 8
+        }
+      ],
+      "colliders": [
+        {
+          "id": "tower_-1",
+          "center_m": [
+            -4.75,
+            2.75,
+            0
+          ],
+          "size_m": [
+            1.5,
+            5.5,
+            1.8
+          ],
+          "condition": "always"
+        },
+        {
+          "id": "tower_1",
+          "center_m": [
+            4.75,
+            2.75,
+            0
+          ],
+          "size_m": [
+            1.5,
+            5.5,
+            1.8
+          ],
+          "condition": "always"
+        },
+        {
+          "id": "header",
+          "center_m": [
+            0,
+            4.95,
+            -0.22
+          ],
+          "size_m": [
+            8.9,
+            1.15,
+            1.65
+          ],
+          "condition": "always"
+        },
+        {
+          "id": "closed_slats",
+          "center_m": [
+            0,
+            2,
+            0
+          ],
+          "size_m": [
+            8,
+            4,
+            0.55
+          ],
+          "condition": "gate_closed"
+        }
+      ],
+      "clearance": [
+        {
+          "kind": "vehicle",
+          "center_m": [
+            0,
+            1.9,
+            0
+          ],
+          "size_m": [
+            8,
+            3.8,
+            8
+          ],
+          "condition": "gate_open"
+        }
+      ],
+      "animations": [
+        "Gate_Open"
+      ],
+      "triangles": 17120,
+      "bytes": 1089152
+    },
+    {
+      "id": "foundation_flat_d0",
+      "name": "Armored foundation slab",
+      "state": "Intact",
+      "file": "foundation_flat_d0.glb",
+      "plot_m": [
+        4,
+        4
+      ],
+      "description": "4 m foundation tile; origin and support plane at the top surface.",
+      "sockets": [
+        {
+          "id": "FOUNDATION_N",
+          "kind": "foundation",
+          "position_m": [
+            0,
+            0,
+            2
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": true,
+          "width_m": 4
+        },
+        {
+          "id": "FOUNDATION_E",
+          "kind": "foundation",
+          "position_m": [
+            2,
+            0,
+            0
+          ],
+          "normal": [
+            1,
+            0,
+            0
+          ],
+          "available": true,
+          "width_m": 4
+        },
+        {
+          "id": "FOUNDATION_S",
+          "kind": "foundation",
+          "position_m": [
+            0,
+            0,
+            -2
+          ],
+          "normal": [
+            0,
+            0,
+            -1
+          ],
+          "available": true,
+          "width_m": 4
+        },
+        {
+          "id": "FOUNDATION_W",
+          "kind": "foundation",
+          "position_m": [
+            -2,
+            0,
+            0
+          ],
+          "normal": [
+            -1,
+            0,
+            0
+          ],
+          "available": true,
+          "width_m": 4
+        },
+        {
+          "id": "SUPPORT",
+          "kind": "support",
+          "position_m": [
+            0,
+            0,
+            0
+          ],
+          "normal": [
+            0,
+            1,
+            0
+          ],
+          "available": true,
+          "width_m": 4
+        }
+      ],
+      "colliders": [
+        {
+          "id": "slab",
+          "center_m": [
+            0,
+            -0.19,
+            0
+          ],
+          "size_m": [
+            4,
+            0.38,
+            4
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [],
+      "animations": [],
+      "triangles": 2200,
+      "bytes": 149596
+    }
+  ]
+}
