@@ -4,6 +4,9 @@ Homage to Firepower (Amiga). Procedural military bases on flat 4 m plates,
 organic Stålberg terrain between them. Vanilla ES modules, three.js r160,
 no build step.
 
+Public: <https://kai-denrei.github.io/karyoku/> (GitHub Pages, `max-age=600`
+CDN lag; the build token in the nav bar says which build is served).
+
 Design: `docs/superpowers/specs/2026-09-06-plate-generator-design.md`.
 Working notes for agents: `CLAUDE.md`.
 

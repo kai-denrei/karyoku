@@ -1,5 +1,8 @@
 # karyoku — working notes for Claude sessions
 
+Public: https://kai-denrei.github.io/karyoku/ (Pages from main, root, `.nojekyll`;
+`max-age=600` CDN lag — the nav's build token says which build is served).
+
 Firepower homage. All three PoC sub-projects are built: `#plate` (generator),
 `#drive` (the MKCX-2 on a plate), `#world` (two plates on Stalberg terrain,
 a road found between them). Specs in `docs/superpowers/specs/`, one per
