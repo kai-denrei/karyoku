@@ -62,6 +62,19 @@ no build step, Node invariant suites).
 - `#world?seed=7&tick=8` logs `[world] t= hull= y= goal= hits=`; `?view=overview`
   parks the camera above the whole world for a screenshot. `window.__world`.
 
+## Feel (operator, 2026-09-06 evening)
+- Plates default 32 x 26 cells, density 0.55: a 7.8 m hull needs room to
+  manoeuvre; 20 x 16 was "much too small".
+- Cameras: `chase` (default), `top`, `orbit`; C cycles. `?view=` picks one.
+- The hull is TILTED to the terrain normal (`terrainNormal` in world.js,
+  `setPose(hull, y, normal)`); flat placement clipped into every slope.
+- Terrain vertices under a plate are dropped 0.8 m: coplanar with the slab
+  they z-fight into a moire.
+- Mortar and howitzer (`LOB_FAMILIES`) fire BALLISTIC shells: aimed at where
+  the hull will be after the flight, visible arc with a ground shadow, splash
+  radius on landing, long cooldown. The skill is reading the arc. Their PITCH
+  node is held at `LOB_ELEV_DEG`.
+
 ## Verify
 - `npm run serve` then `http://localhost:8150/#plate?seed=7&ascii=1`.
   `?seed= ?w= ?h= ?gates= ?arc= ?density= ?tier=` override the knobs;

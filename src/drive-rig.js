@@ -2,7 +2,7 @@
 // the hull model with a stand-in until it lands, the key state, the tracer
 // meshes, and the two cameras. Rendering only; the rules are drive.js.
 import * as THREE from '../vendor/three.module.js';
-import { loadGlb, mergeByMaterial } from './glbmodels.js?v=01da3658';
+import { loadGlb, mergeByMaterial } from './glbmodels.js?v=bf234634';
 
 const HULL_URL = 'assets/models/mkcx2.glb';
 // The nodes that must keep moving through the merge, and the ones that
@@ -26,9 +26,14 @@ export function makeHullObject() {
     obj.add(mergeByMaterial(gltfScene, HULL_PIVOTS, HULL_DROP));
     console.log('[drive] hull model loaded');
   });
-  obj.userData.setPose = (hull, y = 0) => {
+  // Heading about +y, then the whole thing tilted so its up is the ground's
+  // normal — a hover tank on a slope rides the slope, it does not sink into it.
+  const up = new THREE.Vector3(0, 1, 0), n = new THREE.Vector3(), qTilt = new THREE.Quaternion(), qYaw = new THREE.Quaternion();
+  obj.userData.setPose = (hull, y = 0, normal = null) => {
     obj.position.set(hull.x, y, hull.z);
-    obj.rotation.y = Math.PI - hull.heading * Math.PI / 180;
+    qYaw.setFromAxisAngle(up, Math.PI - hull.heading * Math.PI / 180);
+    if (normal) { n.set(normal[0], normal[1], normal[2]).normalize(); qTilt.setFromUnitVectors(up, n); obj.quaternion.copy(qTilt).multiply(qYaw); }
+    else obj.quaternion.copy(qYaw);
   };
   return obj;
 }
@@ -47,30 +52,85 @@ export function makeKeys(on = {}) {
   };
 }
 
-// One mesh per live tracer, created and dropped as the rules' array changes.
+// One mesh per live round, created and dropped as the rules' array changes.
+// A tracer is a bar along its heading. A lob SHELL is a ball on its arc with
+// a shadow on the ground beneath it — the shadow is what tells a driver
+// where the arc is coming down, without drawing the answer on the ground.
+// A shell that lands leaves a splash ring for half a second.
 export function makeTracerPool(scene) {
   const meshes = new Map();
   const geo = new THREE.BoxGeometry(0.25, 0.25, 1.6);
   const mat = new THREE.MeshBasicMaterial({ color: 0xffd166 });
+  const shellGeo = new THREE.SphereGeometry(0.45, 10, 8);
+  const shellMat = new THREE.MeshBasicMaterial({ color: 0xff8c42 });
+  const shadowGeo = new THREE.CircleGeometry(0.6, 12);
+  const shadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.45, depthWrite: false });
+  const splashGeo = new THREE.RingGeometry(0.6, 1, 24);
+  const splashes = [];
+  const lobY = (t) => { const u = Math.min(1, t.t / t.flight); return 4 * t.apex * u * (1 - u); };
   return {
-    sync(tracers, yAt = () => 0) {
+    sync(tracers, yAt = () => 0, dt = 0, splashR = 5) {
       const live = new Set(tracers);
-      for (const [t, m] of meshes) if (!live.has(t)) { scene.remove(m); meshes.delete(t); }
+      for (const [t, m] of meshes) {
+        if (live.has(t)) continue;
+        scene.remove(m); meshes.delete(t);
+        if (t.kind === 'lob') {
+          const ring = new THREE.Mesh(splashGeo, new THREE.MeshBasicMaterial({ color: 0xff8c42, transparent: true, opacity: 0.8, side: THREE.DoubleSide, depthWrite: false }));
+          ring.rotation.x = -Math.PI / 2;
+          ring.position.set(t.tx, yAt(t.tx, t.tz) + 0.15, t.tz);
+          ring.scale.setScalar(0.3);
+          splashes.push({ ring, age: 0 });
+          scene.add(ring);
+        }
+      }
       for (const t of tracers) {
         let m = meshes.get(t);
+        if (t.kind === 'lob') {
+          if (!m) {
+            m = new THREE.Group();
+            m.add(new THREE.Mesh(shellGeo, shellMat));
+            const sh = new THREE.Mesh(shadowGeo, shadowMat); sh.rotation.x = -Math.PI / 2; sh.name = 'shadow';
+            m.add(sh);
+            meshes.set(t, m); scene.add(m);
+          }
+          const g = yAt(t.x, t.z);
+          m.position.set(t.x, 0, t.z);
+          m.children[0].position.y = g + 1.5 + lobY(t);
+          m.getObjectByName('shadow').position.y = g + 0.12;
+          continue;
+        }
         if (!m) { m = new THREE.Mesh(geo, mat); meshes.set(t, m); scene.add(m); }
         m.position.set(t.x, yAt(t.x, t.z) + 3.0, t.z);
         m.rotation.y = Math.PI - t.heading * Math.PI / 180;
       }
+      for (let i = splashes.length - 1; i >= 0; i--) {
+        const sp = splashes[i];
+        sp.age += dt;
+        const k = Math.min(1, sp.age / 0.5);
+        sp.ring.scale.setScalar(0.3 + k * splashR);
+        sp.ring.material.opacity = 0.8 * (1 - k);
+        if (k >= 1) { scene.remove(sp.ring); sp.ring.material.dispose(); splashes.splice(i, 1); }
+      }
     },
-    clear() { for (const m of meshes.values()) scene.remove(m); meshes.clear(); },
+    clear() { for (const m of meshes.values()) scene.remove(m); meshes.clear(); for (const sp of splashes) scene.remove(sp.ring); splashes.length = 0; },
   };
 }
 
-// Top-down follows from the south so north is up and east is right; orbit
-// hands the camera to OrbitControls with its target on the hull.
-export function followCamera(camera, controls, hull, y, mode) {
-  if (mode === 'top') {
+// Chase sits behind the hull along its heading and eases toward where it
+// should be, so a turn swings the view rather than snapping it. Top-down
+// follows from the south so north is up and east is right; orbit hands the
+// camera to OrbitControls with its target on the hull.
+const chaseWant = new THREE.Vector3(), chaseLook = new THREE.Vector3();
+export function followCamera(camera, controls, hull, y, mode, dt = 0.016) {
+  if (mode === 'chase') {
+    const h = hull.heading * Math.PI / 180;
+    const fx = Math.sin(h), fz = -Math.cos(h);
+    chaseWant.set(hull.x - fx * 24, y + 11, hull.z - fz * 24);
+    if (!camera.userData.placed) { camera.position.copy(chaseWant); camera.userData.placed = true; }
+    else camera.position.lerp(chaseWant, Math.min(1, dt * 4));
+    chaseLook.set(hull.x + fx * 10, y + 2, hull.z + fz * 10);
+    camera.lookAt(chaseLook);
+  } else if (mode === 'top') {
     camera.position.set(hull.x, y + 70, hull.z + 28);
     camera.lookAt(hull.x, y, hull.z);
   } else {

@@ -10,15 +10,15 @@
 // and the hull samples it where it stands, so the two cannot disagree
 // beyond the mesh's own faceting, and a plate sits on ground that is
 // exactly zero because the mask says so, not because a vertex was edited.
-import { mulberry32 } from './rng.js?v=01da3658';
-import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=01da3658';
-import { generateMesh, relax } from './organic-grid.js?v=01da3658';
-import { valueNoise2D } from './noise.js?v=01da3658';
-import { generatePlate, makePlateParams, CELL_M, DIRS, yawOfSide, KIND } from './plate.js?v=01da3658';
-import { makeGates, makeSentries, blockedAt, losClear, buildingAt, gateCentre } from './drive.js?v=01da3658';
+import { mulberry32 } from './rng.js?v=bf234634';
+import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=bf234634';
+import { generateMesh, relax } from './organic-grid.js?v=bf234634';
+import { valueNoise2D } from './noise.js?v=bf234634';
+import { generatePlate, makePlateParams, CELL_M, DIRS, yawOfSide, KIND } from './plate.js?v=bf234634';
+import { makeGates, makeSentries, blockedAt, losClear, buildingAt, gateCentre } from './drive.js?v=bf234634';
 
 export const WORLD_TUNE = {
-  size: 560,        // m, the world is a square
+  size: 760,        // m, the world is a square
   r: 0.04,          // poisson radius in [0,1]; ~11 m quads after subdivision
   relaxIters: 40,
   amp: 14,          // m, main relief
@@ -32,7 +32,7 @@ export const WORLD_TUNE = {
   rockR: 2.2,       // m
 };
 export const WORLD_KNOBS = [
-  { key: 'size', label: 'world size (m)', group: 'world', min: 320, max: 1200, step: 40 },
+  { key: 'size', label: 'world size (m)', group: 'world', min: 320, max: 1600, step: 40 },
   { key: 'r', label: 'poisson radius', group: 'world', min: 0.02, max: 0.08, step: 0.005 },
   { key: 'relaxIters', label: 'relax iterations', group: 'world', min: 0, max: 120, step: 5 },
   { key: 'amp', label: 'relief (m)', group: 'terrain', min: 0, max: 40, step: 1 },
@@ -206,6 +206,14 @@ export function makeWorld(params, plateParams) {
   world.spawn = { x: ax, z: az, heading: yawOfSide[gA.side] };
   world.goal = { x: bx, z: bz };
   return world;
+}
+
+// The ground's unit normal from the height function, by central differences.
+export function terrainNormal(heightAt, x, z, d = 1.5) {
+  const dx = (heightAt(x + d, z) - heightAt(x - d, z)) / (2 * d);
+  const dz = (heightAt(x, z + d) - heightAt(x, z - d)) / (2 * d);
+  const l = Math.hypot(dx, 1, dz);
+  return [-dx / l, 1 / l, -dz / l];
 }
 
 // --- queries used by the drive rules -----------------------------------------

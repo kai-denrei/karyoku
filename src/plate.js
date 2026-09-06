@@ -13,9 +13,9 @@
 // `rotation.y = -rot * PI/2`. Yaw is compass degrees, 0 = N, 90 = E.
 // Plate width and depth are EVEN, because roads are 2 x 2 pieces laid on
 // even coordinates and a gate's road port has to land on one.
-import { mulberry32 } from './rng.js?v=01da3658';
-import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=01da3658';
-import { specById } from './catalog-spec.js?v=01da3658';
+import { mulberry32 } from './rng.js?v=bf234634';
+import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=bf234634';
+import { specById } from './catalog-spec.js?v=bf234634';
 
 export const CELL_M = 4;
 
@@ -24,18 +24,18 @@ export const ASCII_OF_KIND = ['.', '#', 'G', '=', 'B', 'o', 'S'];
 
 export const PLATE_TUNE = {
   seed: 1,
-  w: 20,          // cells, including the ring; even
-  h: 16,          // cells, including the ring; even
+  w: 32,          // cells, including the ring; even — a 7.8 m hull needs room
+  h: 26,          // cells, including the ring; even
   gates: 2,
-  density: 0.7,   // fraction of a block the packer tries to fill
+  density: 0.55,  // fraction of a block the packer tries to fill; the rest is manoeuvring room
   arc: 110,       // sentry traverse, degrees
   tier: 1,        // sentry tier
 };
 
 export const PLATE_KNOBS = [
   { key: 'seed', label: 'seed', group: 'plate', min: 0, max: 999999, step: 1 },
-  { key: 'w', label: 'width (cells)', group: 'plate', min: 12, max: 40, step: 2 },
-  { key: 'h', label: 'depth (cells)', group: 'plate', min: 12, max: 40, step: 2 },
+  { key: 'w', label: 'width (cells)', group: 'plate', min: 12, max: 60, step: 2 },
+  { key: 'h', label: 'depth (cells)', group: 'plate', min: 12, max: 60, step: 2 },
   { key: 'gates', label: 'gates', group: 'plate', min: 1, max: 3, step: 1 },
   { key: 'density', label: 'build density', group: 'packing', min: 0.3, max: 1.0, step: 0.05 },
   { key: 'arc', label: 'sentry arc (deg)', group: 'sentries', min: 60, max: 180, step: 5 },

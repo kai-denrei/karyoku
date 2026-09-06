@@ -5,9 +5,10 @@
 // as clones with their YAW pivot exposed, and everything else as a labelled
 // placeholder box of its footprint.
 import * as THREE from '../vendor/three.module.js';
-import { KIND, CELL_M, ringCoverage } from './plate.js?v=01da3658';
-import { fileFor, SECTION_COLOR, PLACEHOLDER_HEIGHT_M } from './catalog.js?v=01da3658';
-import { loadGlb, loadGlbWithClips, mergeByMaterial, fitModel } from './glbmodels.js?v=01da3658';
+import { KIND, CELL_M, ringCoverage } from './plate.js?v=bf234634';
+import { fileFor, SECTION_COLOR, PLACEHOLDER_HEIGHT_M } from './catalog.js?v=bf234634';
+import { LOB_FAMILIES, LOB_ELEV_DEG } from './drive.js?v=bf234634';
+import { loadGlb, loadGlbWithClips, mergeByMaterial, fitModel } from './glbmodels.js?v=bf234634';
 
 const labelCache = new Map();
 function labelTexture(text) {
@@ -201,6 +202,10 @@ export function buildPlateGroup({ plate, catalog, wallState = 0, showArcs = true
       const inst = root.clone();
       const yaw = inst.getObjectByName('YAW') || inst;
       yaw.rotation.y = yawRotation(st.yawDeg);
+      // a lobber holds its barrel up: the workshop applies elevation as a
+      // NEGATIVE rotation about x on the PITCH node
+      const pitch = inst.getObjectByName('PITCH');
+      if (pitch && LOB_FAMILIES.has(st.family)) pitch.rotation.x = -LOB_ELEV_DEG * Math.PI / 180;
       inst.position.set((st.x + 1) * CELL_M, 0.6, (st.z + 1) * CELL_M);
       group.add(inst);
       sentryYaws.set(index, yaw);

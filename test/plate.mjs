@@ -9,7 +9,7 @@ check('dirOfYaw(0) is -z (north)', near(dirOfYaw(0)[0], 0) && near(dirOfYaw(0)[1
 check('dirOfYaw(90) is +x', near(dirOfYaw(90)[0], 1) && near(dirOfYaw(90)[1], 0));
 
 const SEEDS = Array.from({ length: 50 }, (_, i) => i + 1);
-const SIZES = [[12, 12], [40, 12], [12, 40], [40, 40]];
+const SIZES = [[12, 12], [60, 12], [12, 60], [60, 60]];
 
 const ringCells = (p) => {
   const out = [];

@@ -4,12 +4,12 @@
 // hit. The rules are drive.js; this file wires the rig around them.
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { generatePlate, makePlateParams, clampPlateParams, PLATE_KNOBS } from './plate.js?v=01da3658';
+import { generatePlate, makePlateParams, clampPlateParams, PLATE_KNOBS } from './plate.js?v=bf234634';
 import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, blockedAt, makeGates, stepGates,
-  spawnFor, makeSentries, stepSentries, losClear, stepTracers, buildingAt } from './drive.js?v=01da3658';
-import { buildPlateGroup, yawRotation } from './plate-scene.js?v=01da3658';
-import { query, loadCatalog } from './plate-tab.js?v=01da3658';
-import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera } from './drive-rig.js?v=01da3658';
+  spawnFor, makeSentries, stepSentries, losClear, stepTracers, buildingAt } from './drive.js?v=bf234634';
+import { buildPlateGroup, yawRotation } from './plate-scene.js?v=bf234634';
+import { query, loadCatalog } from './plate-tab.js?v=bf234634';
+import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera } from './drive-rig.js?v=bf234634';
 
 export function initDriveTab(root) {
   const { renderer, scene, camera, hud, notice, resize } = makeViewer(root);
@@ -20,13 +20,13 @@ export function initDriveTab(root) {
   const q = query();
   const params = clampPlateParams(makePlateParams(), Object.fromEntries([...q.entries()]));
   const P = clampDriveParams(makeDriveParams(), Object.fromEntries([...q.entries()]));
-  const view = { camera: 'top' };
+  const view = { camera: q.get('view') || 'chase' };
   const hullObj = makeHullObject();
   scene.add(hullObj);
   const pool = makeTracerPool(scene);
 
   let catalog = null, plate = null, rig = null, gates = [], sentries = [], tracers = [], hull = null;
-  let hits = 0, simT = 0, lastLog = 0;
+  let hits = 0, simT = 0, lastLog = 0, lastDt = 0.016;
 
   function build() {
     if (rig) scene.remove(rig.group);
@@ -54,19 +54,20 @@ export function initDriveTab(root) {
   }
 
   const gateWord = () => gates.map((g) => `${g.side}:${g.open >= 0.95 ? 'open' : g.open <= 0 ? 'shut' : 'moving'}`).join(' ');
-  const logLine = () => `[drive] t=${simT.toFixed(1)} hull=${hull.x.toFixed(1)},${hull.z.toFixed(1)} heading=${hull.heading.toFixed(0)} gates=${gateWord()} tracking=${sentries.filter((s) => s.tracking).length} hits=${hits}`;
+  const logLine = () => `[drive] t=${simT.toFixed(1)} hull=${hull.x.toFixed(1)},${hull.z.toFixed(1)} heading=${hull.heading.toFixed(0)} gates=${gateWord()} tracking=${sentries.filter((s) => s.tracking).length} lobs=${tracers.filter((t) => t.kind === 'lob').length} hits=${hits}`;
 
   function sync() {
     hullObj.userData.setPose(hull, 0);
     sentries.forEach((s, i) => { const node = rig.sentryYaws.get(i); if (node) node.rotation.y = yawRotation(s.yaw); });
     for (const gr of rig.gateRigs) { const g = gates[gr.index]; if (g && gr.mixer) gr.mixer.setTime(g.open * gr.duration); }
-    pool.sync(tracers);
-    followCamera(camera, controls, hull, 0, view.camera);
+    pool.sync(tracers, () => 0, lastDt, P.splashR);
+    followCamera(camera, controls, hull, 0, view.camera, lastDt);
     hud.textContent = `hits ${hits} · gates ${gateWord()} · cam ${view.camera} · WASD / arrows drive · C camera · R regenerate`;
   }
 
   const regenerate = () => { params.seed = (params.seed + 1) % 1000000; gui.controllersRecursive().forEach((c) => c.updateDisplay()); build(); };
-  const toggleCam = () => { view.camera = view.camera === 'top' ? 'orbit' : 'top'; controls.enabled = view.camera === 'orbit'; camera.userData.placed = false; };
+  const CAMS = ['chase', 'top', 'orbit'];
+  const toggleCam = () => { view.camera = CAMS[(CAMS.indexOf(view.camera) + 1) % CAMS.length]; controls.enabled = view.camera === 'orbit'; camera.userData.placed = false; gui.controllersRecursive().forEach((c) => c.updateDisplay()); };
   const keys = makeKeys({ c: toggleCam, r: regenerate });
 
   const gui = new GUI({ title: 'DRIVE', container: root });
@@ -78,7 +79,7 @@ export function initDriveTab(root) {
     const f = folders[k.group] || (folders[k.group] = gui.addFolder(k.group));
     f.add(P, k.key, k.min, k.max, k.step).name(k.label);
   }
-  gui.add(view, 'camera', ['top', 'orbit']).name('camera').onChange((v) => { controls.enabled = v === 'orbit'; camera.userData.placed = false; });
+  gui.add(view, 'camera', ['chase', 'top', 'orbit']).name('camera').onChange((v) => { controls.enabled = v === 'orbit'; camera.userData.placed = false; });
   gui.add({ regenerate }, 'regenerate').name('regenerate (seed+1)');
 
   let last = 0;
@@ -95,6 +96,7 @@ export function initDriveTab(root) {
     renderer.setAnimationLoop((now) => {
       const dt = Math.min(0.05, last ? (now - last) / 1000 : 0);
       last = now;
+      lastDt = dt;
       step(dt, keys.input());
       if (probe && simT - lastLog >= 1) { lastLog = simT; console.log(logLine()); }
       sync();

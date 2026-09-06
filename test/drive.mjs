@@ -1,6 +1,6 @@
 import { generatePlate, makePlateParams, PLATE_TUNE, KIND, CELL_M, blindCells } from '../src/plate.js';
 import { DRIVE_TUNE, driveKnobProblems, makeHull, stepHull, blockedAt, makeGates, stepGates, spawnFor,
-  makeSentries, stepSentries, losClear, stepTracers, buildingAt, bearingTo } from '../src/drive.js';
+  makeSentries, stepSentries, losClear, stepTracers, buildingAt, bearingTo, lobHeight, LOB_FAMILIES } from '../src/drive.js';
 import { check, near, done } from './check.mjs';
 
 check('knob table is sound', driveKnobProblems().length === 0, driveKnobProblems().join('; '));
@@ -30,12 +30,12 @@ const DT = 1 / 60;
 }
 // --- walls ---------------------------------------------------------------
 {
-  // the S wall is row h-1: z in [60, 64) m for a 16-deep plate. Drive N at it.
-  const h = makeHull(20, 80, 0);
-  for (let i = 0; i < 300; i++) stepHull(h, { fwd: true }, DT, blocked);
+  // the S wall is row h-1, its outer face at z = h * CELL_M. Drive N at it from 16 m out.
   const wallFace = plate.h * CELL_M;
+  const h = makeHull(20, wallFace + 16, 0);
+  for (let i = 0; i < 300; i++) stepHull(h, { fwd: true }, DT, blocked);
   check('hull stops at the wall face plus its radius', h.z >= wallFace + DRIVE_TUNE.hullR - 1e-9 && h.z <= wallFace + DRIVE_TUNE.hullR + DRIVE_TUNE.speed * DT + 1e-9, `z=${h.z}`);
-  const s = makeHull(30, 80, 315);
+  const s = makeHull(30, wallFace + 16, 315);
   for (let i = 0; i < 120; i++) stepHull(s, { fwd: true }, DT, blocked);
   check('driving diagonally into the wall slides along it', s.x < 30 - 5 && s.z >= wallFace + DRIVE_TUNE.hullR - 1e-9, `x=${s.x} z=${s.z}`);
 }
@@ -77,6 +77,7 @@ const DT = 1 / 60;
   check('it did sweep', Math.abs(nw.yaw - nw.home) > 5);
   // inside the arc, 40 degrees off the home bearing, 20 m out, no buildings in the way
   const s2 = makeSentries(plate)[0];
+  s2.family = 'needle'; s2.lob = false; // a gun, whatever the seed put in the socket
   const b = 275;
   const hx = s2.cx + Math.sin(b * Math.PI / 180) * 20, hz = s2.cz - Math.cos(b * Math.PI / 180) * 20;
   const target = makeHull(hx, hz, 0);
@@ -139,5 +140,38 @@ for (let seed = 1; seed <= 50; seed++) {
   const ss = makeSentries(p);
   stepSentries(ss, hull, DT, () => true);
   check(`seed ${seed}: parked on a blind ring cell, no sentry tracks`, ss.every((s) => !s.tracking));
+}
+// --- lobbers ------------------------------------------------------------------
+{
+  const s = makeSentries(plate)[0];
+  s.family = 'mortar'; s.lob = true;
+  const b = 275;
+  const hx = s.cx + Math.sin(b * Math.PI / 180) * 30, hz = s.cz - Math.cos(b * Math.PI / 180) * 30;
+  const still = makeHull(hx, hz, 0);
+  let shell = null;
+  for (let i = 0; i < 40 && !shell; i++) { const f = stepSentries([s], still, 0.1, () => true); if (f.length) shell = f[0]; }
+  check('a mortar fires a lob shell', shell && shell.kind === 'lob');
+  check('the shell is aimed at a still hull', shell && near(shell.tx, hx, 1e-6) && near(shell.tz, hz, 1e-6));
+  check('flight time is range over shell speed', shell && near(shell.flight, 30 / DRIVE_TUNE.lobSpeed, 1e-6));
+  check('lob cooldown is the long one', near(s.cool, DRIVE_TUNE.lobCooldown));
+  // the shell arcs and lands after its flight time; the still hull is inside the splash
+  const shells = [shell];
+  let hits = 0, peak = 0, steps = 0;
+  while (shells.length && steps < 1000) { peak = Math.max(peak, lobHeight(shells[0])); hits += stepTracers(shells, still, 1 / 60, noBlock); steps++; }
+  check('the shell lands on the hull after its flight', hits === 1 && Math.abs(steps / 60 - shell.flight) < 0.05, `steps ${steps} flight ${shell.flight}`);
+  check('the shell climbed', peak > 3);
+  // a moving hull is led: the target is ahead of it
+  const s2 = makeSentries(plate)[0]; s2.family = 'howitzer'; s2.lob = true;
+  const mover = makeHull(hx, hz, 0); mover.vx = 0; mover.vz = -10;
+  let shell2 = null;
+  for (let i = 0; i < 40 && !shell2; i++) { const f = stepSentries([s2], mover, 0.1, () => true); if (f.length) shell2 = f[0]; }
+  check('a howitzer leads a moving hull', shell2 && shell2.tz < hz - 5, shell2 ? `tz ${shell2.tz} hz ${hz}` : 'no shell');
+  // ...and a hull that leaves the splash before landing is missed
+  const dodger = makeHull(hx, hz, 0);
+  const shells2 = [{ ...shell, t: 0, x: shell.x0, z: shell.z0, hit: false, landed: false }];
+  let hits2 = 0;
+  for (let i = 0; i < 400 && shells2.length; i++) { dodger.x += 12 / 60; hits2 += stepTracers(shells2, dodger, 1 / 60, noBlock); }
+  check('a hull that drives out of the splash is missed', hits2 === 0 && shells2.length === 0);
+  check('LOB_FAMILIES names the two lobbers', LOB_FAMILIES.has('mortar') && LOB_FAMILIES.has('howitzer') && !LOB_FAMILIES.has('needle'));
 }
 done();
