@@ -1,4 +1,4 @@
-import { generatePlate, makePlateParams, plateKnobProblems, KIND, rotSide, dirOfYaw, PLATE_TUNE, roadsConnected, roadBlockKey, ZONES, sentrySockets } from '../src/plate.js';
+import { generatePlate, makePlateParams, plateKnobProblems, KIND, rotSide, dirOfYaw, PLATE_TUNE, roadsConnected, roadBlockKey, ZONES, sentrySockets, blindCells, sentryBears, GUN_FAMILIES } from '../src/plate.js';
 import { specById } from '../src/catalog-spec.js';
 import { check, near, done } from './check.mjs';
 
@@ -91,4 +91,27 @@ function checkPacking(p, label, minBuildings = 3) {
 }
 for (const seed of SEEDS) checkPacking(generatePlate(makePlateParams({ ...PLATE_TUNE, seed })), `seed ${seed}`);
 for (const [w, h] of SIZES) checkPacking(generatePlate(makePlateParams({ ...PLATE_TUNE, seed: 3, w, h, gates: 3 })), `${w}x${h}`, 2);
+check('sentryBears: dead ahead is covered', sentryBears({ x: 0, z: 0, yawDeg: 0, arcDeg: 90 }, 1, 6));
+check('sentryBears: behind is not', !sentryBears({ x: 0, z: 0, yawDeg: 0, arcDeg: 90 }, 1, -6));
+check('sentryBears: wrap across 360', sentryBears({ x: 0, z: 0, yawDeg: 350, arcDeg: 40 }, 1.5, 6));
+function checkSentries(p, label) {
+  const sockets = sentrySockets(p);
+  check(`${label}: one sentry per socket`, p.sentries.length === sockets.length, `${p.sentries.length} vs ${sockets.length}`);
+  check(`${label}: sentries are gun families`, p.sentries.every((st) => GUN_FAMILIES.includes(st.family)));
+  check(`${label}: sentries carry the knobs`, p.sentries.every((st) => st.arcDeg === p.params.arc && st.tier === p.params.tier));
+  check(`${label}: sentry yaw points outward`, p.sentries.every((st) => {
+    const [dx, dz] = dirOfYaw(st.yawDeg);
+    const ox = (st.x + 1) - p.w / 2, oz = (st.z + 1) - p.h / 2;
+    return dx * ox + dz * oz > 0;
+  }));
+  check(`${label}: every sentry within one cell of the ring`, p.sentries.every((st) => st.x <= 1 || st.z <= 1 || st.x + 2 >= p.w - 1 || st.z + 2 >= p.h - 1));
+  check(`${label}: sentry piece owns its cells`, p.sentries.every((st) => p.pieces[st.pieceIndex].id === 'defense_sentry_socket'));
+  check(`${label}: no warnings`, p.warnings.length === 0, p.warnings.join('; '));
+}
+for (const seed of SEEDS) {
+  const p = generatePlate(makePlateParams({ ...PLATE_TUNE, seed }));
+  checkSentries(p, `seed ${seed}`);
+  check(`seed ${seed}: a blind approach exists at the default arc`, blindCells(p).length > 0);
+}
+for (const [w, h] of SIZES) checkSentries(generatePlate(makePlateParams({ ...PLATE_TUNE, seed: 3, w, h, gates: 3 })), `${w}x${h}`);
 done();

@@ -544,6 +544,45 @@ function stepPacking(s, rng) {
   for (const block of s.blocks) packBlock(s, rng, block);
 }
 
+// --- step 5: sentries ---------------------------------------------------------
+// The workshop's gun families; the Relay is a mast and never sits in a
+// socket. A sentry is NOT an aimbot: it bears on a cell only inside its
+// arc, and the arc is narrower than the geometry on purpose, so a plate
+// always has approaches nothing can see. `blindCells` is that promise as a
+// function, and the suite asserts it on every default seed.
+export const GUN_FAMILIES = ['needle', 'rotor', 'kiln', 'quiver', 'lancer', 'railgun', 'howitzer', 'mortar', 'plasma', 'heptapod_a6'];
+
+function stepSentries(s, rng) {
+  for (const sk of sentrySockets(s)) {
+    const ok = [0, 1].every((dz) => [0, 1].every((dx) => {
+      const i = idx(s, sk.x + dx, sk.z + dz);
+      return s.cells[i] === KIND.SENTRY && s.owner[i] === -1;
+    }));
+    if (!ok) { s.warnings.push(`sentry socket at ${sk.x},${sk.z} lost its reservation`); continue; }
+    const family = GUN_FAMILIES[Math.floor(rng() * GUN_FAMILIES.length)];
+    const pieceIndex = place(s, 'defense_sentry_socket', sk.x, sk.z, 2, 2, 0, KIND.SENTRY, { zone: 'defense' });
+    s.sentries.push({ x: sk.x, z: sk.z, family, tier: s.params.tier, yawDeg: sk.yawDeg, arcDeg: s.params.arc, pieceIndex, where: sk.where });
+  }
+}
+
+// Can this sentry bear on the point (cx, cz), in cell units? The socket's
+// centre is one cell in from its origin on both axes.
+export function sentryBears(st, cx, cz) {
+  const dx = cx - (st.x + 1), dz = cz - (st.z + 1);
+  const bearing = Math.atan2(dx, dz) * 180 / Math.PI;
+  return Math.abs(wrapDeg(bearing - st.yawDeg)) <= st.arcDeg / 2;
+}
+
+export function ringCoverage(s) {
+  const out = [];
+  const push = (x, z) => out.push({ x, z, covered: s.sentries.some((st) => sentryBears(st, x + 0.5, z + 0.5)) });
+  for (let x = 0; x < s.w; x++) { push(x, 0); push(x, s.h - 1); }
+  for (let z = 1; z < s.h - 1; z++) { push(0, z); push(s.w - 1, z); }
+  return out;
+}
+
+export const blindCells = (s) => ringCoverage(s).filter((c) => !c.covered).map((c) => [c.x, c.z]);
+
 // --- entry -----------------------------------------------------------------
 export function generatePlate(params) {
   const p = clampPlateParams(makePlateParams(), params);
@@ -554,5 +593,6 @@ export function generatePlate(params) {
   stepRoads(s);
   stepBlocks(s, rng);
   stepPacking(s, rng);
+  stepSentries(s, rng);
   return s;
 }
