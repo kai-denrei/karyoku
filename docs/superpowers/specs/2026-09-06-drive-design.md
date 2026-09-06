@@ -41,7 +41,9 @@ what makes hugging cover possible.
 
 **Occupancy.** `blockedAt(plate, gates, x, z)` in metres: outside the plate
 is open ground; wall, building, sentry and prop cells block; a gate cell
-blocks unless its gate is at least 0.95 open; road and foundation are free.
+blocks unless its gate is at least 0.95 open and the point is inside the
+lane, 4 m either side of the gate axis (the kit's 8 m clearance); the rest
+of the gate's cells are its towers; road and foundation are free.
 
 **Gates.** `makeGates(plate)` gives `[{ side, cx, cz (metres), open: 0 }]`.
 `stepGates(gates, hull, dt, tune)` moves each gate's `open` toward 1 while

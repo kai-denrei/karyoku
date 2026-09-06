@@ -1,9 +1,24 @@
-// main.js — boots the one tab. The build token in the nav is read from the
-// <meta name="cb"> that bust.sh maintains, so the page says which build it is.
-import { initPlateTab } from './plate-tab.js?v=672ea012';
+// main.js — the tab shell. Each tab initialises the first time it is shown;
+// the hash picks the first one (`#drive`, `#plate?seed=7`). The build token
+// in the nav is read from the <meta name="cb"> that bust.sh maintains.
+import { initPlateTab } from './plate-tab.js?v=9868bf29';
+import { initDriveTab } from './drive-tab.js?v=9868bf29';
 
 const meta = document.querySelector('meta[name="cb"]');
 const tok = document.getElementById('build-token');
 if (meta && tok) tok.textContent = meta.content;
 
-initPlateTab(document.getElementById('tab-plate'));
+const TABS = { plate: initPlateTab, drive: initDriveTab };
+const live = {};
+function show(name) {
+  if (!TABS[name]) name = 'plate';
+  for (const b of document.querySelectorAll('#tabbar button[data-tab]')) b.classList.toggle('active', b.dataset.tab === name);
+  for (const s of document.querySelectorAll('.tab')) s.classList.toggle('active', s.id === `tab-${name}`);
+  const section = document.getElementById(`tab-${name}`);
+  if (!live[name]) live[name] = TABS[name](section);
+  else if (live[name].resize) live[name].resize();
+}
+for (const b of document.querySelectorAll('#tabbar button[data-tab]')) {
+  b.addEventListener('click', () => { location.hash = `#${b.dataset.tab}`; show(b.dataset.tab); });
+}
+show(location.hash.slice(1).split('?')[0] || 'plate');

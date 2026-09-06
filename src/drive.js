@@ -11,8 +11,8 @@
 // THE ANTI-AIMBOT NUMBERS are yawRate and the arc: a sentry cannot point
 // outside its arc, and inside it turns at yawRate, so a hull that crosses
 // the arc fast, or stays in the blind sector, is never fired on.
-import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=672ea012';
-import { KIND, CELL_M, wrapDeg, dirOfYaw, DIRS, yawOfSide, rotSide } from './plate.js?v=672ea012';
+import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=9868bf29';
+import { KIND, CELL_M, wrapDeg, dirOfYaw, DIRS, yawOfSide, rotSide } from './plate.js?v=9868bf29';
 
 export const DRIVE_TUNE = {
   speed: 12,        // m/s forward
@@ -82,8 +82,11 @@ export function stepHull(hull, input, dt, blocked, tune = DRIVE_TUNE) {
 }
 
 // --- occupancy ---------------------------------------------------------------
-// Outside the plate is open ground. A gate's centre lane passes when the
-// gate is open; its two flanking cells are the towers and always block.
+// Outside the plate is open ground. A gate passes inside its LANE when it
+// is open: the kit's clearance is 8 m wide, centred on the gate axis, so
+// the lane is metric — 4 m either side of the axis — and the rest of the
+// gate's three cells are the towers, which always block.
+export const GATE_LANE_HALF_M = 4;
 export function blockedAt(plate, gates, x, z) {
   const cx = toCell(x), cz = toCell(z);
   const k = cellKind(plate, cx, cz);
@@ -93,8 +96,9 @@ export function blockedAt(plate, gates, x, z) {
     const pi = plate.owner[cz * plate.w + cx];
     const g = gates.find((gg) => gg.pieceIndex === pi);
     if (!g) return true;
-    const lane = (g.side === 'N' || g.side === 'S') ? cx === g.at : cz === g.at;
-    return !(lane && g.open >= 0.95);
+    const axis = (g.at + 0.5) * CELL_M;
+    const off = (g.side === 'N' || g.side === 'S') ? Math.abs(x - axis) : Math.abs(z - axis);
+    return !(off < GATE_LANE_HALF_M && g.open >= 0.95);
   }
   return false;
 }
