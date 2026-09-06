@@ -11,8 +11,8 @@
 // THE ANTI-AIMBOT NUMBERS are yawRate and the arc: a sentry cannot point
 // outside its arc, and inside it turns at yawRate, so a hull that crosses
 // the arc fast, or stays in the blind sector, is never fired on.
-import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=a93f4dd8';
-import { KIND, CELL_M, wrapDeg, dirOfYaw, DIRS, yawOfSide, rotSide } from './plate.js?v=a93f4dd8';
+import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=37da6c2a';
+import { KIND, CELL_M, wrapDeg, dirOfYaw, DIRS, yawOfSide, rotSide } from './plate.js?v=37da6c2a';
 
 export const DRIVE_TUNE = {
   speed: 12,        // m/s forward
@@ -97,7 +97,8 @@ export function stepHull(hull, input, dt, blocked, tune = DRIVE_TUNE) {
   hull.vx = 0; hull.vz = 0;
   if (v === 0) return false;
   const [dx, dz] = dirOfYaw(hull.heading);
-  const mx = dx * v * dt, mz = dz * v * dt;
+  // a heading of exactly 90 leaves a 1e-17 in the other axis; that is not a move
+  const mx = Math.abs(dx) < 1e-9 ? 0 : dx * v * dt, mz = Math.abs(dz) < 1e-9 ? 0 : dz * v * dt;
   const r = tune.hullR;
   const freeAt = (x, z) => !blocked(x + r, z) && !blocked(x - r, z) && !blocked(x, z + r) && !blocked(x, z - r);
   if (freeAt(hull.x + mx, hull.z + mz)) { hull.x += mx; hull.z += mz; hull.vx = mx / dt; hull.vz = mz / dt; return true; }
@@ -115,6 +116,19 @@ export function fireHull(hull, tune = DRIVE_TUNE) {
   const [dx, dz] = dirOfYaw(hull.heading);
   return { kind: 'shot', x: hull.x + dx * 4, z: hull.z + dz * 4, heading: hull.heading, left: tune.shotRange, from: -1, hit: false,
     speed: tune.shotSpeed };
+}
+
+// Steer along a polyline: the input that turns toward point `idx`, advancing
+// to the next when within `reach`. For probes and for anything that has to
+// drive a road on its own. Returns { input, idx }.
+export function autopilotInput(hull, points, idx, reach = 8, tune = DRIVE_TUNE) {
+  while (idx < points.length - 1 && Math.hypot(points[idx][0] - hull.x, points[idx][1] - hull.z) < reach) idx++;
+  const [tx, tz] = points[Math.min(idx, points.length - 1)];
+  const want = bearingTo(hull.x, hull.z, tx, tz);
+  const d = wrapDeg(want - hull.heading);
+  const input = { fwd: Math.abs(d) < 70 };
+  if (d > 4) input.right = true; else if (d < -4) input.left = true;
+  return { input, idx };
 }
 
 // --- occupancy ---------------------------------------------------------------

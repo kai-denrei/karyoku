@@ -5,13 +5,13 @@
 import * as THREE from '../vendor/three.module.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { makePlateParams, clampPlateParams, PLATE_KNOBS } from './plate.js?v=a93f4dd8';
-import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, stepGates, stepSentries, stepTracers, fireHull, damageAt } from './drive.js?v=a93f4dd8';
-import { WORLD_KNOBS, makeWorldParams, clampWorldParams, makeWorld, worldBlocked, worldBuildingAt, worldLosFor, worldSentries, worldGates, terrainNormal, splitQuad, groundAt } from './world.js?v=a93f4dd8';
-import { PALETTE, terrainMeshes, floraMeshes } from './looks.js?v=a93f4dd8';
-import { buildPlateGroup, yawRotation } from './plate-scene.js?v=a93f4dd8';
-import { query, loadCatalog } from './plate-tab.js?v=a93f4dd8';
-import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS } from './drive-rig.js?v=a93f4dd8';
+import { makePlateParams, clampPlateParams, PLATE_KNOBS } from './plate.js?v=37da6c2a';
+import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, stepGates, stepSentries, stepTracers, fireHull, damageAt, autopilotInput } from './drive.js?v=37da6c2a';
+import { WORLD_KNOBS, makeWorldParams, clampWorldParams, makeWorld, worldBlocked, worldBuildingAt, worldLosFor, worldSentries, worldGates, terrainNormal, splitQuad, groundAt } from './world.js?v=37da6c2a';
+import { PALETTE, terrainMeshes, floraMeshes } from './looks.js?v=37da6c2a';
+import { buildPlateGroup, yawRotation } from './plate-scene.js?v=37da6c2a';
+import { query, loadCatalog } from './plate-tab.js?v=37da6c2a';
+import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS } from './drive-rig.js?v=37da6c2a';
 
 const ARRIVE_M = 8;
 
@@ -134,9 +134,16 @@ export function initWorldTab(root) {
     catalog = c;
     if (error) { notice.textContent = `base-kit manifest unavailable, placeholders only (${error})`; notice.hidden = false; }
     build();
+    // ?tick=N drives N seconds before the first frame; ?auto=1 follows the
+    // road instead of holding the lever straight
     const tick = Number(q.get('tick') || 0);
     if (tick > 0) {
-      for (let i = 0; i < tick * 60; i++) step(1 / 60, { fwd: true });
+      let idx = 0;
+      for (let i = 0; i < tick * 60; i++) {
+        let input = { fwd: true };
+        if (q.get('auto') === '1') { const r = autopilotInput(hull, world.road.points, idx, 8, P); idx = r.idx; input = r.input; }
+        step(1 / 60, input);
+      }
       console.log(logLine());
     }
     renderer.setAnimationLoop((now) => {

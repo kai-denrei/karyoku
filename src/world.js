@@ -10,12 +10,12 @@
 // and the hull samples it where it stands, so the two cannot disagree
 // beyond the mesh's own faceting, and a plate sits on ground that is
 // exactly zero because the mask says so, not because a vertex was edited.
-import { mulberry32 } from './rng.js?v=a93f4dd8';
-import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=a93f4dd8';
-import { generateMesh, relax } from './organic-grid.js?v=a93f4dd8';
-import { valueNoise2D } from './noise.js?v=a93f4dd8';
-import { generatePlate, makePlateParams, CELL_M, DIRS, yawOfSide, KIND } from './plate.js?v=a93f4dd8';
-import { makeGates, makeSentries, blockedAt, losClear, buildingAt, gateCentre } from './drive.js?v=a93f4dd8';
+import { mulberry32 } from './rng.js?v=37da6c2a';
+import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=37da6c2a';
+import { generateMesh, relax } from './organic-grid.js?v=37da6c2a';
+import { valueNoise2D } from './noise.js?v=37da6c2a';
+import { generatePlate, makePlateParams, CELL_M, DIRS, yawOfSide, KIND } from './plate.js?v=37da6c2a';
+import { makeGates, makeSentries, blockedAt, losClear, buildingAt, gateCentre } from './drive.js?v=37da6c2a';
 
 export const ROAD_CLEAR_M = 7;
 export const WORLD_TUNE = {
@@ -212,7 +212,9 @@ export function makeWorld(params, plateParams) {
   const qa = quadNearest(world, ax, az), qb = quadNearest(world, bx, bz);
   const path = findRoad(world, qa, qb, tune);
   if (!path.length) warnings.push('no road between the plates');
-  world.road = { quads: path, set: new Set(path), points: path.map((q) => world.centroids[q]) };
+  // the line includes both gate approaches, so the straight run out of a
+  // gate is part of what cover keeps clear of
+  world.road = { quads: path, set: new Set(path), points: [[ax, az], ...path.map((q) => world.centroids[q]), [bx, bz]] };
 
   // trees and rocks
   const bucket = (x, z) => `${Math.floor(x / 16)},${Math.floor(z / 16)}`;
@@ -234,15 +236,16 @@ export function makeWorld(params, plateParams) {
   mesh.quads.forEach((q, qi) => {
     if (world.road.set.has(qi)) return;
     const [cx, cz] = world.centroids[qi];
-    if (distToRoad(cx, cz) < ROAD_CLEAR_M + 4) return;
     let mask = 1;
     for (const p of plates) mask = Math.min(mask, smoothstep(0, tune.plateMargin, rectDist(cx, cz, p.ox, p.oz, p.ox + p.wM, p.oz + p.hM)));
     if (mask < 0.5) return;
     const h = heightAt(cx, cz);
     const hillFactor = Math.max(0.2, 1 - Math.max(0, h) / (tune.amp + 1e-6));
     const jitter = () => (rng() - 0.5) * 5;
-    if (rng() < tune.treeRate * hillFactor) { const t = { kind: 'tree', x: cx + jitter(), z: cz + jitter(), r: tune.trunkR, h: 7 + rng() * 5, q: qi }; world.trees.push(t); put(t); }
-    else if (rng() < tune.rockRate) { const rk = { kind: 'rock', x: cx + jitter(), z: cz + jitter(), r: tune.rockR, h: 1.5 + rng() * 2, q: qi }; world.rocks.push(rk); put(rk); }
+    const x = cx + jitter(), z = cz + jitter();
+    if (distToRoad(x, z) < ROAD_CLEAR_M) return; // the PLACED position, not the centroid
+    if (rng() < tune.treeRate * hillFactor) { const t = { kind: 'tree', x, z, r: tune.trunkR, h: 7 + rng() * 5, q: qi }; world.trees.push(t); put(t); }
+    else if (rng() < tune.rockRate) { const rk = { kind: 'rock', x, z, r: tune.rockR, h: 1.5 + rng() * 2, q: qi }; world.rocks.push(rk); put(rk); }
   });
 
   // spawn and goal

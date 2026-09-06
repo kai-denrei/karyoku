@@ -1,6 +1,6 @@
 import { generatePlate, makePlateParams, PLATE_TUNE, KIND, CELL_M, blindCells } from '../src/plate.js';
 import { DRIVE_TUNE, driveKnobProblems, makeHull, stepHull, blockedAt, makeGates, stepGates, spawnFor,
-  makeSentries, stepSentries, losClear, stepTracers, buildingAt, bearingTo, lobHeight, LOB_FAMILIES, fireHull, rayStop, damageAt } from '../src/drive.js';
+  makeSentries, stepSentries, losClear, stepTracers, buildingAt, bearingTo, lobHeight, LOB_FAMILIES, fireHull, rayStop, damageAt, autopilotInput } from '../src/drive.js';
 import { check, near, done } from './check.mjs';
 
 check('knob table is sound', driveKnobProblems().length === 0, driveKnobProblems().join('; '));
@@ -208,5 +208,15 @@ for (let seed = 1; seed <= 50; seed++) {
   check('rubble no longer blocks', !blockedAt(p2, g2, wx, wz));
   const cx = 0.5 * CELL_M, cz = (p2.h - 0.5) * CELL_M; // the SW corner piece
   check('a corner shrugs the round off', damageAt(p2, cx, cz) === null && blockedAt(p2, g2, cx, cz));
+}
+// --- autopilot ----------------------------------------------------------------
+{
+  const pts = [[0, 0], [40, 0], [40, -40], [80, -40]];
+  const h = makeHull(0, 0, 0); // facing north, road goes east first
+  let idx = 0, steps = 0;
+  const last = pts[pts.length - 1];
+  while (Math.hypot(h.x - last[0], h.z - last[1]) > 6 && steps < 3000) { const r = autopilotInput(h, pts, idx); idx = r.idx; stepHull(h, r.input, DT, noBlock); steps++; }
+  check('the autopilot drives the polyline to its end', Math.hypot(h.x - last[0], h.z - last[1]) < 10, `ended ${h.x.toFixed(1)},${h.z.toFixed(1)}`);
+  check('it turned rather than teleported', steps > 60);
 }
 done();

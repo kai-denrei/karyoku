@@ -4,12 +4,12 @@
 import * as THREE from '../vendor/three.module.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { generatePlate, PLATE_KNOBS, makePlateParams, clampPlateParams, CELL_M } from './plate.js?v=a93f4dd8';
-import { CATALOG_SPEC } from './catalog-spec.js?v=a93f4dd8';
-import { buildCatalog, BASE_KIT_URL, NASA_URL } from './catalog.js?v=a93f4dd8';
-import { bustToken } from './glbmodels.js?v=a93f4dd8';
-import { applySpaceScene, makeStars, makeComposer } from './looks.js?v=a93f4dd8';
-import { buildPlateGroup } from './plate-scene.js?v=a93f4dd8';
+import { generatePlate, PLATE_KNOBS, makePlateParams, clampPlateParams, CELL_M } from './plate.js?v=37da6c2a';
+import { CATALOG_SPEC } from './catalog-spec.js?v=37da6c2a';
+import { buildCatalog, BASE_KIT_URL, NASA_URL } from './catalog.js?v=37da6c2a';
+import { bustToken } from './glbmodels.js?v=37da6c2a';
+import { applySpaceScene, makeStars, makeComposer } from './looks.js?v=37da6c2a';
+import { buildPlateGroup } from './plate-scene.js?v=37da6c2a';
 
 // `#plate?seed=7` and `?seed=7#plate` both work: the hash's own query is
 // merged under the real search string.
