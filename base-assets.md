@@ -1,6 +1,6 @@
 # Futuristic military base — modular asset catalog
 
-**109 planned asset types**, organized around base functions and typed connections. This is an art and procedural-design specification, not a completed model pack. The existing sentry collection supplies the weapons for the emplacement assets.
+**111 planned asset types**, organized around base functions and typed connections. This is an art and procedural-design specification, not a completed model pack. The existing sentry collection supplies the weapons for the emplacement assets.
 
 All footprints below are **reserved plots in 4 m cells**, written X × Z. A 4 × 3 barracks reserves 16 × 12 m; its building mesh is smaller so doors, paths and service access fit. Small props occupy sockets within a plot rather than consuming a full empty 4 m square.
 
@@ -175,3 +175,9 @@ All footprints below are **reserved plots in 4 m cells**, written X × Z. A 4 ×
 | `prop_antenna` | Small roof antenna | 1 × 1 | Roof socket only; data connection optional. |
 | `prop_banner` | Faction standard and mast | 1 × 1 | Faction identity with destructible mast and cloth sections. |
 
+## Research
+
+| ID | Individual asset | Plot | Function and placement logic |
+| --- | --- | --- | --- |
+| `research_xenobiology` | Xenobiology laboratory | 4 × 3 | Sealed lab wing with a specimen airlock; personnel-zone adjacency. |
+| `research_specimen_crate` | Specimen crate | 1 × 1 | Sealed specimen container; research and logistics sockets. |

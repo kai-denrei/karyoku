@@ -13,9 +13,9 @@
 // `rotation.y = -rot * PI/2`. Yaw is compass degrees, 0 = N, 90 = E.
 // Plate width and depth are EVEN, because roads are 2 x 2 pieces laid on
 // even coordinates and a gate's road port has to land on one.
-import { mulberry32 } from './rng.js?v=965abc95';
-import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=965abc95';
-import { specById } from './catalog-spec.js?v=965abc95';
+import { mulberry32 } from './rng.js?v=9c7098f2';
+import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=9c7098f2';
+import { specById } from './catalog-spec.js?v=9c7098f2';
 
 export const CELL_M = 4;
 
@@ -426,17 +426,17 @@ export const ZONES = {
   command:   { buildings: ['command_hq', 'command_operations', 'command_uplink', 'command_server', 'command_comms'],
                props: ['command_beacon', 'prop_terminal', 'prop_lamp'] },
   logistics: { buildings: ['logistics_warehouse', 'logistics_loading_dock', 'logistics_crane', 'ground_hardstand', 'logistics_container'],
-               props: ['crate_general', 'crate_parts', 'logistics_pallet', 'crate_secure'] },
+               props: ['crate_general', 'crate_parts', 'logistics_pallet', 'crate_secure', 'research_specimen_crate'] },
   defense:   { buildings: ['defense_bunker', 'defense_watchtower', 'defense_radar', 'defense_interceptor'],
                props: ['defense_searchlight', 'field_barrier', 'field_sensor'] },
   utility:   { buildings: ['utility_reactor', 'utility_solar', 'utility_water', 'utility_battery', 'utility_waste', 'utility_substation', 'utility_tank', 'utility_cooling'],
                props: ['utility_junction', 'utility_conduit', 'crate_energy'] },
   air:       { buildings: ['air_launchpad', 'air_hangar', 'air_control', 'air_fuel_service', 'air_drone_pad'],
                props: ['field_signal', 'prop_lamp', 'prop_sign'] },
-  personnel: { buildings: ['personnel_mess', 'personnel_barracks', 'personnel_infirmary', 'personnel_recreation', 'personnel_shelter', 'personnel_hygiene', 'personnel_triage'],
+  personnel: { buildings: ['personnel_mess', 'personnel_barracks', 'personnel_infirmary', 'research_xenobiology', 'personnel_recreation', 'personnel_shelter', 'personnel_hygiene', 'personnel_triage'],
                props: ['prop_seating', 'prop_planter', 'prop_lamp'] },
-  industry:  { buildings: ['industry_garage', 'industry_fabricator', 'industry_workshop', 'industry_recycler', 'industry_test_cell', 'industry_drone_bench', 'industry_service_lift'],
-               props: ['industry_tool_rack', 'crate_parts', 'logistics_pallet'] },
+  industry:  { buildings: ['industry_garage', 'industry_fabricator', 'industry_workshop', 'research_xenobiology', 'industry_recycler', 'industry_test_cell', 'industry_drone_bench', 'industry_service_lift'],
+               props: ['industry_tool_rack', 'crate_parts', 'research_specimen_crate'] },
 };
 // Buildings a block may hold more than once. Everything else is one per block.
 const REPEATABLE = new Set(['personnel_barracks', 'logistics_container', 'logistics_warehouse', 'ground_hardstand',

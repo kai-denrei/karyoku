@@ -2,7 +2,7 @@
 // base-assets.md. Do not edit by hand; edit the markdown and re-run.
 // Plots are in 4 m cells, X by Z. Pure: no DOM, no three.js.
 
-export const SECTIONS = ['ground', 'road', 'perimeter', 'defense', 'command', 'personnel', 'logistics', 'industry', 'utility', 'air', 'field', 'prop'];
+export const SECTIONS = ['ground', 'road', 'perimeter', 'defense', 'command', 'personnel', 'logistics', 'industry', 'utility', 'air', 'field', 'prop', 'research'];
 
 export const CATALOG_SPEC = [
   { id: 'foundation_flat', name: 'Universal foundation', section: 'ground', plot: [1, 1], ports: ['none'], note: 'Modular armored slab; foundation for larger plots.' },
@@ -114,6 +114,8 @@ export const CATALOG_SPEC = [
   { id: 'prop_vent', name: 'Roof ventilation unit', section: 'prop', plot: [1, 1], ports: ['roof'], note: 'Roof socket only; inherits building support state.' },
   { id: 'prop_antenna', name: 'Small roof antenna', section: 'prop', plot: [1, 1], ports: ['roof'], note: 'Roof socket only; data connection optional.' },
   { id: 'prop_banner', name: 'Faction standard and mast', section: 'prop', plot: [1, 1], ports: ['none'], note: 'Faction identity with destructible mast and cloth sections.' },
+  { id: 'research_xenobiology', name: 'Xenobiology laboratory', section: 'research', plot: [4, 3], ports: ['road'], note: 'Sealed lab wing with a specimen airlock; personnel-zone adjacency.' },
+  { id: 'research_specimen_crate', name: 'Specimen crate', section: 'research', plot: [1, 1], ports: ['road'], note: 'Sealed specimen container; research and logistics sockets.' },
 ];
 
 const byId = new Map(CATALOG_SPEC.map((r) => [r.id, r]));

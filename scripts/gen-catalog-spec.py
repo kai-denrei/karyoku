@@ -23,6 +23,7 @@ SECTION_OF = {
     'Air, orbital and drone operations': 'air',
     'Field devices and deployable protection': 'field',
     'Identity, interiors and environmental props': 'prop',
+    'Research': 'research',
 }
 
 def ports_for(section, rid):
@@ -34,7 +35,7 @@ def ports_for(section, rid):
         return ['walk']
     if rid in ('prop_vent', 'prop_antenna'):
         return ['roof']
-    if section in ('command', 'personnel', 'logistics', 'industry', 'utility', 'air', 'defense'):
+    if section in ('command', 'personnel', 'logistics', 'industry', 'utility', 'air', 'defense', 'research'):
         return ['road']
     return ['none']
 
@@ -49,8 +50,8 @@ for line in SRC.read_text(encoding='utf-8').splitlines():
         rid, name, px, pz, note = m.groups()
         rows.append((rid, name.strip(), section, int(px), int(pz), ports_for(section, rid), note.strip()))
 
-if len(rows) != 109:
-    sys.exit(f'expected 109 rows, parsed {len(rows)}')
+if len(rows) != 111:
+    sys.exit(f'expected 111 rows, parsed {len(rows)}')
 
 def js_str(s):
     return "'" + s.replace('\\', '\\\\').replace("'", "\\'") + "'"

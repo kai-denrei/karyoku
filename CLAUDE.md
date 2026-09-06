@@ -155,6 +155,22 @@ no build step, Node invariant suites).
   and the grey ladder painted over them. Kit URLs get a 0.10 emissive wash
   only; house and NASA casts get the ladder and the metal.
 
+## The research-outpost kit and the crew (operator, 2026-09-07)
+- `assets/outpost/` is the workshop's research-outpost kit: twelve ids in
+  four damage states (48 GLBs, 19 MB), manifest in the base-kit format.
+  Loads after NASA and before the house casts, so it beats the NASA
+  stand-ins and loses the container and the Stalheart to the house.
+  Two ids were new and joined `base-assets.md` under "Research"
+  (`research_xenobiology`, `research_specimen_crate`); the spec is 111 rows.
+  Same workshop paint rule as the base kit: wash only, no ladder.
+- THE CREW: `crew.js` (pure, `test/crew.mjs`) walks astronauts between
+  cells they can see straight across walkable ground; `crew-scene.js`
+  PARSES the compact astronaut fresh per walker (51 skins, three Mixamo
+  clips — a clone needs SkeletonUtils, which is not vendored) from one
+  fetched buffer, colours the suit materials per walker, and blends the
+  walk and idle clips by whether the walker is moving. `?crew=N` sets the
+  count (6 on a plate, 5 per plate in the world).
+
 ## Verify
 - `npm run serve` then `http://localhost:8150/#plate?seed=7&ascii=1`.
   `?seed= ?w= ?h= ?gates= ?arc= ?density= ?tier=` override the knobs;

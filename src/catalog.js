@@ -17,7 +17,7 @@ export const CELL_M = 4;
 export const PLACEHOLDER_HEIGHT_M = {
   ground: 0.2, road: 0.2, perimeter: 3.2, defense: 3.0, command: 7.0,
   personnel: 5.0, logistics: 6.0, industry: 6.0, utility: 5.0, air: 4.0,
-  field: 0.8, prop: 1.5,
+  field: 0.8, prop: 1.5, research: 5.5,
 };
 
 // Placeholder colours by section — one hue per function so a plate reads
@@ -25,7 +25,7 @@ export const PLACEHOLDER_HEIGHT_M = {
 export const SECTION_COLOR = {
   ground: 0x3a3f47, road: 0x2a2e36, perimeter: 0x6b7583, defense: 0xc0392b,
   command: 0x7df9ff, personnel: 0x2ecc71, logistics: 0xf39c12, industry: 0xe67e22,
-  utility: 0xf1c40f, air: 0x9b59b6, field: 0xff6b6b, prop: 0x95a5a6,
+  utility: 0xf1c40f, air: 0x9b59b6, field: 0xff6b6b, prop: 0x95a5a6, research: 0x48dbfb,
 };
 
 // 'wall_standard_d2' -> { base: 'wall_standard', state: 2 }. An id with no
@@ -67,6 +67,7 @@ export function buildCatalog(spec, manifest, extras = []) {
 }
 export const NASA_URL = 'assets/models/nasa/';
 export const HOUSE_URL = 'assets/models/';
+export const OUTPOST_URL = 'assets/outpost/';
 
 // The fit for an entry's state, or null when the model is trusted as authored.
 export function fitFor(entry, state = 0) {

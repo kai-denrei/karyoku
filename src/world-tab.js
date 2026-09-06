@@ -5,13 +5,16 @@
 import * as THREE from '../vendor/three.module.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { makePlateParams, clampPlateParams, PLATE_KNOBS } from './plate.js?v=965abc95';
-import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, stepGates, stepSentries, stepTracers, fireHull, damageAt, autopilotInput, makeBodies, stepBodies, bodyAt } from './drive.js?v=965abc95';
-import { WORLD_KNOBS, makeWorldParams, clampWorldParams, makeWorld, worldBlocked, worldBuildingAt, worldLosFor, worldSentries, worldGates, terrainNormal, splitQuad, groundAt } from './world.js?v=965abc95';
-import { PALETTE, terrainMeshes, floraMeshes } from './looks.js?v=965abc95';
-import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=965abc95';
-import { query, loadCatalog } from './plate-tab.js?v=965abc95';
-import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS } from './drive-rig.js?v=965abc95';
+import { makePlateParams, clampPlateParams, PLATE_KNOBS } from './plate.js?v=9c7098f2';
+import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, stepGates, stepSentries, stepTracers, fireHull, damageAt, autopilotInput, makeBodies, stepBodies, bodyAt } from './drive.js?v=9c7098f2';
+import { WORLD_KNOBS, makeWorldParams, clampWorldParams, makeWorld, worldBlocked, worldBuildingAt, worldLosFor, worldSentries, worldGates, terrainNormal, splitQuad, groundAt } from './world.js?v=9c7098f2';
+import { PALETTE, terrainMeshes, floraMeshes } from './looks.js?v=9c7098f2';
+import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=9c7098f2';
+import { query, loadCatalog } from './plate-tab.js?v=9c7098f2';
+import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS } from './drive-rig.js?v=9c7098f2';
+import { makeCrew, stepCrew } from './crew.js?v=9c7098f2';
+import { makeCrewScene } from './crew-scene.js?v=9c7098f2';
+import { mulberry32 } from './rng.js?v=9c7098f2';
 
 const ARRIVE_M = 8;
 
@@ -32,6 +35,8 @@ export function initWorldTab(root) {
   const pool = makeTracerPool(scene);
 
   let catalog = null, world = null, group = null, rigs = [], gates = [], sentries = [], tracers = [], hull = null, bodies = [];
+  let crews = [], crewRng = null;
+  const CREW_N = Number(q.get('crew') || 5);
   let hits = 0, simT = 0, lastLog = 0, arrivedAt = -1, lastDt = 0.016, breached = 0;
 
   function build() {
@@ -56,6 +61,9 @@ export function initWorldTab(root) {
     gates = worldGates(world);
     sentries = worldSentries(world);
     bodies = world.plates.flatMap((p) => makeBodies(p.plate, p.ox, p.oz));
+    crewRng = mulberry32(plateParams.seed ^ 0x51ed);
+    // a crew per plate, in the plate's own frame under its rig group
+    crews = world.plates.map((p, pi) => { const crew = makeCrew(p.plate, CREW_N, crewRng); return { plate: p.plate, crew, scene: makeCrewScene(rigs[pi].group, crew) }; });
     tracers = [];
     hits = 0; simT = 0; lastLog = 0; arrivedAt = -1; breached = 0;
     hull = makeHull(world.spawn.x, world.spawn.z, world.spawn.heading);
@@ -69,6 +77,7 @@ export function initWorldTab(root) {
   function step(dt, input) {
     stepHull(hull, input, dt, (x, z) => worldBlocked(world, x, z), P);
     stepBodies(bodies, hull, (x, z) => worldBlocked(world, x, z), P);
+    for (const c of crews) stepCrew(c.crew, c.plate, dt, crewRng);
     if (input.fire) { const shot = fireHull(hull, P); if (shot) tracers.push(shot); }
     // every gate opens for the hull, both rings, both plates (operator: for
     // now); only the hostile plate's sentries fire
@@ -97,6 +106,7 @@ export function initWorldTab(root) {
       p.sentries.forEach((s, i) => { const node = rigs[pi].sentryYaws.get(i); if (node) node.rotation.y = yawRotation(s.yaw); });
       for (const gr of rigs[pi].gateRigs) { const g = p.gates[gr.index]; if (g) setGateOpen(gr, g.open); }
     });
+    for (const c of crews) c.scene.sync(lastDt);
     for (const b of bodies) {
       const pi = world.plates.findIndex((p) => p.plate === b.plate);
       const obj = pi >= 0 ? rigs[pi].dynamic.get(b.pieceIndex) : null;

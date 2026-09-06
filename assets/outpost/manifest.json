@@ -1,0 +1,3716 @@
+{
+  "version": 1,
+  "units": "meters",
+  "up": "+Y",
+  "forward": "+Z",
+  "assets": [
+    {
+      "id": "command_operations_d0",
+      "name": "Survey command nexus",
+      "state": "Intact",
+      "file": "command_operations_d0.glb",
+      "plot_m": [
+        12,
+        12
+      ],
+      "description": "Survey command nexus. Sealed expedition hardware with district accents and modular connections.",
+      "sockets": [
+        {
+          "id": "WALK_FRONT",
+          "kind": "walk",
+          "position_m": [
+            0,
+            0,
+            6.0
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": true,
+          "width_m": 2
+        },
+        {
+          "id": "POWER_REAR",
+          "kind": "power",
+          "position_m": [
+            0,
+            0,
+            -6.0
+          ],
+          "normal": [
+            0,
+            0,
+            -1
+          ],
+          "available": true,
+          "width_m": null
+        }
+      ],
+      "colliders": [
+        {
+          "id": "structure",
+          "center_m": [
+            0,
+            1.8,
+            0
+          ],
+          "size_m": [
+            9,
+            3.6,
+            9
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [
+        {
+          "kind": "walk",
+          "center_m": [
+            0,
+            1.2,
+            5.25
+          ],
+          "size_m": [
+            2,
+            2.4,
+            1.5
+          ],
+          "condition": "approach_only"
+        }
+      ],
+      "animations": [],
+      "family": "command_operations",
+      "zone": "command",
+      "damage_level": 0,
+      "functional": true,
+      "collision_quality": "conservative blockout; engine integration required",
+      "debris_envelope_m": [
+        12,
+        12
+      ],
+      "services_available": true,
+      "triangles": 10512,
+      "bytes": 639992
+    },
+    {
+      "id": "command_operations_d1",
+      "name": "Survey command nexus",
+      "state": "Damaged",
+      "file": "command_operations_d1.glb",
+      "plot_m": [
+        12,
+        12
+      ],
+      "description": "Survey command nexus. Impact scars and fault indicators; main silhouette retained.",
+      "sockets": [
+        {
+          "id": "WALK_FRONT",
+          "kind": "walk",
+          "position_m": [
+            0,
+            0,
+            6.0
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": true,
+          "width_m": 2
+        },
+        {
+          "id": "POWER_REAR",
+          "kind": "power",
+          "position_m": [
+            0,
+            0,
+            -6.0
+          ],
+          "normal": [
+            0,
+            0,
+            -1
+          ],
+          "available": true,
+          "width_m": null
+        }
+      ],
+      "colliders": [
+        {
+          "id": "structure",
+          "center_m": [
+            0,
+            1.8,
+            0
+          ],
+          "size_m": [
+            9,
+            3.6,
+            9
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [
+        {
+          "kind": "walk",
+          "center_m": [
+            0,
+            1.2,
+            5.25
+          ],
+          "size_m": [
+            2,
+            2.4,
+            1.5
+          ],
+          "condition": "approach_only"
+        }
+      ],
+      "animations": [],
+      "family": "command_operations",
+      "zone": "command",
+      "damage_level": 1,
+      "functional": true,
+      "collision_quality": "conservative blockout; engine integration required",
+      "debris_envelope_m": [
+        12,
+        12
+      ],
+      "services_available": true,
+      "triangles": 11376,
+      "bytes": 702640
+    },
+    {
+      "id": "command_operations_d2",
+      "name": "Survey command nexus",
+      "state": "Critical",
+      "file": "command_operations_d2.glb",
+      "plot_m": [
+        12,
+        12
+      ],
+      "description": "Survey command nexus. Missing components expose the internal structure; service connections disabled.",
+      "sockets": [
+        {
+          "id": "WALK_FRONT",
+          "kind": "walk",
+          "position_m": [
+            0,
+            0,
+            6.0
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": false,
+          "width_m": 2
+        },
+        {
+          "id": "POWER_REAR",
+          "kind": "power",
+          "position_m": [
+            0,
+            0,
+            -6.0
+          ],
+          "normal": [
+            0,
+            0,
+            -1
+          ],
+          "available": false,
+          "width_m": null
+        }
+      ],
+      "colliders": [
+        {
+          "id": "structure",
+          "center_m": [
+            0,
+            1.8,
+            0
+          ],
+          "size_m": [
+            9,
+            3.6,
+            9
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [
+        {
+          "kind": "walk",
+          "center_m": [
+            0,
+            1.2,
+            5.25
+          ],
+          "size_m": [
+            2,
+            2.4,
+            1.5
+          ],
+          "condition": "approach_only"
+        }
+      ],
+      "animations": [],
+      "family": "command_operations",
+      "zone": "command",
+      "damage_level": 2,
+      "functional": false,
+      "collision_quality": "conservative blockout; engine integration required",
+      "debris_envelope_m": [
+        12,
+        12
+      ],
+      "services_available": false,
+      "triangles": 8400,
+      "bytes": 502788
+    },
+    {
+      "id": "command_operations_d3",
+      "name": "Survey command nexus",
+      "state": "Destroyed",
+      "file": "command_operations_d3.glb",
+      "plot_m": [
+        12,
+        12
+      ],
+      "description": "Survey command nexus. Inert footing and bounded wreckage; original function removed.",
+      "sockets": [
+        {
+          "id": "WALK_FRONT",
+          "kind": "walk",
+          "position_m": [
+            0,
+            0,
+            6.0
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": false,
+          "width_m": 2
+        },
+        {
+          "id": "POWER_REAR",
+          "kind": "power",
+          "position_m": [
+            0,
+            0,
+            -6.0
+          ],
+          "normal": [
+            0,
+            0,
+            -1
+          ],
+          "available": false,
+          "width_m": null
+        }
+      ],
+      "colliders": [
+        {
+          "id": "structure",
+          "center_m": [
+            0,
+            0.5,
+            0
+          ],
+          "size_m": [
+            9,
+            1,
+            9
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [
+        {
+          "kind": "walk",
+          "center_m": [
+            0,
+            1.2,
+            5.25
+          ],
+          "size_m": [
+            2,
+            2.4,
+            1.5
+          ],
+          "condition": "approach_only"
+        }
+      ],
+      "animations": [],
+      "family": "command_operations",
+      "zone": "command",
+      "damage_level": 3,
+      "functional": false,
+      "collision_quality": "conservative blockout; engine integration required",
+      "debris_envelope_m": [
+        12,
+        12
+      ],
+      "services_available": false,
+      "triangles": 3284,
+      "bytes": 261068
+    },
+    {
+      "id": "personnel_barracks_d0",
+      "name": "Pressure-sealed barracks",
+      "state": "Intact",
+      "file": "personnel_barracks_d0.glb",
+      "plot_m": [
+        16,
+        12
+      ],
+      "description": "Pressure-sealed barracks. Sealed expedition hardware with district accents and modular connections.",
+      "sockets": [
+        {
+          "id": "WALK_FRONT",
+          "kind": "walk",
+          "position_m": [
+            0,
+            0,
+            6.0
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": true,
+          "width_m": 2
+        },
+        {
+          "id": "POWER_REAR",
+          "kind": "power",
+          "position_m": [
+            0,
+            0,
+            -6.0
+          ],
+          "normal": [
+            0,
+            0,
+            -1
+          ],
+          "available": true,
+          "width_m": null
+        }
+      ],
+      "colliders": [
+        {
+          "id": "structure",
+          "center_m": [
+            0,
+            1.8,
+            0
+          ],
+          "size_m": [
+            13,
+            3.6,
+            9
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [
+        {
+          "kind": "walk",
+          "center_m": [
+            0,
+            1.2,
+            5.25
+          ],
+          "size_m": [
+            2,
+            2.4,
+            1.5
+          ],
+          "condition": "approach_only"
+        }
+      ],
+      "animations": [],
+      "family": "personnel_barracks",
+      "zone": "personnel",
+      "damage_level": 0,
+      "functional": true,
+      "collision_quality": "conservative blockout; engine integration required",
+      "debris_envelope_m": [
+        16,
+        12
+      ],
+      "services_available": true,
+      "triangles": 13160,
+      "bytes": 764176
+    },
+    {
+      "id": "personnel_barracks_d1",
+      "name": "Pressure-sealed barracks",
+      "state": "Damaged",
+      "file": "personnel_barracks_d1.glb",
+      "plot_m": [
+        16,
+        12
+      ],
+      "description": "Pressure-sealed barracks. Impact scars and fault indicators; main silhouette retained.",
+      "sockets": [
+        {
+          "id": "WALK_FRONT",
+          "kind": "walk",
+          "position_m": [
+            0,
+            0,
+            6.0
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": true,
+          "width_m": 2
+        },
+        {
+          "id": "POWER_REAR",
+          "kind": "power",
+          "position_m": [
+            0,
+            0,
+            -6.0
+          ],
+          "normal": [
+            0,
+            0,
+            -1
+          ],
+          "available": true,
+          "width_m": null
+        }
+      ],
+      "colliders": [
+        {
+          "id": "structure",
+          "center_m": [
+            0,
+            1.8,
+            0
+          ],
+          "size_m": [
+            13,
+            3.6,
+            9
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [
+        {
+          "kind": "walk",
+          "center_m": [
+            0,
+            1.2,
+            5.25
+          ],
+          "size_m": [
+            2,
+            2.4,
+            1.5
+          ],
+          "condition": "approach_only"
+        }
+      ],
+      "animations": [],
+      "family": "personnel_barracks",
+      "zone": "personnel",
+      "damage_level": 1,
+      "functional": true,
+      "collision_quality": "conservative blockout; engine integration required",
+      "debris_envelope_m": [
+        16,
+        12
+      ],
+      "services_available": true,
+      "triangles": 14024,
+      "bytes": 826760
+    },
+    {
+      "id": "personnel_barracks_d2",
+      "name": "Pressure-sealed barracks",
+      "state": "Critical",
+      "file": "personnel_barracks_d2.glb",
+      "plot_m": [
+        16,
+        12
+      ],
+      "description": "Pressure-sealed barracks. Missing components expose the internal structure; service connections disabled.",
+      "sockets": [
+        {
+          "id": "WALK_FRONT",
+          "kind": "walk",
+          "position_m": [
+            0,
+            0,
+            6.0
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": false,
+          "width_m": 2
+        },
+        {
+          "id": "POWER_REAR",
+          "kind": "power",
+          "position_m": [
+            0,
+            0,
+            -6.0
+          ],
+          "normal": [
+            0,
+            0,
+            -1
+          ],
+          "available": false,
+          "width_m": null
+        }
+      ],
+      "colliders": [
+        {
+          "id": "structure",
+          "center_m": [
+            0,
+            1.8,
+            0
+          ],
+          "size_m": [
+            13,
+            3.6,
+            9
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [
+        {
+          "kind": "walk",
+          "center_m": [
+            0,
+            1.2,
+            5.25
+          ],
+          "size_m": [
+            2,
+            2.4,
+            1.5
+          ],
+          "condition": "approach_only"
+        }
+      ],
+      "animations": [],
+      "family": "personnel_barracks",
+      "zone": "personnel",
+      "damage_level": 2,
+      "functional": false,
+      "collision_quality": "conservative blockout; engine integration required",
+      "debris_envelope_m": [
+        16,
+        12
+      ],
+      "services_available": false,
+      "triangles": 11708,
+      "bytes": 673544
+    },
+    {
+      "id": "personnel_barracks_d3",
+      "name": "Pressure-sealed barracks",
+      "state": "Destroyed",
+      "file": "personnel_barracks_d3.glb",
+      "plot_m": [
+        16,
+        12
+      ],
+      "description": "Pressure-sealed barracks. Inert footing and bounded wreckage; original function removed.",
+      "sockets": [
+        {
+          "id": "WALK_FRONT",
+          "kind": "walk",
+          "position_m": [
+            0,
+            0,
+            6.0
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": false,
+          "width_m": 2
+        },
+        {
+          "id": "POWER_REAR",
+          "kind": "power",
+          "position_m": [
+            0,
+            0,
+            -6.0
+          ],
+          "normal": [
+            0,
+            0,
+            -1
+          ],
+          "available": false,
+          "width_m": null
+        }
+      ],
+      "colliders": [
+        {
+          "id": "structure",
+          "center_m": [
+            0,
+            0.5,
+            0
+          ],
+          "size_m": [
+            13,
+            1,
+            9
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [
+        {
+          "kind": "walk",
+          "center_m": [
+            0,
+            1.2,
+            5.25
+          ],
+          "size_m": [
+            2,
+            2.4,
+            1.5
+          ],
+          "condition": "approach_only"
+        }
+      ],
+      "animations": [],
+      "family": "personnel_barracks",
+      "zone": "personnel",
+      "damage_level": 3,
+      "functional": false,
+      "collision_quality": "conservative blockout; engine integration required",
+      "debris_envelope_m": [
+        16,
+        12
+      ],
+      "services_available": false,
+      "triangles": 3284,
+      "bytes": 261064
+    },
+    {
+      "id": "personnel_infirmary_d0",
+      "name": "Isolation infirmary",
+      "state": "Intact",
+      "file": "personnel_infirmary_d0.glb",
+      "plot_m": [
+        16,
+        12
+      ],
+      "description": "Isolation infirmary. Sealed expedition hardware with district accents and modular connections.",
+      "sockets": [
+        {
+          "id": "WALK_FRONT",
+          "kind": "walk",
+          "position_m": [
+            0,
+            0,
+            6.0
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": true,
+          "width_m": 2
+        },
+        {
+          "id": "POWER_REAR",
+          "kind": "power",
+          "position_m": [
+            0,
+            0,
+            -6.0
+          ],
+          "normal": [
+            0,
+            0,
+            -1
+          ],
+          "available": true,
+          "width_m": null
+        }
+      ],
+      "colliders": [
+        {
+          "id": "structure",
+          "center_m": [
+            0,
+            1.8,
+            0
+          ],
+          "size_m": [
+            13,
+            3.6,
+            9
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [
+        {
+          "kind": "walk",
+          "center_m": [
+            0,
+            1.2,
+            5.25
+          ],
+          "size_m": [
+            2,
+            2.4,
+            1.5
+          ],
+          "condition": "approach_only"
+        }
+      ],
+      "animations": [],
+      "family": "personnel_infirmary",
+      "zone": "medical",
+      "damage_level": 0,
+      "functional": true,
+      "collision_quality": "conservative blockout; engine integration required",
+      "debris_envelope_m": [
+        16,
+        12
+      ],
+      "services_available": true,
+      "triangles": 9360,
+      "bytes": 592160
+    },
+    {
+      "id": "personnel_infirmary_d1",
+      "name": "Isolation infirmary",
+      "state": "Damaged",
+      "file": "personnel_infirmary_d1.glb",
+      "plot_m": [
+        16,
+        12
+      ],
+      "description": "Isolation infirmary. Impact scars and fault indicators; main silhouette retained.",
+      "sockets": [
+        {
+          "id": "WALK_FRONT",
+          "kind": "walk",
+          "position_m": [
+            0,
+            0,
+            6.0
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": true,
+          "width_m": 2
+        },
+        {
+          "id": "POWER_REAR",
+          "kind": "power",
+          "position_m": [
+            0,
+            0,
+            -6.0
+          ],
+          "normal": [
+            0,
+            0,
+            -1
+          ],
+          "available": true,
+          "width_m": null
+        }
+      ],
+      "colliders": [
+        {
+          "id": "structure",
+          "center_m": [
+            0,
+            1.8,
+            0
+          ],
+          "size_m": [
+            13,
+            3.6,
+            9
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [
+        {
+          "kind": "walk",
+          "center_m": [
+            0,
+            1.2,
+            5.25
+          ],
+          "size_m": [
+            2,
+            2.4,
+            1.5
+          ],
+          "condition": "approach_only"
+        }
+      ],
+      "animations": [],
+      "family": "personnel_infirmary",
+      "zone": "medical",
+      "damage_level": 1,
+      "functional": true,
+      "collision_quality": "conservative blockout; engine integration required",
+      "debris_envelope_m": [
+        16,
+        12
+      ],
+      "services_available": true,
+      "triangles": 10224,
+      "bytes": 654768
+    },
+    {
+      "id": "personnel_infirmary_d2",
+      "name": "Isolation infirmary",
+      "state": "Critical",
+      "file": "personnel_infirmary_d2.glb",
+      "plot_m": [
+        16,
+        12
+      ],
+      "description": "Isolation infirmary. Missing components expose the internal structure; service connections disabled.",
+      "sockets": [
+        {
+          "id": "WALK_FRONT",
+          "kind": "walk",
+          "position_m": [
+            0,
+            0,
+            6.0
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": false,
+          "width_m": 2
+        },
+        {
+          "id": "POWER_REAR",
+          "kind": "power",
+          "position_m": [
+            0,
+            0,
+            -6.0
+          ],
+          "normal": [
+            0,
+            0,
+            -1
+          ],
+          "available": false,
+          "width_m": null
+        }
+      ],
+      "colliders": [
+        {
+          "id": "structure",
+          "center_m": [
+            0,
+            1.8,
+            0
+          ],
+          "size_m": [
+            13,
+            3.6,
+            9
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [
+        {
+          "kind": "walk",
+          "center_m": [
+            0,
+            1.2,
+            5.25
+          ],
+          "size_m": [
+            2,
+            2.4,
+            1.5
+          ],
+          "condition": "approach_only"
+        }
+      ],
+      "animations": [],
+      "family": "personnel_infirmary",
+      "zone": "medical",
+      "damage_level": 2,
+      "functional": false,
+      "collision_quality": "conservative blockout; engine integration required",
+      "debris_envelope_m": [
+        16,
+        12
+      ],
+      "services_available": false,
+      "triangles": 7908,
+      "bytes": 501248
+    },
+    {
+      "id": "personnel_infirmary_d3",
+      "name": "Isolation infirmary",
+      "state": "Destroyed",
+      "file": "personnel_infirmary_d3.glb",
+      "plot_m": [
+        16,
+        12
+      ],
+      "description": "Isolation infirmary. Inert footing and bounded wreckage; original function removed.",
+      "sockets": [
+        {
+          "id": "WALK_FRONT",
+          "kind": "walk",
+          "position_m": [
+            0,
+            0,
+            6.0
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": false,
+          "width_m": 2
+        },
+        {
+          "id": "POWER_REAR",
+          "kind": "power",
+          "position_m": [
+            0,
+            0,
+            -6.0
+          ],
+          "normal": [
+            0,
+            0,
+            -1
+          ],
+          "available": false,
+          "width_m": null
+        }
+      ],
+      "colliders": [
+        {
+          "id": "structure",
+          "center_m": [
+            0,
+            0.5,
+            0
+          ],
+          "size_m": [
+            13,
+            1,
+            9
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [
+        {
+          "kind": "walk",
+          "center_m": [
+            0,
+            1.2,
+            5.25
+          ],
+          "size_m": [
+            2,
+            2.4,
+            1.5
+          ],
+          "condition": "approach_only"
+        }
+      ],
+      "animations": [],
+      "family": "personnel_infirmary",
+      "zone": "medical",
+      "damage_level": 3,
+      "functional": false,
+      "collision_quality": "conservative blockout; engine integration required",
+      "debris_envelope_m": [
+        16,
+        12
+      ],
+      "services_available": false,
+      "triangles": 3284,
+      "bytes": 261052
+    },
+    {
+      "id": "research_xenobiology_d0",
+      "name": "Xenobiology containment lab",
+      "state": "Intact",
+      "file": "research_xenobiology_d0.glb",
+      "plot_m": [
+        16,
+        12
+      ],
+      "description": "Xenobiology containment lab. Sealed expedition hardware with district accents and modular connections.",
+      "sockets": [
+        {
+          "id": "WALK_FRONT",
+          "kind": "walk",
+          "position_m": [
+            0,
+            0,
+            6.0
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": true,
+          "width_m": 2
+        },
+        {
+          "id": "POWER_REAR",
+          "kind": "power",
+          "position_m": [
+            0,
+            0,
+            -6.0
+          ],
+          "normal": [
+            0,
+            0,
+            -1
+          ],
+          "available": true,
+          "width_m": null
+        }
+      ],
+      "colliders": [
+        {
+          "id": "structure",
+          "center_m": [
+            0,
+            1.8,
+            0
+          ],
+          "size_m": [
+            13,
+            3.6,
+            9
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [
+        {
+          "kind": "walk",
+          "center_m": [
+            0,
+            1.2,
+            5.25
+          ],
+          "size_m": [
+            2,
+            2.4,
+            1.5
+          ],
+          "condition": "approach_only"
+        }
+      ],
+      "animations": [],
+      "family": "research_xenobiology",
+      "zone": "research",
+      "damage_level": 0,
+      "functional": true,
+      "collision_quality": "conservative blockout; engine integration required",
+      "debris_envelope_m": [
+        16,
+        12
+      ],
+      "services_available": true,
+      "triangles": 15980,
+      "bytes": 992956
+    },
+    {
+      "id": "research_xenobiology_d1",
+      "name": "Xenobiology containment lab",
+      "state": "Damaged",
+      "file": "research_xenobiology_d1.glb",
+      "plot_m": [
+        16,
+        12
+      ],
+      "description": "Xenobiology containment lab. Impact scars and fault indicators; main silhouette retained.",
+      "sockets": [
+        {
+          "id": "WALK_FRONT",
+          "kind": "walk",
+          "position_m": [
+            0,
+            0,
+            6.0
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": true,
+          "width_m": 2
+        },
+        {
+          "id": "POWER_REAR",
+          "kind": "power",
+          "position_m": [
+            0,
+            0,
+            -6.0
+          ],
+          "normal": [
+            0,
+            0,
+            -1
+          ],
+          "available": true,
+          "width_m": null
+        }
+      ],
+      "colliders": [
+        {
+          "id": "structure",
+          "center_m": [
+            0,
+            1.8,
+            0
+          ],
+          "size_m": [
+            13,
+            3.6,
+            9
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [
+        {
+          "kind": "walk",
+          "center_m": [
+            0,
+            1.2,
+            5.25
+          ],
+          "size_m": [
+            2,
+            2.4,
+            1.5
+          ],
+          "condition": "approach_only"
+        }
+      ],
+      "animations": [],
+      "family": "research_xenobiology",
+      "zone": "research",
+      "damage_level": 1,
+      "functional": true,
+      "collision_quality": "conservative blockout; engine integration required",
+      "debris_envelope_m": [
+        16,
+        12
+      ],
+      "services_available": true,
+      "triangles": 16844,
+      "bytes": 1055564
+    },
+    {
+      "id": "research_xenobiology_d2",
+      "name": "Xenobiology containment lab",
+      "state": "Critical",
+      "file": "research_xenobiology_d2.glb",
+      "plot_m": [
+        16,
+        12
+      ],
+      "description": "Xenobiology containment lab. Missing components expose the internal structure; service connections disabled.",
+      "sockets": [
+        {
+          "id": "WALK_FRONT",
+          "kind": "walk",
+          "position_m": [
+            0,
+            0,
+            6.0
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": false,
+          "width_m": 2
+        },
+        {
+          "id": "POWER_REAR",
+          "kind": "power",
+          "position_m": [
+            0,
+            0,
+            -6.0
+          ],
+          "normal": [
+            0,
+            0,
+            -1
+          ],
+          "available": false,
+          "width_m": null
+        }
+      ],
+      "colliders": [
+        {
+          "id": "structure",
+          "center_m": [
+            0,
+            1.8,
+            0
+          ],
+          "size_m": [
+            13,
+            3.6,
+            9
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [
+        {
+          "kind": "walk",
+          "center_m": [
+            0,
+            1.2,
+            5.25
+          ],
+          "size_m": [
+            2,
+            2.4,
+            1.5
+          ],
+          "condition": "approach_only"
+        }
+      ],
+      "animations": [],
+      "family": "research_xenobiology",
+      "zone": "research",
+      "damage_level": 2,
+      "functional": false,
+      "collision_quality": "conservative blockout; engine integration required",
+      "debris_envelope_m": [
+        16,
+        12
+      ],
+      "services_available": false,
+      "triangles": 10916,
+      "bytes": 666796
+    },
+    {
+      "id": "research_xenobiology_d3",
+      "name": "Xenobiology containment lab",
+      "state": "Destroyed",
+      "file": "research_xenobiology_d3.glb",
+      "plot_m": [
+        16,
+        12
+      ],
+      "description": "Xenobiology containment lab. Inert footing and bounded wreckage; original function removed.",
+      "sockets": [
+        {
+          "id": "WALK_FRONT",
+          "kind": "walk",
+          "position_m": [
+            0,
+            0,
+            6.0
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": false,
+          "width_m": 2
+        },
+        {
+          "id": "POWER_REAR",
+          "kind": "power",
+          "position_m": [
+            0,
+            0,
+            -6.0
+          ],
+          "normal": [
+            0,
+            0,
+            -1
+          ],
+          "available": false,
+          "width_m": null
+        }
+      ],
+      "colliders": [
+        {
+          "id": "structure",
+          "center_m": [
+            0,
+            0.5,
+            0
+          ],
+          "size_m": [
+            13,
+            1,
+            9
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [
+        {
+          "kind": "walk",
+          "center_m": [
+            0,
+            1.2,
+            5.25
+          ],
+          "size_m": [
+            2,
+            2.4,
+            1.5
+          ],
+          "condition": "approach_only"
+        }
+      ],
+      "animations": [],
+      "family": "research_xenobiology",
+      "zone": "research",
+      "damage_level": 3,
+      "functional": false,
+      "collision_quality": "conservative blockout; engine integration required",
+      "debris_envelope_m": [
+        16,
+        12
+      ],
+      "services_available": false,
+      "triangles": 3284,
+      "bytes": 261068
+    },
+    {
+      "id": "utility_reactor_d0",
+      "name": "Toroidal field reactor",
+      "state": "Intact",
+      "file": "utility_reactor_d0.glb",
+      "plot_m": [
+        16,
+        16
+      ],
+      "description": "Toroidal field reactor. Sealed expedition hardware with district accents and modular connections.",
+      "sockets": [
+        {
+          "id": "POWER",
+          "kind": "power",
+          "position_m": [
+            0,
+            0,
+            8.0
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": true,
+          "width_m": null
+        }
+      ],
+      "colliders": [
+        {
+          "id": "reactor",
+          "center_m": [
+            0,
+            2,
+            0
+          ],
+          "size_m": [
+            10,
+            4,
+            10
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [],
+      "animations": [],
+      "family": "utility_reactor",
+      "zone": "utilities",
+      "damage_level": 0,
+      "functional": true,
+      "collision_quality": "conservative blockout; engine integration required",
+      "debris_envelope_m": [
+        16,
+        16
+      ],
+      "services_available": true,
+      "triangles": 4796,
+      "bytes": 332192
+    },
+    {
+      "id": "utility_reactor_d1",
+      "name": "Toroidal field reactor",
+      "state": "Damaged",
+      "file": "utility_reactor_d1.glb",
+      "plot_m": [
+        16,
+        16
+      ],
+      "description": "Toroidal field reactor. Impact scars and fault indicators; main silhouette retained.",
+      "sockets": [
+        {
+          "id": "POWER",
+          "kind": "power",
+          "position_m": [
+            0,
+            0,
+            8.0
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": true,
+          "width_m": null
+        }
+      ],
+      "colliders": [
+        {
+          "id": "reactor",
+          "center_m": [
+            0,
+            2,
+            0
+          ],
+          "size_m": [
+            10,
+            4,
+            10
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [],
+      "animations": [],
+      "family": "utility_reactor",
+      "zone": "utilities",
+      "damage_level": 1,
+      "functional": true,
+      "collision_quality": "conservative blockout; engine integration required",
+      "debris_envelope_m": [
+        16,
+        16
+      ],
+      "services_available": true,
+      "triangles": 5444,
+      "bytes": 379016
+    },
+    {
+      "id": "utility_reactor_d2",
+      "name": "Toroidal field reactor",
+      "state": "Critical",
+      "file": "utility_reactor_d2.glb",
+      "plot_m": [
+        16,
+        16
+      ],
+      "description": "Toroidal field reactor. Missing components expose the internal structure; service connections disabled.",
+      "sockets": [
+        {
+          "id": "POWER",
+          "kind": "power",
+          "position_m": [
+            0,
+            0,
+            8.0
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": false,
+          "width_m": null
+        }
+      ],
+      "colliders": [
+        {
+          "id": "reactor",
+          "center_m": [
+            0,
+            2,
+            0
+          ],
+          "size_m": [
+            10,
+            4,
+            10
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [],
+      "animations": [],
+      "family": "utility_reactor",
+      "zone": "utilities",
+      "damage_level": 2,
+      "functional": false,
+      "collision_quality": "conservative blockout; engine integration required",
+      "debris_envelope_m": [
+        16,
+        16
+      ],
+      "services_available": false,
+      "triangles": 4944,
+      "bytes": 358256
+    },
+    {
+      "id": "utility_reactor_d3",
+      "name": "Toroidal field reactor",
+      "state": "Destroyed",
+      "file": "utility_reactor_d3.glb",
+      "plot_m": [
+        16,
+        16
+      ],
+      "description": "Toroidal field reactor. Inert footing and bounded wreckage; original function removed.",
+      "sockets": [
+        {
+          "id": "POWER",
+          "kind": "power",
+          "position_m": [
+            0,
+            0,
+            8.0
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": false,
+          "width_m": null
+        }
+      ],
+      "colliders": [
+        {
+          "id": "reactor",
+          "center_m": [
+            0,
+            0.9,
+            0
+          ],
+          "size_m": [
+            10,
+            1.8,
+            10
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [],
+      "animations": [],
+      "family": "utility_reactor",
+      "zone": "utilities",
+      "damage_level": 3,
+      "functional": false,
+      "collision_quality": "conservative blockout; engine integration required",
+      "debris_envelope_m": [
+        16,
+        16
+      ],
+      "services_available": false,
+      "triangles": 3036,
+      "bytes": 244040
+    },
+    {
+      "id": "command_comms_d0",
+      "name": "Deep-space relay",
+      "state": "Intact",
+      "file": "command_comms_d0.glb",
+      "plot_m": [
+        8,
+        8
+      ],
+      "description": "Deep-space relay. Sealed expedition hardware with district accents and modular connections.",
+      "sockets": [
+        {
+          "id": "DATA",
+          "kind": "data",
+          "position_m": [
+            0,
+            0,
+            4.0
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": true,
+          "width_m": null
+        }
+      ],
+      "colliders": [
+        {
+          "id": "relay",
+          "center_m": [
+            0,
+            3,
+            0
+          ],
+          "size_m": [
+            5,
+            6,
+            5
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [],
+      "animations": [],
+      "family": "command_comms",
+      "zone": "command",
+      "damage_level": 0,
+      "functional": true,
+      "collision_quality": "conservative blockout; engine integration required",
+      "debris_envelope_m": [
+        8,
+        8
+      ],
+      "services_available": true,
+      "triangles": 3888,
+      "bytes": 266704
+    },
+    {
+      "id": "command_comms_d1",
+      "name": "Deep-space relay",
+      "state": "Damaged",
+      "file": "command_comms_d1.glb",
+      "plot_m": [
+        8,
+        8
+      ],
+      "description": "Deep-space relay. Impact scars and fault indicators; main silhouette retained.",
+      "sockets": [
+        {
+          "id": "DATA",
+          "kind": "data",
+          "position_m": [
+            0,
+            0,
+            4.0
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": true,
+          "width_m": null
+        }
+      ],
+      "colliders": [
+        {
+          "id": "relay",
+          "center_m": [
+            0,
+            3,
+            0
+          ],
+          "size_m": [
+            5,
+            6,
+            5
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [],
+      "animations": [],
+      "family": "command_comms",
+      "zone": "command",
+      "damage_level": 1,
+      "functional": true,
+      "collision_quality": "conservative blockout; engine integration required",
+      "debris_envelope_m": [
+        8,
+        8
+      ],
+      "services_available": true,
+      "triangles": 4536,
+      "bytes": 313164
+    },
+    {
+      "id": "command_comms_d2",
+      "name": "Deep-space relay",
+      "state": "Critical",
+      "file": "command_comms_d2.glb",
+      "plot_m": [
+        8,
+        8
+      ],
+      "description": "Deep-space relay. Missing components expose the internal structure; service connections disabled.",
+      "sockets": [
+        {
+          "id": "DATA",
+          "kind": "data",
+          "position_m": [
+            0,
+            0,
+            4.0
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": false,
+          "width_m": null
+        }
+      ],
+      "colliders": [
+        {
+          "id": "relay",
+          "center_m": [
+            0,
+            1.4,
+            0
+          ],
+          "size_m": [
+            5,
+            2.8,
+            5
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [],
+      "animations": [],
+      "family": "command_comms",
+      "zone": "command",
+      "damage_level": 2,
+      "functional": false,
+      "collision_quality": "conservative blockout; engine integration required",
+      "debris_envelope_m": [
+        8,
+        8
+      ],
+      "services_available": false,
+      "triangles": 2472,
+      "bytes": 190016
+    },
+    {
+      "id": "command_comms_d3",
+      "name": "Deep-space relay",
+      "state": "Destroyed",
+      "file": "command_comms_d3.glb",
+      "plot_m": [
+        8,
+        8
+      ],
+      "description": "Deep-space relay. Inert footing and bounded wreckage; original function removed.",
+      "sockets": [
+        {
+          "id": "DATA",
+          "kind": "data",
+          "position_m": [
+            0,
+            0,
+            4.0
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": false,
+          "width_m": null
+        }
+      ],
+      "colliders": [
+        {
+          "id": "relay",
+          "center_m": [
+            0,
+            1.4,
+            0
+          ],
+          "size_m": [
+            5,
+            2.8,
+            5
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [],
+      "animations": [],
+      "family": "command_comms",
+      "zone": "command",
+      "damage_level": 3,
+      "functional": false,
+      "collision_quality": "conservative blockout; engine integration required",
+      "debris_envelope_m": [
+        8,
+        8
+      ],
+      "services_available": false,
+      "triangles": 2556,
+      "bytes": 210080
+    },
+    {
+      "id": "air_launchpad_d0",
+      "name": "Orbital lander pad",
+      "state": "Intact",
+      "file": "air_launchpad_d0.glb",
+      "plot_m": [
+        32,
+        32
+      ],
+      "description": "Orbital lander pad. Sealed expedition hardware with district accents and modular connections.",
+      "sockets": [
+        {
+          "id": "ROAD",
+          "kind": "road",
+          "position_m": [
+            0,
+            0,
+            16.0
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": true,
+          "width_m": 8
+        }
+      ],
+      "colliders": [
+        {
+          "id": "deck",
+          "center_m": [
+            0,
+            -0.12,
+            0
+          ],
+          "size_m": [
+            24,
+            0.3,
+            24
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [
+        {
+          "kind": "landing",
+          "center_m": [
+            0,
+            8,
+            0
+          ],
+          "size_m": [
+            28,
+            16,
+            28
+          ],
+          "condition": "D0_D1_only"
+        }
+      ],
+      "animations": [],
+      "family": "air_launchpad",
+      "zone": "flight",
+      "damage_level": 0,
+      "functional": true,
+      "collision_quality": "conservative blockout; engine integration required",
+      "debris_envelope_m": [
+        32,
+        32
+      ],
+      "services_available": true,
+      "triangles": 3904,
+      "bytes": 275300
+    },
+    {
+      "id": "air_launchpad_d1",
+      "name": "Orbital lander pad",
+      "state": "Damaged",
+      "file": "air_launchpad_d1.glb",
+      "plot_m": [
+        32,
+        32
+      ],
+      "description": "Orbital lander pad. Impact scars and fault indicators; main silhouette retained.",
+      "sockets": [
+        {
+          "id": "ROAD",
+          "kind": "road",
+          "position_m": [
+            0,
+            0,
+            16.0
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": true,
+          "width_m": 8
+        }
+      ],
+      "colliders": [
+        {
+          "id": "deck",
+          "center_m": [
+            0,
+            -0.12,
+            0
+          ],
+          "size_m": [
+            24,
+            0.3,
+            24
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [
+        {
+          "kind": "landing",
+          "center_m": [
+            0,
+            8,
+            0
+          ],
+          "size_m": [
+            28,
+            16,
+            28
+          ],
+          "condition": "D0_D1_only"
+        }
+      ],
+      "animations": [],
+      "family": "air_launchpad",
+      "zone": "flight",
+      "damage_level": 1,
+      "functional": true,
+      "collision_quality": "conservative blockout; engine integration required",
+      "debris_envelope_m": [
+        32,
+        32
+      ],
+      "services_available": true,
+      "triangles": 4552,
+      "bytes": 322000
+    },
+    {
+      "id": "air_launchpad_d2",
+      "name": "Orbital lander pad",
+      "state": "Critical",
+      "file": "air_launchpad_d2.glb",
+      "plot_m": [
+        32,
+        32
+      ],
+      "description": "Orbital lander pad. Missing components expose the internal structure; service connections disabled.",
+      "sockets": [
+        {
+          "id": "ROAD",
+          "kind": "road",
+          "position_m": [
+            0,
+            0,
+            16.0
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": false,
+          "width_m": 8
+        }
+      ],
+      "colliders": [
+        {
+          "id": "deck",
+          "center_m": [
+            0,
+            -0.12,
+            0
+          ],
+          "size_m": [
+            24,
+            0.3,
+            24
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [
+        {
+          "kind": "landing",
+          "center_m": [
+            0,
+            8,
+            0
+          ],
+          "size_m": [
+            28,
+            16,
+            28
+          ],
+          "condition": "D0_D1_only"
+        }
+      ],
+      "animations": [],
+      "family": "air_launchpad",
+      "zone": "flight",
+      "damage_level": 2,
+      "functional": false,
+      "collision_quality": "conservative blockout; engine integration required",
+      "debris_envelope_m": [
+        32,
+        32
+      ],
+      "services_available": false,
+      "surface_valid": false,
+      "triangles": 3268,
+      "bytes": 242216
+    },
+    {
+      "id": "air_launchpad_d3",
+      "name": "Orbital lander pad",
+      "state": "Destroyed",
+      "file": "air_launchpad_d3.glb",
+      "plot_m": [
+        32,
+        32
+      ],
+      "description": "Orbital lander pad. Inert footing and bounded wreckage; original function removed.",
+      "sockets": [
+        {
+          "id": "ROAD",
+          "kind": "road",
+          "position_m": [
+            0,
+            0,
+            16.0
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": false,
+          "width_m": 8
+        }
+      ],
+      "colliders": [
+        {
+          "id": "deck",
+          "center_m": [
+            0,
+            -0.12,
+            0
+          ],
+          "size_m": [
+            24,
+            0.3,
+            24
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [
+        {
+          "kind": "landing",
+          "center_m": [
+            0,
+            8,
+            0
+          ],
+          "size_m": [
+            28,
+            16,
+            28
+          ],
+          "condition": "D0_D1_only"
+        }
+      ],
+      "animations": [],
+      "family": "air_launchpad",
+      "zone": "flight",
+      "damage_level": 3,
+      "functional": false,
+      "collision_quality": "conservative blockout; engine integration required",
+      "debris_envelope_m": [
+        32,
+        32
+      ],
+      "services_available": false,
+      "surface_valid": false,
+      "triangles": 1980,
+      "bytes": 167972
+    },
+    {
+      "id": "industry_garage_d0",
+      "name": "Pressurized rover garage",
+      "state": "Intact",
+      "file": "industry_garage_d0.glb",
+      "plot_m": [
+        20,
+        16
+      ],
+      "description": "Pressurized rover garage. Sealed expedition hardware with district accents and modular connections.",
+      "sockets": [
+        {
+          "id": "WALK_FRONT",
+          "kind": "walk",
+          "position_m": [
+            0,
+            0,
+            8.0
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": true,
+          "width_m": 2
+        },
+        {
+          "id": "POWER_REAR",
+          "kind": "power",
+          "position_m": [
+            0,
+            0,
+            -8.0
+          ],
+          "normal": [
+            0,
+            0,
+            -1
+          ],
+          "available": true,
+          "width_m": null
+        },
+        {
+          "id": "ROAD_REAR",
+          "kind": "road",
+          "position_m": [
+            0,
+            0,
+            -8.0
+          ],
+          "normal": [
+            0,
+            0,
+            -1
+          ],
+          "available": false,
+          "width_m": 8
+        }
+      ],
+      "colliders": [
+        {
+          "id": "structure",
+          "center_m": [
+            0,
+            2.3,
+            0
+          ],
+          "size_m": [
+            17,
+            4.6,
+            13
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [
+        {
+          "kind": "walk",
+          "center_m": [
+            0,
+            1.2,
+            7.25
+          ],
+          "size_m": [
+            2,
+            2.4,
+            1.5
+          ],
+          "condition": "approach_only"
+        }
+      ],
+      "animations": [],
+      "family": "industry_garage",
+      "zone": "industry",
+      "damage_level": 0,
+      "functional": true,
+      "collision_quality": "conservative blockout; engine integration required",
+      "debris_envelope_m": [
+        20,
+        16
+      ],
+      "services_available": true,
+      "triangles": 11844,
+      "bytes": 681016
+    },
+    {
+      "id": "industry_garage_d1",
+      "name": "Pressurized rover garage",
+      "state": "Damaged",
+      "file": "industry_garage_d1.glb",
+      "plot_m": [
+        20,
+        16
+      ],
+      "description": "Pressurized rover garage. Impact scars and fault indicators; main silhouette retained.",
+      "sockets": [
+        {
+          "id": "WALK_FRONT",
+          "kind": "walk",
+          "position_m": [
+            0,
+            0,
+            8.0
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": true,
+          "width_m": 2
+        },
+        {
+          "id": "POWER_REAR",
+          "kind": "power",
+          "position_m": [
+            0,
+            0,
+            -8.0
+          ],
+          "normal": [
+            0,
+            0,
+            -1
+          ],
+          "available": true,
+          "width_m": null
+        },
+        {
+          "id": "ROAD_REAR",
+          "kind": "road",
+          "position_m": [
+            0,
+            0,
+            -8.0
+          ],
+          "normal": [
+            0,
+            0,
+            -1
+          ],
+          "available": false,
+          "width_m": 8
+        }
+      ],
+      "colliders": [
+        {
+          "id": "structure",
+          "center_m": [
+            0,
+            2.3,
+            0
+          ],
+          "size_m": [
+            17,
+            4.6,
+            13
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [
+        {
+          "kind": "walk",
+          "center_m": [
+            0,
+            1.2,
+            7.25
+          ],
+          "size_m": [
+            2,
+            2.4,
+            1.5
+          ],
+          "condition": "approach_only"
+        }
+      ],
+      "animations": [],
+      "family": "industry_garage",
+      "zone": "industry",
+      "damage_level": 1,
+      "functional": true,
+      "collision_quality": "conservative blockout; engine integration required",
+      "debris_envelope_m": [
+        20,
+        16
+      ],
+      "services_available": true,
+      "triangles": 12708,
+      "bytes": 743620
+    },
+    {
+      "id": "industry_garage_d2",
+      "name": "Pressurized rover garage",
+      "state": "Critical",
+      "file": "industry_garage_d2.glb",
+      "plot_m": [
+        20,
+        16
+      ],
+      "description": "Pressurized rover garage. Missing components expose the internal structure; service connections disabled.",
+      "sockets": [
+        {
+          "id": "WALK_FRONT",
+          "kind": "walk",
+          "position_m": [
+            0,
+            0,
+            8.0
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": false,
+          "width_m": 2
+        },
+        {
+          "id": "POWER_REAR",
+          "kind": "power",
+          "position_m": [
+            0,
+            0,
+            -8.0
+          ],
+          "normal": [
+            0,
+            0,
+            -1
+          ],
+          "available": false,
+          "width_m": null
+        },
+        {
+          "id": "ROAD_REAR",
+          "kind": "road",
+          "position_m": [
+            0,
+            0,
+            -8.0
+          ],
+          "normal": [
+            0,
+            0,
+            -1
+          ],
+          "available": false,
+          "width_m": 8
+        }
+      ],
+      "colliders": [
+        {
+          "id": "structure",
+          "center_m": [
+            0,
+            2.3,
+            0
+          ],
+          "size_m": [
+            17,
+            4.6,
+            13
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [
+        {
+          "kind": "walk",
+          "center_m": [
+            0,
+            1.2,
+            7.25
+          ],
+          "size_m": [
+            2,
+            2.4,
+            1.5
+          ],
+          "condition": "approach_only"
+        }
+      ],
+      "animations": [],
+      "family": "industry_garage",
+      "zone": "industry",
+      "damage_level": 2,
+      "functional": false,
+      "collision_quality": "conservative blockout; engine integration required",
+      "debris_envelope_m": [
+        20,
+        16
+      ],
+      "services_available": false,
+      "triangles": 9928,
+      "bytes": 557112
+    },
+    {
+      "id": "industry_garage_d3",
+      "name": "Pressurized rover garage",
+      "state": "Destroyed",
+      "file": "industry_garage_d3.glb",
+      "plot_m": [
+        20,
+        16
+      ],
+      "description": "Pressurized rover garage. Inert footing and bounded wreckage; original function removed.",
+      "sockets": [
+        {
+          "id": "WALK_FRONT",
+          "kind": "walk",
+          "position_m": [
+            0,
+            0,
+            8.0
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": false,
+          "width_m": 2
+        },
+        {
+          "id": "POWER_REAR",
+          "kind": "power",
+          "position_m": [
+            0,
+            0,
+            -8.0
+          ],
+          "normal": [
+            0,
+            0,
+            -1
+          ],
+          "available": false,
+          "width_m": null
+        },
+        {
+          "id": "ROAD_REAR",
+          "kind": "road",
+          "position_m": [
+            0,
+            0,
+            -8.0
+          ],
+          "normal": [
+            0,
+            0,
+            -1
+          ],
+          "available": false,
+          "width_m": 8
+        }
+      ],
+      "colliders": [
+        {
+          "id": "structure",
+          "center_m": [
+            0,
+            0.5,
+            0
+          ],
+          "size_m": [
+            17,
+            1,
+            13
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [
+        {
+          "kind": "walk",
+          "center_m": [
+            0,
+            1.2,
+            7.25
+          ],
+          "size_m": [
+            2,
+            2.4,
+            1.5
+          ],
+          "condition": "approach_only"
+        }
+      ],
+      "animations": [],
+      "family": "industry_garage",
+      "zone": "industry",
+      "damage_level": 3,
+      "functional": false,
+      "collision_quality": "conservative blockout; engine integration required",
+      "debris_envelope_m": [
+        20,
+        16
+      ],
+      "services_available": false,
+      "triangles": 3284,
+      "bytes": 261220
+    },
+    {
+      "id": "logistics_container_d0",
+      "name": "Armored expedition container",
+      "state": "Intact",
+      "file": "logistics_container_d0.glb",
+      "plot_m": [
+        12,
+        4
+      ],
+      "description": "Armored expedition container. Sealed expedition hardware with district accents and modular connections.",
+      "sockets": [
+        {
+          "id": "CARGO",
+          "kind": "cargo",
+          "position_m": [
+            0,
+            0,
+            0
+          ],
+          "normal": [
+            0,
+            1,
+            0
+          ],
+          "available": true,
+          "width_m": null
+        }
+      ],
+      "colliders": [
+        {
+          "id": "cargo",
+          "center_m": [
+            0,
+            1.5,
+            0
+          ],
+          "size_m": [
+            10,
+            3,
+            3
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [],
+      "animations": [],
+      "family": "logistics_container",
+      "zone": "logistics",
+      "damage_level": 0,
+      "functional": true,
+      "collision_quality": "conservative blockout; engine integration required",
+      "debris_envelope_m": [
+        12,
+        4
+      ],
+      "services_available": true,
+      "triangles": 11172,
+      "bytes": 695016
+    },
+    {
+      "id": "logistics_container_d1",
+      "name": "Armored expedition container",
+      "state": "Damaged",
+      "file": "logistics_container_d1.glb",
+      "plot_m": [
+        12,
+        4
+      ],
+      "description": "Armored expedition container. Impact scars and fault indicators; main silhouette retained.",
+      "sockets": [
+        {
+          "id": "CARGO",
+          "kind": "cargo",
+          "position_m": [
+            0,
+            0,
+            0
+          ],
+          "normal": [
+            0,
+            1,
+            0
+          ],
+          "available": true,
+          "width_m": null
+        }
+      ],
+      "colliders": [
+        {
+          "id": "cargo",
+          "center_m": [
+            0,
+            1.5,
+            0
+          ],
+          "size_m": [
+            10,
+            3,
+            3
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [],
+      "animations": [],
+      "family": "logistics_container",
+      "zone": "logistics",
+      "damage_level": 1,
+      "functional": true,
+      "collision_quality": "conservative blockout; engine integration required",
+      "debris_envelope_m": [
+        12,
+        4
+      ],
+      "services_available": true,
+      "triangles": 12036,
+      "bytes": 757600
+    },
+    {
+      "id": "logistics_container_d2",
+      "name": "Armored expedition container",
+      "state": "Critical",
+      "file": "logistics_container_d2.glb",
+      "plot_m": [
+        12,
+        4
+      ],
+      "description": "Armored expedition container. Missing components expose the internal structure; service connections disabled.",
+      "sockets": [
+        {
+          "id": "CARGO",
+          "kind": "cargo",
+          "position_m": [
+            0,
+            0,
+            0
+          ],
+          "normal": [
+            0,
+            1,
+            0
+          ],
+          "available": false,
+          "width_m": null
+        }
+      ],
+      "colliders": [
+        {
+          "id": "cargo",
+          "center_m": [
+            0,
+            1.5,
+            0
+          ],
+          "size_m": [
+            10,
+            3,
+            3
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [],
+      "animations": [],
+      "family": "logistics_container",
+      "zone": "logistics",
+      "damage_level": 2,
+      "functional": false,
+      "collision_quality": "conservative blockout; engine integration required",
+      "debris_envelope_m": [
+        12,
+        4
+      ],
+      "services_available": false,
+      "triangles": 9720,
+      "bytes": 604276
+    },
+    {
+      "id": "logistics_container_d3",
+      "name": "Armored expedition container",
+      "state": "Destroyed",
+      "file": "logistics_container_d3.glb",
+      "plot_m": [
+        12,
+        4
+      ],
+      "description": "Armored expedition container. Inert footing and bounded wreckage; original function removed.",
+      "sockets": [
+        {
+          "id": "CARGO",
+          "kind": "cargo",
+          "position_m": [
+            0,
+            0,
+            0
+          ],
+          "normal": [
+            0,
+            1,
+            0
+          ],
+          "available": false,
+          "width_m": null
+        }
+      ],
+      "colliders": [
+        {
+          "id": "cargo",
+          "center_m": [
+            0,
+            0.55,
+            0
+          ],
+          "size_m": [
+            10,
+            1.1,
+            3
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [],
+      "animations": [],
+      "family": "logistics_container",
+      "zone": "logistics",
+      "damage_level": 3,
+      "functional": false,
+      "collision_quality": "conservative blockout; engine integration required",
+      "debris_envelope_m": [
+        12,
+        4
+      ],
+      "services_available": false,
+      "triangles": 3284,
+      "bytes": 260968
+    },
+    {
+      "id": "research_specimen_crate_d0",
+      "name": "Cryogenic specimen vault",
+      "state": "Intact",
+      "file": "research_specimen_crate_d0.glb",
+      "plot_m": [
+        4,
+        4
+      ],
+      "description": "Cryogenic specimen vault. Sealed expedition hardware with district accents and modular connections.",
+      "sockets": [
+        {
+          "id": "CARGO",
+          "kind": "cargo",
+          "position_m": [
+            0,
+            0,
+            0
+          ],
+          "normal": [
+            0,
+            1,
+            0
+          ],
+          "available": true,
+          "width_m": null
+        }
+      ],
+      "colliders": [
+        {
+          "id": "vault",
+          "center_m": [
+            0,
+            1.05,
+            0
+          ],
+          "size_m": [
+            2.4,
+            2.1,
+            2.4
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [],
+      "animations": [],
+      "family": "research_specimen_crate",
+      "zone": "research",
+      "damage_level": 0,
+      "functional": true,
+      "collision_quality": "conservative blockout; engine integration required",
+      "debris_envelope_m": [
+        4,
+        4
+      ],
+      "services_available": true,
+      "triangles": 2460,
+      "bytes": 174756
+    },
+    {
+      "id": "research_specimen_crate_d1",
+      "name": "Cryogenic specimen vault",
+      "state": "Damaged",
+      "file": "research_specimen_crate_d1.glb",
+      "plot_m": [
+        4,
+        4
+      ],
+      "description": "Cryogenic specimen vault. Impact scars and fault indicators; main silhouette retained.",
+      "sockets": [
+        {
+          "id": "CARGO",
+          "kind": "cargo",
+          "position_m": [
+            0,
+            0,
+            0
+          ],
+          "normal": [
+            0,
+            1,
+            0
+          ],
+          "available": true,
+          "width_m": null
+        }
+      ],
+      "colliders": [
+        {
+          "id": "vault",
+          "center_m": [
+            0,
+            1.05,
+            0
+          ],
+          "size_m": [
+            2.4,
+            2.1,
+            2.4
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [],
+      "animations": [],
+      "family": "research_specimen_crate",
+      "zone": "research",
+      "damage_level": 1,
+      "functional": true,
+      "collision_quality": "conservative blockout; engine integration required",
+      "debris_envelope_m": [
+        4,
+        4
+      ],
+      "services_available": true,
+      "triangles": 3108,
+      "bytes": 221580
+    },
+    {
+      "id": "research_specimen_crate_d2",
+      "name": "Cryogenic specimen vault",
+      "state": "Critical",
+      "file": "research_specimen_crate_d2.glb",
+      "plot_m": [
+        4,
+        4
+      ],
+      "description": "Cryogenic specimen vault. Missing components expose the internal structure; service connections disabled.",
+      "sockets": [
+        {
+          "id": "CARGO",
+          "kind": "cargo",
+          "position_m": [
+            0,
+            0,
+            0
+          ],
+          "normal": [
+            0,
+            1,
+            0
+          ],
+          "available": false,
+          "width_m": null
+        }
+      ],
+      "colliders": [
+        {
+          "id": "vault",
+          "center_m": [
+            0,
+            1.05,
+            0
+          ],
+          "size_m": [
+            2.4,
+            2.1,
+            2.4
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [],
+      "animations": [],
+      "family": "research_specimen_crate",
+      "zone": "research",
+      "damage_level": 2,
+      "functional": false,
+      "collision_quality": "conservative blockout; engine integration required",
+      "debris_envelope_m": [
+        4,
+        4
+      ],
+      "services_available": false,
+      "triangles": 3592,
+      "bytes": 267712
+    },
+    {
+      "id": "research_specimen_crate_d3",
+      "name": "Cryogenic specimen vault",
+      "state": "Destroyed",
+      "file": "research_specimen_crate_d3.glb",
+      "plot_m": [
+        4,
+        4
+      ],
+      "description": "Cryogenic specimen vault. Inert footing and bounded wreckage; original function removed.",
+      "sockets": [
+        {
+          "id": "CARGO",
+          "kind": "cargo",
+          "position_m": [
+            0,
+            0,
+            0
+          ],
+          "normal": [
+            0,
+            1,
+            0
+          ],
+          "available": false,
+          "width_m": null
+        }
+      ],
+      "colliders": [
+        {
+          "id": "vault",
+          "center_m": [
+            0,
+            0.3,
+            0
+          ],
+          "size_m": [
+            2.4,
+            0.6,
+            2.4
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [],
+      "animations": [],
+      "family": "research_specimen_crate",
+      "zone": "research",
+      "damage_level": 3,
+      "functional": false,
+      "collision_quality": "conservative blockout; engine integration required",
+      "debris_envelope_m": [
+        4,
+        4
+      ],
+      "services_available": false,
+      "triangles": 2304,
+      "bytes": 191692
+    },
+    {
+      "id": "road_straight_d0",
+      "name": "Guided transit road",
+      "state": "Intact",
+      "file": "road_straight_d0.glb",
+      "plot_m": [
+        8,
+        8
+      ],
+      "description": "Guided transit road. Sealed expedition hardware with district accents and modular connections.",
+      "sockets": [
+        {
+          "id": "S",
+          "kind": "road",
+          "position_m": [
+            0,
+            0,
+            -4
+          ],
+          "normal": [
+            0,
+            0,
+            -1
+          ],
+          "available": true,
+          "width_m": 8
+        },
+        {
+          "id": "N",
+          "kind": "road",
+          "position_m": [
+            0,
+            0,
+            4
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": true,
+          "width_m": 8
+        }
+      ],
+      "colliders": [
+        {
+          "id": "surface",
+          "center_m": [
+            0,
+            -0.12,
+            0
+          ],
+          "size_m": [
+            8,
+            0.24,
+            8
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [],
+      "animations": [],
+      "family": "road_straight",
+      "zone": "site",
+      "damage_level": 0,
+      "functional": true,
+      "collision_quality": "conservative blockout; engine integration required",
+      "debris_envelope_m": [
+        8,
+        8
+      ],
+      "services_available": true,
+      "triangles": 3024,
+      "bytes": 215728
+    },
+    {
+      "id": "road_straight_d1",
+      "name": "Guided transit road",
+      "state": "Damaged",
+      "file": "road_straight_d1.glb",
+      "plot_m": [
+        8,
+        8
+      ],
+      "description": "Guided transit road. Impact scars and fault indicators; main silhouette retained.",
+      "sockets": [
+        {
+          "id": "S",
+          "kind": "road",
+          "position_m": [
+            0,
+            0,
+            -4
+          ],
+          "normal": [
+            0,
+            0,
+            -1
+          ],
+          "available": true,
+          "width_m": 8
+        },
+        {
+          "id": "N",
+          "kind": "road",
+          "position_m": [
+            0,
+            0,
+            4
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": true,
+          "width_m": 8
+        }
+      ],
+      "colliders": [
+        {
+          "id": "surface",
+          "center_m": [
+            0,
+            -0.12,
+            0
+          ],
+          "size_m": [
+            8,
+            0.24,
+            8
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [],
+      "animations": [],
+      "family": "road_straight",
+      "zone": "site",
+      "damage_level": 1,
+      "functional": true,
+      "collision_quality": "conservative blockout; engine integration required",
+      "debris_envelope_m": [
+        8,
+        8
+      ],
+      "services_available": true,
+      "triangles": 3672,
+      "bytes": 262420
+    },
+    {
+      "id": "road_straight_d2",
+      "name": "Guided transit road",
+      "state": "Critical",
+      "file": "road_straight_d2.glb",
+      "plot_m": [
+        8,
+        8
+      ],
+      "description": "Guided transit road. Missing components expose the internal structure; service connections disabled.",
+      "sockets": [
+        {
+          "id": "S",
+          "kind": "road",
+          "position_m": [
+            0,
+            0,
+            -4
+          ],
+          "normal": [
+            0,
+            0,
+            -1
+          ],
+          "available": false,
+          "width_m": 8
+        },
+        {
+          "id": "N",
+          "kind": "road",
+          "position_m": [
+            0,
+            0,
+            4
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": false,
+          "width_m": 8
+        }
+      ],
+      "colliders": [
+        {
+          "id": "surface",
+          "center_m": [
+            0,
+            -0.12,
+            0
+          ],
+          "size_m": [
+            8,
+            0.24,
+            8
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [],
+      "animations": [],
+      "family": "road_straight",
+      "zone": "site",
+      "damage_level": 2,
+      "functional": false,
+      "collision_quality": "conservative blockout; engine integration required",
+      "debris_envelope_m": [
+        8,
+        8
+      ],
+      "services_available": false,
+      "surface_valid": false,
+      "triangles": 3508,
+      "bytes": 262656
+    },
+    {
+      "id": "road_straight_d3",
+      "name": "Guided transit road",
+      "state": "Destroyed",
+      "file": "road_straight_d3.glb",
+      "plot_m": [
+        8,
+        8
+      ],
+      "description": "Guided transit road. Inert footing and bounded wreckage; original function removed.",
+      "sockets": [
+        {
+          "id": "S",
+          "kind": "road",
+          "position_m": [
+            0,
+            0,
+            -4
+          ],
+          "normal": [
+            0,
+            0,
+            -1
+          ],
+          "available": false,
+          "width_m": 8
+        },
+        {
+          "id": "N",
+          "kind": "road",
+          "position_m": [
+            0,
+            0,
+            4
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": false,
+          "width_m": 8
+        }
+      ],
+      "colliders": [
+        {
+          "id": "surface",
+          "center_m": [
+            0,
+            -0.12,
+            0
+          ],
+          "size_m": [
+            8,
+            0.24,
+            8
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [],
+      "animations": [],
+      "family": "road_straight",
+      "zone": "site",
+      "damage_level": 3,
+      "functional": false,
+      "collision_quality": "conservative blockout; engine integration required",
+      "debris_envelope_m": [
+        8,
+        8
+      ],
+      "services_available": false,
+      "surface_valid": false,
+      "triangles": 2736,
+      "bytes": 221864
+    },
+    {
+      "id": "utility_conduit_d0",
+      "name": "Service conduit spine",
+      "state": "Intact",
+      "file": "utility_conduit_d0.glb",
+      "plot_m": [
+        4,
+        4
+      ],
+      "description": "Service conduit spine. Sealed expedition hardware with district accents and modular connections.",
+      "sockets": [
+        {
+          "id": "S",
+          "kind": "utility",
+          "position_m": [
+            0,
+            0,
+            -2
+          ],
+          "normal": [
+            0,
+            0,
+            -1
+          ],
+          "available": true,
+          "width_m": 1.6
+        },
+        {
+          "id": "N",
+          "kind": "utility",
+          "position_m": [
+            0,
+            0,
+            2
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": true,
+          "width_m": 1.6
+        }
+      ],
+      "colliders": [
+        {
+          "id": "conduit",
+          "center_m": [
+            0,
+            0.45,
+            0
+          ],
+          "size_m": [
+            1.9,
+            0.9,
+            4
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [],
+      "animations": [],
+      "family": "utility_conduit",
+      "zone": "utilities",
+      "damage_level": 0,
+      "functional": true,
+      "collision_quality": "conservative blockout; engine integration required",
+      "debris_envelope_m": [
+        4,
+        4
+      ],
+      "services_available": true,
+      "triangles": 1200,
+      "bytes": 85852
+    },
+    {
+      "id": "utility_conduit_d1",
+      "name": "Service conduit spine",
+      "state": "Damaged",
+      "file": "utility_conduit_d1.glb",
+      "plot_m": [
+        4,
+        4
+      ],
+      "description": "Service conduit spine. Impact scars and fault indicators; main silhouette retained.",
+      "sockets": [
+        {
+          "id": "S",
+          "kind": "utility",
+          "position_m": [
+            0,
+            0,
+            -2
+          ],
+          "normal": [
+            0,
+            0,
+            -1
+          ],
+          "available": true,
+          "width_m": 1.6
+        },
+        {
+          "id": "N",
+          "kind": "utility",
+          "position_m": [
+            0,
+            0,
+            2
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": true,
+          "width_m": 1.6
+        }
+      ],
+      "colliders": [
+        {
+          "id": "conduit",
+          "center_m": [
+            0,
+            0.45,
+            0
+          ],
+          "size_m": [
+            1.9,
+            0.9,
+            4
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [],
+      "animations": [],
+      "family": "utility_conduit",
+      "zone": "utilities",
+      "damage_level": 1,
+      "functional": true,
+      "collision_quality": "conservative blockout; engine integration required",
+      "debris_envelope_m": [
+        4,
+        4
+      ],
+      "services_available": true,
+      "triangles": 1848,
+      "bytes": 132224
+    },
+    {
+      "id": "utility_conduit_d2",
+      "name": "Service conduit spine",
+      "state": "Critical",
+      "file": "utility_conduit_d2.glb",
+      "plot_m": [
+        4,
+        4
+      ],
+      "description": "Service conduit spine. Missing components expose the internal structure; service connections disabled.",
+      "sockets": [
+        {
+          "id": "S",
+          "kind": "utility",
+          "position_m": [
+            0,
+            0,
+            -2
+          ],
+          "normal": [
+            0,
+            0,
+            -1
+          ],
+          "available": false,
+          "width_m": 1.6
+        },
+        {
+          "id": "N",
+          "kind": "utility",
+          "position_m": [
+            0,
+            0,
+            2
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": false,
+          "width_m": 1.6
+        }
+      ],
+      "colliders": [
+        {
+          "id": "conduit",
+          "center_m": [
+            0,
+            0.45,
+            0
+          ],
+          "size_m": [
+            1.9,
+            0.9,
+            4
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [],
+      "animations": [],
+      "family": "utility_conduit",
+      "zone": "utilities",
+      "damage_level": 2,
+      "functional": false,
+      "collision_quality": "conservative blockout; engine integration required",
+      "debris_envelope_m": [
+        4,
+        4
+      ],
+      "services_available": false,
+      "triangles": 2776,
+      "bytes": 208744
+    },
+    {
+      "id": "utility_conduit_d3",
+      "name": "Service conduit spine",
+      "state": "Destroyed",
+      "file": "utility_conduit_d3.glb",
+      "plot_m": [
+        4,
+        4
+      ],
+      "description": "Service conduit spine. Inert footing and bounded wreckage; original function removed.",
+      "sockets": [
+        {
+          "id": "S",
+          "kind": "utility",
+          "position_m": [
+            0,
+            0,
+            -2
+          ],
+          "normal": [
+            0,
+            0,
+            -1
+          ],
+          "available": false,
+          "width_m": 1.6
+        },
+        {
+          "id": "N",
+          "kind": "utility",
+          "position_m": [
+            0,
+            0,
+            2
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": false,
+          "width_m": 1.6
+        }
+      ],
+      "colliders": [
+        {
+          "id": "conduit",
+          "center_m": [
+            0,
+            0.45,
+            0
+          ],
+          "size_m": [
+            1.9,
+            0.9,
+            4
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [],
+      "animations": [],
+      "family": "utility_conduit",
+      "zone": "utilities",
+      "damage_level": 3,
+      "functional": false,
+      "collision_quality": "conservative blockout; engine integration required",
+      "debris_envelope_m": [
+        4,
+        4
+      ],
+      "services_available": false,
+      "triangles": 3300,
+      "bytes": 259832
+    }
+  ]
+}

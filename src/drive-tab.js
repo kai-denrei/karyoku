@@ -5,13 +5,16 @@
 import * as THREE from '../vendor/three.module.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { generatePlate, makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M } from './plate.js?v=965abc95';
+import { generatePlate, makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M } from './plate.js?v=9c7098f2';
 import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, blockedAt, makeGates, stepGates,
-  spawnFor, makeSentries, stepSentries, losClear, stepTracers, rayStop, fireHull, damageAt, makeBodies, stepBodies } from './drive.js?v=965abc95';
-import { PALETTE } from './looks.js?v=965abc95';
-import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=965abc95';
-import { query, loadCatalog } from './plate-tab.js?v=965abc95';
-import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS } from './drive-rig.js?v=965abc95';
+  spawnFor, makeSentries, stepSentries, losClear, stepTracers, rayStop, fireHull, damageAt, makeBodies, stepBodies } from './drive.js?v=9c7098f2';
+import { PALETTE } from './looks.js?v=9c7098f2';
+import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=9c7098f2';
+import { query, loadCatalog } from './plate-tab.js?v=9c7098f2';
+import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS } from './drive-rig.js?v=9c7098f2';
+import { makeCrew, stepCrew } from './crew.js?v=9c7098f2';
+import { makeCrewScene } from './crew-scene.js?v=9c7098f2';
+import { mulberry32 } from './rng.js?v=9c7098f2';
 
 export function initDriveTab(root) {
   const { renderer, scene, camera, hud, notice, resize, render, setGroups } = makeViewer(root);
@@ -28,6 +31,8 @@ export function initDriveTab(root) {
   const pool = makeTracerPool(scene);
 
   let catalog = null, plate = null, rig = null, gates = [], sentries = [], tracers = [], hull = null, bodies = [];
+  let crew = [], crewScene = null, crewRng = null;
+  const CREW_N = Number(q.get('crew') || 6);
   let hits = 0, simT = 0, lastLog = 0, lastDt = 0.016, breached = 0;
 
   function build() {
@@ -41,6 +46,9 @@ export function initDriveTab(root) {
     gates = makeGates(plate);
     sentries = makeSentries(plate);
     bodies = makeBodies(plate);
+    crewRng = mulberry32(params.seed ^ 0x51ed);
+    crew = makeCrew(plate, CREW_N, crewRng);
+    crewScene = makeCrewScene(rig.group, crew);
     tracers = [];
     hits = 0; simT = 0; lastLog = 0; breached = 0;
     const sp = spawnFor(plate, plate.gates[0]);
@@ -55,6 +63,7 @@ export function initDriveTab(root) {
   function step(dt, input) {
     stepHull(hull, input, dt, (x, z) => blockedAt(plate, gates, x, z), P);
     stepBodies(bodies, hull, (x, z) => blockedAt(plate, gates, x, z), P);
+    stepCrew(crew, plate, dt, crewRng);
     if (input.fire) { const shot = fireHull(hull, P); if (shot) tracers.push(shot); }
     stepGates(gates, hull, dt, P);
     for (const t of stepSentries(sentries, hull, dt, (ax, az, bx, bz) => losClear(plate, ax, az, bx, bz), P)) tracers.push(t);
@@ -75,6 +84,7 @@ export function initDriveTab(root) {
     sentries.forEach((s, i) => { const node = rig.sentryYaws.get(i); if (node) node.rotation.y = yawRotation(s.yaw); });
     for (const gr of rig.gateRigs) { const g = gates[gr.index]; if (g) setGateOpen(gr, g.open); }
     for (const b of bodies) { const obj = rig.dynamic.get(b.pieceIndex); if (obj) obj.position.set(b.x, 0, b.z); }
+    if (crewScene) crewScene.sync(lastDt);
     pool.sync(tracers, () => 0, lastDt, P.splashR);
     followCamera(camera, controls, hull, 0, view.camera, lastDt, null, { cx: plate.w * CELL_M / 2, cz: plate.h * CELL_M / 2, span: Math.max(plate.w, plate.h) * CELL_M });
     hud.textContent = `hits ${hits} · shots ${hull.shots} · breached ${breached} · gates ${gateWord()} · cam ${view.camera} · WASD drive · SPACE fire · 1 top 2 chase 3 orbit 4 overview · R regenerate`;

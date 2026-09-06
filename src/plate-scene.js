@@ -5,14 +5,14 @@
 // as clones with their YAW pivot exposed, and everything else as a labelled
 // placeholder box of its footprint.
 import * as THREE from '../vendor/three.module.js';
-import { KIND, CELL_M, ringCoverage } from './plate.js?v=965abc95';
-import { fileFor, fitFor, SECTION_COLOR, PLACEHOLDER_HEIGHT_M } from './catalog.js?v=965abc95';
-import { LOB_FAMILIES, LOB_ELEV_DEG } from './drive.js?v=965abc95';
-import { PALETTE, neonBox } from './looks.js?v=965abc95';
-import { prepFor, ladderTint, dressMetal } from './casts.js?v=965abc95';
-import { tintModel } from './glbmodels.js?v=965abc95';
-import { BODY_IDS } from './drive.js?v=965abc95';
-import { loadGlb, loadGlbWithClips, mergeByMaterial, fitModel } from './glbmodels.js?v=965abc95';
+import { KIND, CELL_M, ringCoverage } from './plate.js?v=9c7098f2';
+import { fileFor, fitFor, SECTION_COLOR, PLACEHOLDER_HEIGHT_M } from './catalog.js?v=9c7098f2';
+import { LOB_FAMILIES, LOB_ELEV_DEG } from './drive.js?v=9c7098f2';
+import { PALETTE, neonBox } from './looks.js?v=9c7098f2';
+import { prepFor, ladderTint, dressMetal } from './casts.js?v=9c7098f2';
+import { tintModel } from './glbmodels.js?v=9c7098f2';
+import { BODY_IDS } from './drive.js?v=9c7098f2';
+import { loadGlb, loadGlbWithClips, mergeByMaterial, fitModel } from './glbmodels.js?v=9c7098f2';
 
 const labelCache = new Map();
 function labelTexture(text) {
@@ -49,7 +49,8 @@ export function proto(url, pivots = [], fit = null, tint = null) {
     // steel, graphite, amber caution, mint status — and the grey ladder
     // painted over all of them. A faint emissive wash by side is all it gets.
     if (tint !== null) {
-      if (url.startsWith('assets/base-kit/')) tintModel(fitted, tint, { wash: 0.10 });
+      // ...and so does the research-outpost kit, from the same workshop
+      if (url.startsWith('assets/base-kit/') || url.startsWith('assets/outpost/')) tintModel(fitted, tint, { wash: 0.10 });
       else { ladderTint(fitted, tint); dressMetal(fitted); }
     }
     return fitted;

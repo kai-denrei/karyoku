@@ -4,12 +4,12 @@
 import * as THREE from '../vendor/three.module.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { generatePlate, PLATE_KNOBS, makePlateParams, clampPlateParams, CELL_M } from './plate.js?v=965abc95';
-import { CATALOG_SPEC } from './catalog-spec.js?v=965abc95';
-import { buildCatalog, BASE_KIT_URL, NASA_URL, HOUSE_URL } from './catalog.js?v=965abc95';
-import { bustToken } from './glbmodels.js?v=965abc95';
-import { applySpaceScene, makeStars, makeComposer } from './looks.js?v=965abc95';
-import { buildPlateGroup } from './plate-scene.js?v=965abc95';
+import { generatePlate, PLATE_KNOBS, makePlateParams, clampPlateParams, CELL_M } from './plate.js?v=9c7098f2';
+import { CATALOG_SPEC } from './catalog-spec.js?v=9c7098f2';
+import { buildCatalog, BASE_KIT_URL, NASA_URL, HOUSE_URL, OUTPOST_URL } from './catalog.js?v=9c7098f2';
+import { bustToken } from './glbmodels.js?v=9c7098f2';
+import { applySpaceScene, makeStars, makeComposer } from './looks.js?v=9c7098f2';
+import { buildPlateGroup } from './plate-scene.js?v=9c7098f2';
 
 // `#plate?seed=7` and `?seed=7#plate` both work: the hash's own query is
 // merged under the real search string.
@@ -29,8 +29,10 @@ export function loadCatalog() {
   // the NASA stand-ins are optional: a missing manifest costs placeholders, not the tab
   const nasa = get(`${NASA_URL}manifest.json`).catch(() => null);
   const house = get(`${HOUSE_URL}manifest.json`).catch(() => null);
-  // order matters: a later manifest wins, so the house casts beat the NASA stand-ins
-  const extras = async () => [{ manifest: await nasa, base: NASA_URL }, { manifest: await house, base: HOUSE_URL }];
+  const outpost = get(`${OUTPOST_URL}manifest.json`).catch(() => null);
+  // order matters: a later manifest wins — the outpost kit beats the NASA
+  // stand-ins, the house casts beat both
+  const extras = async () => [{ manifest: await nasa, base: NASA_URL }, { manifest: await outpost, base: OUTPOST_URL }, { manifest: await house, base: HOUSE_URL }];
   catalogP = get(`${BASE_KIT_URL}manifest.json`)
     .then(async (m) => ({ catalog: buildCatalog(CATALOG_SPEC, m, await extras()), error: null }))
     .catch(async (e) => ({ catalog: buildCatalog(CATALOG_SPEC, null, await extras()), error: e.message }));
