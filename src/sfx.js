@@ -4,16 +4,52 @@
 // which round, how the engine bed follows the throttle, where a shell's
 // impact goes and which way it faces, how far a machine's hum carries.
 import * as THREE from '../vendor/three.module.js';
-import { makeAudio } from './audio.js?v=8de06158';
-import { SENTRY_FIRE } from './audiomanifest.js?v=8de06158';
-import { makeImpactBurst, IMPACT_TUNE, orientImpact } from './impactfx.js?v=8de06158';
-import { PALETTE, BZ } from './looks.js?v=8de06158';
-import { makeTankFeel, stepTankFeel, landTankFeel, fireTankFeel, applyTankFeel } from './tankfeel.js?v=8de06158';
+import { makeAudio } from './audio.js?v=19ae0665';
+import { SENTRY_FIRE, DEATH_KEYS } from './audiomanifest.js?v=19ae0665';
+import { makeImpactBurst, IMPACT_TUNE, orientImpact } from './impactfx.js?v=19ae0665';
+import { PALETTE, BZ } from './looks.js?v=19ae0665';
+import { makeTankFeel, stepTankFeel, landTankFeel, fireTankFeel, applyTankFeel } from './tankfeel.js?v=19ae0665';
 
 // the impact set is authored for a 4-unit wall; a shell on a 4 m cell
 // wants about this much of it
 const SHELL_SIZE = 2.6;
 const HUM_REACH = 60; // m — a machine's hum is gone past this
+
+// THE SOFT BURST, the reference's makeDotBurst in metres: n dots from one
+// point, thrown flat against the surface normal with a small pop along it,
+// fading over LIFE. Half the dots wear the suit, half the blood; the same
+// two-colour hurt the reference's creatures flash. Deterministic per seed.
+const SUIT_DOT = 0xff7a1a, BLOOD_DOT = 0xd8102a;
+function makeSoftBurst(normal, seed, n = 36, reach = 1.3) {
+  const hshf = (i) => { const s = Math.sin(i * 91.7 + seed * 13.1 + 2.3) * 43758.5453; return s - Math.floor(s); };
+  const pos = new Float32Array(n * 3), vel = new Float32Array(n * 3), col = new Float32Array(n * 3);
+  const cs = new THREE.Color(SUIT_DOT), cb = new THREE.Color(BLOOD_DOT);
+  for (let i = 0; i < n; i++) {
+    const th = hshf(i) * 6.283, up = hshf(i + 50) * 0.55;
+    let dx = Math.cos(th), dy = 0, dz = Math.sin(th);
+    dx += normal[0] * up; dy += normal[1] * up; dz += normal[2] * up;
+    const sp = (0.45 + hshf(i + 100) * 1.1) * reach;
+    vel[i * 3] = dx * sp; vel[i * 3 + 1] = dy * sp; vel[i * 3 + 2] = dz * sp;
+    const c = hshf(i + 200) < 0.5 ? cs : cb, b = 0.7 + 0.3 * hshf(i + 150);
+    col[i * 3] = c.r * b; col[i * 3 + 1] = c.g * b; col[i * 3 + 2] = c.b * b;
+  }
+  const geo = new THREE.BufferGeometry();
+  const posAttr = new THREE.BufferAttribute(pos, 3);
+  geo.setAttribute('position', posAttr);
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  const mat = new THREE.PointsMaterial({ size: 3.2, sizeAttenuation: false, vertexColors: true, transparent: true, opacity: 1, depthWrite: false });
+  const pts = new THREE.Points(geo, mat);
+  const LIFE = 0.7;
+  let life = 0;
+  pts.userData.tick = (dt) => {
+    life += dt;
+    for (let i = 0; i < n; i++) { pos[i * 3] += vel[i * 3] * dt; pos[i * 3 + 1] += vel[i * 3 + 1] * dt; pos[i * 3 + 2] += vel[i * 3 + 2] * dt; }
+    posAttr.needsUpdate = true;
+    mat.opacity = Math.max(0, 1 - life / LIFE);
+    return life < LIFE;
+  };
+  return pts;
+}
 
 export function makeSfx(scene) {
   const audio = makeAudio({ seed: 1 });
@@ -80,6 +116,21 @@ export function makeSfx(scene) {
       scene.add(g);
       fx.push(g);
       if (sound) audio.play(sound, { dist });
+    },
+    // a soft body hit: one of three cries, faded by distance, and the
+    // two-colour burst at the body; the light impact recipe's flash and
+    // spark on top so the strike reads at any range. The caller lays the
+    // splat (crew-scene does, for any dead walker).
+    softHit(point, dist, normal = [0, 1, 0]) {
+      audio.play(DEATH_KEYS[seed % DEATH_KEYS.length], { dist });
+      const burst = makeSoftBurst(normal, seed++);
+      burst.position.set(point[0], point[1], point[2]);
+      scene.add(burst);
+      fx.push(burst);
+      const g = makeImpactBurst('light', IMPACT_TUNE, colors, seed++, 1.6);
+      orientImpact(g, point, normal);
+      scene.add(g);
+      fx.push(g);
     },
     tick(dt) {
       for (let i = fx.length - 1; i >= 0; i--) {

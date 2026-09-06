@@ -14,7 +14,7 @@
 // asks it too, with the walker's own radius, so nobody walks through a
 // container or the tank. Something that rolls onto a walker slowly shoves
 // them out (`escape`); fast, it squashes them (stepSquash).
-import { KIND, CELL_M, rotSide, DIRS } from './plate.js?v=8de06158';
+import { KIND, CELL_M, rotSide, DIRS } from './plate.js?v=19ae0665';
 
 export const CREW_TUNE = {
   walk: 1.4, run: 4.6,      // m/s
@@ -25,6 +25,9 @@ export const CREW_TUNE = {
   hullHalfL: 4.0, hullHalfW: 1.9, // the MKCX as a box to a walker: 7.8 m long, 3.5 m wide, plus a step
   escapeM: 3,               // how far a shoved walker is moved to find free ground
   squashM: 0.6,             // beyond the hull's own radius
+  softR: 0.9,               // a shell passing this close to a walker's centre hits them
+  softH: 1.9,               // ...and no higher than this (the suit's crown)
+  splashR: 3.0,             // a shell or lob landing this close kills
   squashSpeed: 2.0,         // m/s the hull must be doing
 };
 export const SUIT = 0xff7a1a; // orange, every one of them
@@ -210,6 +213,28 @@ export function stepCrew(crew, plate, dt, rng, threat = null, tune = CREW_TUNE, 
     if (!ok) { w.target = null; w.moving = false; w.wait = w.fleeing ? 0.2 : tune.idleMin; continue; }
     w.x = mx; w.z = mz; w.moving = true;
   }
+}
+
+// THE SOFT BODIES. A shell in flight at (x, z, y) that passes within softR
+// of a live walker, below softH, hits them: the first one found is marked
+// dead and returned, and the shell should stop there. The reference's
+// ruling for the tank's shells is that a direct hit one-shots anything
+// soft; an astronaut is nothing but.
+export function shotHits(crew, x, z, y = 0, tune = CREW_TUNE) {
+  if (y > tune.softH) return null;
+  for (const w of crew.walkers) {
+    if (w.alive && Math.hypot(w.x - x, w.z - z) <= tune.softR) { w.alive = false; w.moving = false; return w; }
+  }
+  return null;
+}
+// A shell or a lob landing at (x, z): every live walker inside splashR
+// dies. Returns them, for the cries and the bursts.
+export function splashHits(crew, x, z, tune = CREW_TUNE) {
+  const out = [];
+  for (const w of crew.walkers) {
+    if (w.alive && Math.hypot(w.x - x, w.z - z) <= tune.splashR) { w.alive = false; w.moving = false; out.push(w); }
+  }
+  return out;
 }
 
 // The Amiga moment: a hull moving over a walker. Returns the walkers it

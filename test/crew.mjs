@@ -1,5 +1,5 @@
 import { generatePlate, makePlateParams, PLATE_TUNE, CELL_M } from '../src/plate.js';
-import { makeCrew, stepCrew, stepSquash, keyAreas, crewWalkableAt, crewFreeAt, hullCovers, escape, CREW_TUNE, SUIT } from '../src/crew.js';
+import { makeCrew, stepCrew, stepSquash, shotHits, splashHits, keyAreas, crewWalkableAt, crewFreeAt, hullCovers, escape, CREW_TUNE, SUIT } from '../src/crew.js';
 import { mulberry32 } from '../src/rng.js';
 import { check, done } from './check.mjs';
 
@@ -86,5 +86,19 @@ check('sometimes they run', ran > 0 && ran < movingFrames * 0.6, `ran ${ran} of 
   // the disc: a walker's radius keeps it off a wall it walks past
   const wallX = plate.pieces.find((p) => p.kind === 1);
   check('a point a hand off a wall cell is not free for a walker', wallX && !crewFreeAt(plate, (wallX.x + 1) * CELL_M + 0.2, (wallX.z + 0.5) * CELL_M));
+}
+// THE SOFT BODIES: a shell through an astronaut, a landing beside one
+{
+  const c6 = makeCrew(plate, 4, mulberry32(21));
+  const [a, b] = c6.walkers;
+  b.x = a.x + 6; b.z = a.z;
+  check('a shell 3 m up passes over a walker', shotHits(c6, a.x, a.z, 3.0) === null && a.alive);
+  check('a shell a metre past a walker misses', shotHits(c6, a.x + 1.2, a.z, 1.0) === null && a.alive);
+  const hit = shotHits(c6, a.x + 0.5, a.z, 1.0);
+  check('a shell through a walker kills that walker, no other', hit === a && !a.alive && b.alive);
+  check('a dead walker is not hit again', shotHits(c6, a.x, a.z, 1.0) === null);
+  const killed = splashHits(c6, b.x + 2, b.z);
+  check('a landing kills everyone in its splash, once', killed.length === 1 && killed[0] === b && !b.alive && splashHits(c6, b.x, b.z).length === 0);
+  check('a landing well away kills no one', splashHits(c6, b.x + 20, b.z + 20).length === 0);
 }
 done();

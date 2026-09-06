@@ -44,6 +44,12 @@ export const SOUNDS = {
   impact_rubble: { file: `${A}/tank_destroyed.mp3`, bus: 'tank', gain: 0.70, maxVoices: 2, minInterval: 0.20, rateJitter: 0.05 },
   impact_hit:    { file: `${A}/tank_secondary.mp3`, bus: 'tank', gain: 0.45, maxVoices: 3, minInterval: 0.08, rateJitter: 0.12 },
 
+  // --- the soft bodies: an astronaut hit by a shell, or run over. Three
+  // cries, picked at random per death so a crowd never chants ------------
+  enemy_die_a: { file: `${A}/enemy_die_a.mp3`, bus: 'tank', gain: 0.60, maxVoices: 3, minInterval: 0.04, rateJitter: 0.12 },
+  enemy_die_b: { file: `${A}/enemy_die_b.mp3`, bus: 'tank', gain: 0.60, maxVoices: 3, minInterval: 0.04, rateJitter: 0.12 },
+  enemy_die_c: { file: `${A}/enemy_die_c.mp3`, bus: 'tank', gain: 0.60, maxVoices: 3, minInterval: 0.04, rateJitter: 0.12 },
+
   // --- the assembly line: a faint hydraulic bed per machine ------------------
   // (an electric hum built from a dial-up master was cut: it read as a modem)
   assembly_hydraulics: { file: `${A}/assembly_hydraulics.mp3`, bus: 'ambient', gain: 0.30, maxVoices: 3, minInterval: 0, rateJitter: 0 },
@@ -55,7 +61,7 @@ export const SENTRY_FIRE = {
   railgun: 'tower_sniper', howitzer: 'tower_aoe', mortar: 'tower_aoe', plasma: 'tower_laser', heptapod_a6: 'tower_homing',
 };
 
-export const DEATH_KEYS = [];
+export const DEATH_KEYS = ['enemy_die_a', 'enemy_die_b', 'enemy_die_c'];
 export const GLOBAL_VOICE_CAP = 24;
 // inverse-distance falloff, in METRES here: a turret 45 m off is half as loud
 export const DISTANCE_K = 45;

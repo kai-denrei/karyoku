@@ -245,6 +245,14 @@ no build step, Node invariant suites).
   0.35) against cells AND solids; trips slide along an obstacle or are
   given up; something rolling onto a walker slowly shoves them out
   (`escape`), fast squashes them. Probe lines carry `crewIn=` (must be 0).
+- SOFT BODIES: `shotHits(crew, x, z, y)` (a shell within `softR` 0.9 m and
+  under `softH`) and `splashHits(crew, x, z)` (`splashR` 3 m at a shell or
+  lob landing) kill walkers; the tabs then `sfx.softHit(point, dist,
+  normal)`: one of `DEATH_KEYS` at random, the two-colour suit-and-blood
+  dot burst (`makeSoftBurst`), the light recipe's flash; a direct hit also
+  lands the shell blast and stops the shell. The run-over gets the same
+  `softHit`. crew-scene lays the splat for ANY dead walker. HUD and probe:
+  `crew down` / `down=`.
 - BALLISTICS: a hull shot leaves at `shotSpeed` and `hull.elev` degrees
   (SHIFT+W / SHIFT+S, `elevRate`, stops `elevMin..elevMax`), falls under
   `gravity`, lands on `groundY` or stops on a solid it does not clear

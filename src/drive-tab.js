@@ -5,19 +5,19 @@
 import * as THREE from '../vendor/three.module.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { generatePlate, makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M } from './plate.js?v=8de06158';
+import { generatePlate, makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M } from './plate.js?v=19ae0665';
 import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, blockedAt, makeGates, stepGates,
-  spawnFor, makeSentries, stepSentries, losClear, stepTracers, rayStop, fireHull, damageAt, makeBodies, stepBodies, bodyAt, shotRangeFor } from './drive.js?v=8de06158';
-import { PALETTE, LOOK, LOOKS } from './looks.js?v=8de06158';
-import { withParam } from './url.js?v=8de06158';
-import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=8de06158';
-import { query, loadCatalog } from './plate-tab.js?v=8de06158';
-import { modelledIds } from './catalog.js?v=8de06158';
-import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS, makeMobileShell, mobileShell } from './drive-rig.js?v=8de06158';
-import { makeSfx } from './sfx.js?v=8de06158';
-import { makeCrew, stepCrew, stepSquash, hullCovers, crewFreeAt, CREW_TUNE } from './crew.js?v=8de06158';
-import { makeCrewScene } from './crew-scene.js?v=8de06158';
-import { mulberry32 } from './rng.js?v=8de06158';
+  spawnFor, makeSentries, stepSentries, losClear, stepTracers, rayStop, fireHull, damageAt, makeBodies, stepBodies, bodyAt, shotRangeFor } from './drive.js?v=19ae0665';
+import { PALETTE, LOOK, LOOKS } from './looks.js?v=19ae0665';
+import { withParam } from './url.js?v=19ae0665';
+import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=19ae0665';
+import { query, loadCatalog } from './plate-tab.js?v=19ae0665';
+import { modelledIds } from './catalog.js?v=19ae0665';
+import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS, makeMobileShell, mobileShell } from './drive-rig.js?v=19ae0665';
+import { makeSfx } from './sfx.js?v=19ae0665';
+import { makeCrew, stepCrew, stepSquash, shotHits, splashHits, hullCovers, crewFreeAt, CREW_TUNE } from './crew.js?v=19ae0665';
+import { makeCrewScene } from './crew-scene.js?v=19ae0665';
+import { mulberry32 } from './rng.js?v=19ae0665';
 
 export function initDriveTab(root) {
   const { renderer, scene, camera, hud, notice, resize, render, setGroups, post } = makeViewer(root);
@@ -81,7 +81,7 @@ export function initDriveTab(root) {
     stepBodies(bodies, hull, (x, z) => blockedAt(plate, gates, x, z), P);
     // this plate is the target: the hull is the enemy its crew runs from
     stepCrew(crew, plate, dt, crewRng, { x: hull.x, z: hull.z }, CREW_TUNE, crewSolid);
-    squashed += stepSquash(crew, hull, P.hullR).length;
+    for (const w of stepSquash(crew, hull, P.hullR)) { squashed++; sfx.softHit([w.x, 0.6, w.z], 0); }
     if (input.fire) { const shot = fireHull(hull, P); if (shot) { tracers.push(shot); sfx.fire(); } }
     sfx.engine(hull.speed, P.speed, dt);
     stepGates(gates, hull, dt, P);
@@ -94,13 +94,27 @@ export function initDriveTab(root) {
     const distTo = (x, z) => Math.hypot(x - hull.x, z - hull.z);
     const wound = (x, z, pc) => { if (pc.state >= 3) { breached++; sfx.impact('shell', [x, 4, z], [0, 1, 0], distTo(x, z), 4.5, 'impact_rubble'); } rig.rebuild(); };
     const before = hits;
+    // the soft bodies: a landing kills everyone in its splash
+    const splash = (x, z) => { for (const w of splashHits(crew, x, z)) { squashed++; sfx.softHit([w.x, 1.0, w.z], distTo(w.x, w.z)); } };
     hits += stepTracers(tracers, hull, dt, (x, z, t) => {
-      if (t && t.kind === 'lob' && t.landed) { sfx.impact('shell', [x, 0.1, z], [0, 1, 0], distTo(x, z), 3.2, 'tower_aoe'); return true; }
+      if (t && t.kind === 'lob' && t.landed) { sfx.impact('shell', [x, 0.1, z], [0, 1, 0], distTo(x, z), 3.2, 'tower_aoe'); splash(x, z); return true; }
       if (t && t.kind === 'shot' && t.landed) {
         const pc = damageAt(plate, x, z, destructible);
         sfx.impact('shell', [x, 0.1, z], [0, 1, 0], distTo(x, z));
         if (pc) wound(x, z, pc);
+        splash(x, z);
         return true;
+      }
+      // ...and a shell through an astronaut stops there: the blast, the cry, the burst
+      if (t && t.kind === 'shot') {
+        const w = shotHits(crew, x, z, t.y);
+        if (w) {
+          const n = Math.hypot(t.vx, t.vz) || 1;
+          squashed++;
+          sfx.impact('shell', [x, t.y, z], [-t.vx / n, 0.2, -t.vz / n], distTo(x, z));
+          sfx.softHit([w.x, 1.0, w.z], distTo(x, z), [-t.vx / n, 0.4, -t.vz / n]);
+          return true;
+        }
       }
       if (!stop(x, z, t)) return false;
       if (t && t.kind === 'shot') {
@@ -116,7 +130,7 @@ export function initDriveTab(root) {
   }
 
   const gateWord = () => gates.map((g) => `${g.side}:${g.open >= 0.95 ? 'open' : g.open <= 0 ? 'shut' : 'moving'}`).join(' ');
-  const logLine = () => `[drive] t=${simT.toFixed(1)} hull=${hull.x.toFixed(1)},${hull.z.toFixed(1)} heading=${hull.heading.toFixed(0)} gates=${gateWord()} tracking=${sentries.filter((s) => s.tracking).length} lobs=${tracers.filter((t) => t.kind === 'lob').length} hits=${hits} shots=${hull.shots} damaged=${plate.pieces.filter((pc) => pc.kind === 1 && pc.state > 0).length} breached=${breached} fx=${sfx.live} crewIn=${crew ? crew.walkers.filter((w) => w.alive && !crewFreeAt(plate, w.x, w.z, crewSolid)).length : 0} engine=${sfx.running ? 'on' : 'off'} hover=${sfx.feel.hoverT.toFixed(2)} bodyY=${hullObj.userData.hoverBody ? hullObj.userData.hoverBody.position.y.toFixed(3) : 'none'}`;
+  const logLine = () => `[drive] t=${simT.toFixed(1)} hull=${hull.x.toFixed(1)},${hull.z.toFixed(1)} heading=${hull.heading.toFixed(0)} gates=${gateWord()} tracking=${sentries.filter((s) => s.tracking).length} lobs=${tracers.filter((t) => t.kind === 'lob').length} hits=${hits} shots=${hull.shots} down=${squashed} damaged=${plate.pieces.filter((pc) => pc.kind === 1 && pc.state > 0).length} breached=${breached} fx=${sfx.live} crewIn=${crew ? crew.walkers.filter((w) => w.alive && !crewFreeAt(plate, w.x, w.z, crewSolid)).length : 0} engine=${sfx.running ? 'on' : 'off'} hover=${sfx.feel.hoverT.toFixed(2)} bodyY=${hullObj.userData.hoverBody ? hullObj.userData.hoverBody.position.y.toFixed(3) : 'none'}`;
 
   function sync() {
     hullObj.userData.setPose(hull, 0);
@@ -130,8 +144,8 @@ export function initDriveTab(root) {
     pool.sync(tracers, () => 0, lastDt, P.splashR);
     followCamera(camera, controls, hull, 0, view.camera, lastDt, null, { cx: plate.w * CELL_M / 2, cz: plate.h * CELL_M / 2, span: Math.max(plate.w, plate.h) * CELL_M }, (x, z) => blockedAt(plate, gates, x, z));
     hud.textContent = mobileShell
-      ? `muzzle ${hull.elev.toFixed(0)} · range ${shotRangeFor(hull, P).toFixed(0)} m · hits ${hits} · breached ${breached} · squashed ${squashed}`
-      : `muzzle ${hull.elev.toFixed(0)} deg · range ${shotRangeFor(hull, P).toFixed(0)} m · hits ${hits} · shots ${hull.shots} · breached ${breached} · squashed ${squashed} · gates ${gateWord()} · cam ${view.camera} · WASD drive · SPACE fire · SHIFT+W/S muzzle · 1-4 cameras · R regenerate`;
+      ? `muzzle ${hull.elev.toFixed(0)} · range ${shotRangeFor(hull, P).toFixed(0)} m · hits ${hits} · breached ${breached} · crew down ${squashed}`
+      : `muzzle ${hull.elev.toFixed(0)} deg · range ${shotRangeFor(hull, P).toFixed(0)} m · hits ${hits} · shots ${hull.shots} · breached ${breached} · crew down ${squashed} · gates ${gateWord()} · cam ${view.camera} · WASD drive · SPACE fire · SHIFT+W/S muzzle · 1-4 cameras · R regenerate`;
   }
 
   const regenerate = () => { params.seed = (params.seed + 1) % 1000000; gui.controllersRecursive().forEach((c) => c.updateDisplay()); build(); };

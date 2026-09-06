@@ -57,7 +57,10 @@ export const ELEMENTS = [
     { event: 'electric hum', key: null, want: 'REMOVED: the dial-up build read as a modem. Wants a clean transformer hum, no modulation' },
   ] },
   { id: 'crew', label: 'Astronauts', events: [
-    { event: 'run over (red splash)', key: null, want: 'wet crunch, short; the Firepower moment' },
+    { event: 'hit by a shell, or run over: cry A (one of three, at random)', key: 'enemy_die_a', wired: true },
+    { event: 'the same, cry B', key: 'enemy_die_b', wired: true },
+    { event: 'the same, cry C', key: 'enemy_die_c', wired: true },
+    { event: 'run over: the crunch under the cry', key: null, want: 'wet crunch, short, under the cry; the Firepower moment' },
     { event: 'flee from the enemy tank', key: null, want: 'a muffled shout through the suit radio' },
     { event: 'footsteps', key: null, want: 'probably none: too many walkers, too faint at camera range' },
   ] },
