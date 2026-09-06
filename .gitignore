@@ -2,3 +2,4 @@
 node_modules/
 tmp/
 assets/models/nasa/*.src.glb
+.deban/
