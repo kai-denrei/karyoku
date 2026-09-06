@@ -16,3 +16,23 @@
 ## meshoptimizer — GLB decoder
 
 - **File:** `vendor/meshopt_decoder.module.js`, MIT, by Arseny Kapoulkine.
+
+## NASA 3D Resources — space-colony stand-ins
+
+- **Files:** `assets/models/nasa/*.glb` (gantry, habitat, insight, ibex,
+  launcher, radome, cubesat), mapped to catalog roles in
+  `assets/models/nasa/manifest.json`
+- **Source:** <https://github.com/nasa/NASA-3D-Resources> — Gantry, Habitat
+  Demonstration Unit (part 1), InSight Cruise Lander (arm deployed),
+  Interstellar Boundary Explorer (IBEX), Mobile Launcher (assembled), Radome,
+  CubeSat 1RU Generic
+- **Credit:** NASA
+- **Terms:** *"These assets are free and without copyright."* Same three
+  conditions as the reference project's dish: no insignia, no implied
+  endorsement, no third-party rights. Embedded textures are the models' own
+  material atlases (foil ramps, panel and AO maps, a station photo); none
+  is a logo or wordmark by name, and nothing in the game claims a NASA
+  association.
+- **Processing:** `scripts/nasa-prep.sh` decodes the Draco originals
+  (which the vendored loader cannot read), simplifies the two heaviest
+  meshes, and re-encodes with meshopt. The Draco sources are not committed.

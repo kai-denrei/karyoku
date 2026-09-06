@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { CATALOG_SPEC, SECTIONS, specById } from '../src/catalog-spec.js';
-import { buildCatalog, splitId, PLACEHOLDER_HEIGHT_M } from '../src/catalog.js';
+import { buildCatalog, splitId, PLACEHOLDER_HEIGHT_M, fileFor, fitFor, NASA_URL } from '../src/catalog.js';
 import { check, done } from './check.mjs';
 
 check('109 asset types', CATALOG_SPEC.length === 109, `got ${CATALOG_SPEC.length}`);
@@ -36,4 +36,13 @@ for (const a of manifest.assets) {
   check(`manifest ${a.id} matches spec plot`, row && a.plot_m[0] === row.plot[0] * 4 && a.plot_m[1] === row.plot[1] * 4,
     row ? `manifest ${a.plot_m} vs spec ${row.plot}` : 'no spec row');
 }
+// the NASA stand-ins: a second manifest, its own URL base, a fit per model
+const nasa = JSON.parse(readFileSync(new URL('../assets/models/nasa/manifest.json', import.meta.url), 'utf8'));
+const cat2 = buildCatalog(CATALOG_SPEC, manifest, [{ manifest: nasa, base: NASA_URL }]);
+check('nasa manifest ids all exist in the spec', nasa.assets.every((a) => specById(splitId(a.id).base)));
+check('nasa plots match the spec', nasa.assets.every((a) => { const r = specById(splitId(a.id).base); return a.plot_m[0] === r.plot[0] * 4 && a.plot_m[1] === r.plot[1] * 4; }));
+check('the radome stands in for the uplink', cat2.get('command_uplink').placeholder === false && fileFor(cat2.get('command_uplink')) === NASA_URL + 'radome.glb');
+check('a nasa fit is carried', fitFor(cat2.get('command_uplink')).span === 11);
+check('the kit still wins its own pieces', fileFor(cat2.get('wall_standard')) === 'assets/base-kit/wall_standard_d0.glb' && fitFor(cat2.get('wall_standard')) === null);
+check('fits stay inside the footprint', nasa.assets.every((a) => a.fit.span <= Math.min(a.plot_m[0], a.plot_m[1])));
 done();

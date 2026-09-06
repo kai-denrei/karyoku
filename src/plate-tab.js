@@ -4,11 +4,11 @@
 import * as THREE from '../vendor/three.module.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { generatePlate, PLATE_KNOBS, makePlateParams, clampPlateParams, CELL_M } from './plate.js?v=bee40328';
-import { CATALOG_SPEC } from './catalog-spec.js?v=bee40328';
-import { buildCatalog, BASE_KIT_URL } from './catalog.js?v=bee40328';
-import { bustToken } from './glbmodels.js?v=bee40328';
-import { buildPlateGroup } from './plate-scene.js?v=bee40328';
+import { generatePlate, PLATE_KNOBS, makePlateParams, clampPlateParams, CELL_M } from './plate.js?v=5de7ca2f';
+import { CATALOG_SPEC } from './catalog-spec.js?v=5de7ca2f';
+import { buildCatalog, BASE_KIT_URL, NASA_URL } from './catalog.js?v=5de7ca2f';
+import { bustToken } from './glbmodels.js?v=5de7ca2f';
+import { buildPlateGroup } from './plate-scene.js?v=5de7ca2f';
 
 // `#plate?seed=7` and `?seed=7#plate` both work: the hash's own query is
 // merged under the real search string.
@@ -24,10 +24,12 @@ export function query() {
 let catalogP = null;
 export function loadCatalog() {
   if (catalogP) return catalogP;
-  catalogP = fetch(`${BASE_KIT_URL}manifest.json${bustToken()}`)
-    .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
-    .then((m) => ({ catalog: buildCatalog(CATALOG_SPEC, m), error: null }))
-    .catch((e) => ({ catalog: buildCatalog(CATALOG_SPEC, null), error: e.message }));
+  const get = (url) => fetch(`${url}${bustToken()}`).then((r) => (r.ok ? r.json() : Promise.reject(new Error(`${url}: HTTP ${r.status}`))));
+  // the NASA stand-ins are optional: a missing manifest costs placeholders, not the tab
+  const nasa = get(`${NASA_URL}manifest.json`).catch(() => null);
+  catalogP = get(`${BASE_KIT_URL}manifest.json`)
+    .then(async (m) => ({ catalog: buildCatalog(CATALOG_SPEC, m, [{ manifest: await nasa, base: NASA_URL }]), error: null }))
+    .catch(async (e) => ({ catalog: buildCatalog(CATALOG_SPEC, null, [{ manifest: await nasa, base: NASA_URL }]), error: e.message }));
   return catalogP;
 }
 

@@ -5,10 +5,10 @@
 // as clones with their YAW pivot exposed, and everything else as a labelled
 // placeholder box of its footprint.
 import * as THREE from '../vendor/three.module.js';
-import { KIND, CELL_M, ringCoverage } from './plate.js?v=bee40328';
-import { fileFor, SECTION_COLOR, PLACEHOLDER_HEIGHT_M } from './catalog.js?v=bee40328';
-import { LOB_FAMILIES, LOB_ELEV_DEG } from './drive.js?v=bee40328';
-import { loadGlb, loadGlbWithClips, mergeByMaterial, fitModel } from './glbmodels.js?v=bee40328';
+import { KIND, CELL_M, ringCoverage } from './plate.js?v=5de7ca2f';
+import { fileFor, fitFor, SECTION_COLOR, PLACEHOLDER_HEIGHT_M } from './catalog.js?v=5de7ca2f';
+import { LOB_FAMILIES, LOB_ELEV_DEG } from './drive.js?v=5de7ca2f';
+import { loadGlb, loadGlbWithClips, mergeByMaterial, fitModel } from './glbmodels.js?v=5de7ca2f';
 
 const labelCache = new Map();
 function labelTexture(text) {
@@ -31,15 +31,19 @@ function labelTexture(text) {
 // null and the piece stays a placeholder.
 const protos = new Map();
 export function proto(url, pivots = [], fit = null) {
-  if (protos.has(url)) return protos.get(url);
+  const key = url + (fit ? JSON.stringify(fit) : '');
+  if (protos.has(key)) return protos.get(key);
   const p = loadGlb(url).then((scene) => {
     if (!scene) return null;
     const merged = mergeByMaterial(scene, pivots);
     return fit ? fitModel(merged, fit) : merged;
   });
-  protos.set(url, p);
+  protos.set(key, p);
   return p;
 }
+// a catalog state's fit as fitModel's options: scaled to sit inside the
+// footprint (span) and under a height, whichever binds first
+const fitOf = (entry, state) => { const f = fitFor(entry, state); return f ? { height: f.height, maxSpan: f.span } : null; };
 
 // ...and the same for a model that must keep its clips: the pivots are
 // read off the clip's own tracks, so whatever the animation moves survives
@@ -194,6 +198,8 @@ export function buildPlateGroup({ plate, catalog, wallState = 0, showArcs = true
     const state = piece.state;
     const url = entry.placeholder ? null : fileFor(entry, state);
     if (!url) { fallback(piece); continue; }
+    const fit = fitOf(entry, state);
+    const mkey = fit ? url + JSON.stringify(fit) : url;
     if (animatedGates && piece.kind === KIND.GATE) {
       const gi = plate.gates.findIndex((g) => g.pieceIndex === plate.pieces.indexOf(piece));
       pending.push(animProto(url).then((res) => {
@@ -214,11 +220,11 @@ export function buildPlateGroup({ plate, catalog, wallState = 0, showArcs = true
       }));
       continue;
     }
-    if (!byModel.has(url)) byModel.set(url, []);
-    byModel.get(url).push(piece);
+    if (!byModel.has(mkey)) byModel.set(mkey, { url, fit, pieces: [] });
+    byModel.get(mkey).pieces.push(piece);
   }
-  for (const [url, pieces] of byModel) {
-    pending.push(proto(url).then((root) => {
+  for (const { url, fit, pieces } of byModel.values()) {
+    pending.push(proto(url, [], fit).then((root) => {
       if (!root) { for (const piece of pieces) fallback(piece); return; }
       group.add(instanced(root, pieces, pieceMatrix));
     }));

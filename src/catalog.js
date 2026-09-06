@@ -35,26 +35,42 @@ export function splitId(id) {
   return m ? { base: m[1], state: Number(m[2]) } : { base: id, state: 0 };
 }
 
-export function buildCatalog(spec, manifest) {
+// `extras` are more manifests of the same shape, each with the URL base its
+// files live under — the NASA models are one. A later manifest wins a state
+// an earlier one also names, so the kit's own model beats a stand-in. A
+// state may carry `fit` ({ span, height } in metres): the model is scaled to
+// sit inside that footprint rather than trusted at its authored size.
+export function buildCatalog(spec, manifest, extras = []) {
   const cat = new Map();
   for (const row of spec) {
     cat.set(row.id, { ...row, placeholder: true, states: {} });
   }
-  const assets = (manifest && manifest.assets) || [];
-  for (const a of assets) {
-    const { base, state } = splitId(a.id);
-    const entry = cat.get(base);
-    if (!entry) continue; // a modelled asset the spec does not know: ignored, never placed
-    entry.states[state] = {
-      file: a.file,
-      sockets: a.sockets || [],
-      colliders: a.colliders || [],
-      animations: a.animations || [],
-      clearance: a.clearance || [],
-    };
-    entry.placeholder = false;
+  const sources = [[manifest, BASE_KIT_URL], ...extras.map((e) => [e.manifest, e.base])];
+  for (const [m, base] of sources) {
+    for (const a of (m && m.assets) || []) {
+      const { base: id, state } = splitId(a.id);
+      const entry = cat.get(id);
+      if (!entry) continue; // a modelled asset the spec does not know: ignored, never placed
+      entry.states[state] = {
+        file: a.file,
+        base,
+        fit: a.fit || null,
+        sockets: a.sockets || [],
+        colliders: a.colliders || [],
+        animations: a.animations || [],
+        clearance: a.clearance || [],
+      };
+      entry.placeholder = false;
+    }
   }
   return cat;
+}
+export const NASA_URL = 'assets/models/nasa/';
+
+// The fit for an entry's state, or null when the model is trusted as authored.
+export function fitFor(entry, state = 0) {
+  for (let s = state; s >= 0; s--) if (entry.states[s]) return entry.states[s].fit || null;
+  return null;
 }
 
 // The file for an entry at a damage state, falling back down the ladder so
@@ -62,7 +78,7 @@ export function buildCatalog(spec, manifest) {
 // null for a placeholder.
 export function fileFor(entry, state = 0) {
   for (let s = state; s >= 0; s--) {
-    if (entry.states[s]) return BASE_KIT_URL + entry.states[s].file;
+    if (entry.states[s]) return (entry.states[s].base || BASE_KIT_URL) + entry.states[s].file;
   }
   return null;
 }

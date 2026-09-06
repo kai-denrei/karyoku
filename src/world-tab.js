@@ -5,12 +5,12 @@
 import * as THREE from '../vendor/three.module.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { makePlateParams, clampPlateParams, PLATE_KNOBS } from './plate.js?v=bee40328';
-import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, stepGates, stepSentries, stepTracers, fireHull, damageAt } from './drive.js?v=bee40328';
-import { WORLD_KNOBS, makeWorldParams, clampWorldParams, makeWorld, worldBlocked, worldBuildingAt, worldLosFor, worldSentries, worldGates, terrainNormal, splitQuad, groundAt } from './world.js?v=bee40328';
-import { buildPlateGroup, yawRotation } from './plate-scene.js?v=bee40328';
-import { query, loadCatalog } from './plate-tab.js?v=bee40328';
-import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS } from './drive-rig.js?v=bee40328';
+import { makePlateParams, clampPlateParams, PLATE_KNOBS } from './plate.js?v=5de7ca2f';
+import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, stepGates, stepSentries, stepTracers, fireHull, damageAt } from './drive.js?v=5de7ca2f';
+import { WORLD_KNOBS, makeWorldParams, clampWorldParams, makeWorld, worldBlocked, worldBuildingAt, worldLosFor, worldSentries, worldGates, terrainNormal, splitQuad, groundAt } from './world.js?v=5de7ca2f';
+import { buildPlateGroup, yawRotation } from './plate-scene.js?v=5de7ca2f';
+import { query, loadCatalog } from './plate-tab.js?v=5de7ca2f';
+import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS } from './drive-rig.js?v=5de7ca2f';
 
 const ARRIVE_M = 8;
 

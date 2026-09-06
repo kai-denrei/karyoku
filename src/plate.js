@@ -13,9 +13,9 @@
 // `rotation.y = -rot * PI/2`. Yaw is compass degrees, 0 = N, 90 = E.
 // Plate width and depth are EVEN, because roads are 2 x 2 pieces laid on
 // even coordinates and a gate's road port has to land on one.
-import { mulberry32 } from './rng.js?v=bee40328';
-import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=bee40328';
-import { specById } from './catalog-spec.js?v=bee40328';
+import { mulberry32 } from './rng.js?v=5de7ca2f';
+import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=5de7ca2f';
+import { specById } from './catalog-spec.js?v=5de7ca2f';
 
 export const CELL_M = 4;
 
@@ -582,7 +582,10 @@ function findSpot(s, rng, block, def) {
 
 function packBlock(s, rng, block) {
   const zone = ZONES[block.zone];
-  const list = zone.buildings.map(specById).sort((a, b) => b.plot[0] * b.plot[1] - a.plot[0] * a.plot[1]);
+  // the zone's biggest building anchors the block; the rest come in a
+  // seeded order, so a plate is not the same three warehouses every time
+  const sorted = zone.buildings.map(specById).sort((a, b) => b.plot[0] * b.plot[1] - a.plot[0] * a.plot[1]);
+  const list = [sorted[0], ...shuffled(rng, sorted.slice(1))];
   const target = s.params.density * block.cells.length;
   const used = new Map();
   let filled = 0, placedAny = true;
