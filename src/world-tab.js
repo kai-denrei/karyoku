@@ -5,18 +5,18 @@
 import * as THREE from '../vendor/three.module.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { makePlateParams, clampPlateParams, PLATE_KNOBS } from './plate.js?v=37da6c2a';
-import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, stepGates, stepSentries, stepTracers, fireHull, damageAt, autopilotInput } from './drive.js?v=37da6c2a';
-import { WORLD_KNOBS, makeWorldParams, clampWorldParams, makeWorld, worldBlocked, worldBuildingAt, worldLosFor, worldSentries, worldGates, terrainNormal, splitQuad, groundAt } from './world.js?v=37da6c2a';
-import { PALETTE, terrainMeshes, floraMeshes } from './looks.js?v=37da6c2a';
-import { buildPlateGroup, yawRotation } from './plate-scene.js?v=37da6c2a';
-import { query, loadCatalog } from './plate-tab.js?v=37da6c2a';
-import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS } from './drive-rig.js?v=37da6c2a';
+import { makePlateParams, clampPlateParams, PLATE_KNOBS } from './plate.js?v=ad2b0ef0';
+import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, stepGates, stepSentries, stepTracers, fireHull, damageAt, autopilotInput } from './drive.js?v=ad2b0ef0';
+import { WORLD_KNOBS, makeWorldParams, clampWorldParams, makeWorld, worldBlocked, worldBuildingAt, worldLosFor, worldSentries, worldGates, terrainNormal, splitQuad, groundAt } from './world.js?v=ad2b0ef0';
+import { PALETTE, terrainMeshes, floraMeshes } from './looks.js?v=ad2b0ef0';
+import { buildPlateGroup, yawRotation } from './plate-scene.js?v=ad2b0ef0';
+import { query, loadCatalog } from './plate-tab.js?v=ad2b0ef0';
+import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS } from './drive-rig.js?v=ad2b0ef0';
 
 const ARRIVE_M = 8;
 
 export function initWorldTab(root) {
-  const { renderer, scene, camera, hud, notice, resize, render } = makeViewer(root);
+  const { renderer, scene, camera, hud, notice, resize, render, setGroups } = makeViewer(root);
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.enabled = false;
@@ -42,7 +42,10 @@ export function initWorldTab(root) {
     group = new THREE.Group();
     const { fill, wire } = terrainMeshes(world, splitQuad);
     group.add(fill, wire);
-    group.add(floraMeshes(world));
+    const flora = floraMeshes(world);
+    group.add(flora);
+    // the TD board's weights: the map calm, machines and effects hot
+    setGroups(() => [['map', [fill, wire]], ['tank', [hullObj]], ['towers', rigs.map((r) => r.group)], ['effects', [flora]]]);
     rigs = world.plates.map((p) => {
       const rig = buildPlateGroup({ plate: p.plate, catalog, wallState: null, animatedGates: true, showBlind: false, showArcs: p.hostile, tint: p.hostile ? PALETTE.hostile : PALETTE.home });
       rig.group.position.set(p.ox, 0, p.oz);

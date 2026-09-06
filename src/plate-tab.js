@@ -4,12 +4,12 @@
 import * as THREE from '../vendor/three.module.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { generatePlate, PLATE_KNOBS, makePlateParams, clampPlateParams, CELL_M } from './plate.js?v=37da6c2a';
-import { CATALOG_SPEC } from './catalog-spec.js?v=37da6c2a';
-import { buildCatalog, BASE_KIT_URL, NASA_URL } from './catalog.js?v=37da6c2a';
-import { bustToken } from './glbmodels.js?v=37da6c2a';
-import { applySpaceScene, makeStars, makeComposer } from './looks.js?v=37da6c2a';
-import { buildPlateGroup } from './plate-scene.js?v=37da6c2a';
+import { generatePlate, PLATE_KNOBS, makePlateParams, clampPlateParams, CELL_M } from './plate.js?v=ad2b0ef0';
+import { CATALOG_SPEC } from './catalog-spec.js?v=ad2b0ef0';
+import { buildCatalog, BASE_KIT_URL, NASA_URL, HOUSE_URL } from './catalog.js?v=ad2b0ef0';
+import { bustToken } from './glbmodels.js?v=ad2b0ef0';
+import { applySpaceScene, makeStars, makeComposer } from './looks.js?v=ad2b0ef0';
+import { buildPlateGroup } from './plate-scene.js?v=ad2b0ef0';
 
 // `#plate?seed=7` and `?seed=7#plate` both work: the hash's own query is
 // merged under the real search string.
@@ -28,9 +28,12 @@ export function loadCatalog() {
   const get = (url) => fetch(`${url}${bustToken()}`).then((r) => (r.ok ? r.json() : Promise.reject(new Error(`${url}: HTTP ${r.status}`))));
   // the NASA stand-ins are optional: a missing manifest costs placeholders, not the tab
   const nasa = get(`${NASA_URL}manifest.json`).catch(() => null);
+  const house = get(`${HOUSE_URL}manifest.json`).catch(() => null);
+  // order matters: a later manifest wins, so the house casts beat the NASA stand-ins
+  const extras = async () => [{ manifest: await nasa, base: NASA_URL }, { manifest: await house, base: HOUSE_URL }];
   catalogP = get(`${BASE_KIT_URL}manifest.json`)
-    .then(async (m) => ({ catalog: buildCatalog(CATALOG_SPEC, m, [{ manifest: await nasa, base: NASA_URL }]), error: null }))
-    .catch(async (e) => ({ catalog: buildCatalog(CATALOG_SPEC, null, [{ manifest: await nasa, base: NASA_URL }]), error: e.message }));
+    .then(async (m) => ({ catalog: buildCatalog(CATALOG_SPEC, m, await extras()), error: null }))
+    .catch(async (e) => ({ catalog: buildCatalog(CATALOG_SPEC, null, await extras()), error: e.message }));
   return catalogP;
 }
 
@@ -42,7 +45,7 @@ export function initPlateTab(root) {
   const camera = new THREE.PerspectiveCamera(50, 1, 0.5, 2000);
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
-  applySpaceScene(scene, 0.0006);
+  applySpaceScene(scene);
   scene.add(makeStars());
   const post = makeComposer(renderer, scene, camera);
 
@@ -69,6 +72,7 @@ export function initPlateTab(root) {
     window.__plate = plate;
     ({ group } = buildPlateGroup({ plate, catalog, wallState: view.wallState }));
     scene.add(group);
+    post.setGroups(() => [['towers', [group]]]);
     const W = plate.w * CELL_M, H = plate.h * CELL_M;
     controls.target.set(W / 2, 0, H / 2);
     if (!camera.userData.placed) {

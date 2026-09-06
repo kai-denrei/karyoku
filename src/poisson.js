@@ -4,10 +4,10 @@
 // results are reproducible by seed (no Math.random anywhere). Returns an array
 // of [x,y] points, inset from the boundary by ·0.85 + 0.075.
 //
-//   import { mulberry32 } from './rng.js?v=37da6c2a';
+//   import { mulberry32 } from './rng.js?v=ad2b0ef0';
 //   poissonDisk(mulberry32(seed), { r: 0.1, k: 30 }) -> [[x,y], ...]
 
-import { dist } from './vec2.js?v=37da6c2a';
+import { dist } from './vec2.js?v=ad2b0ef0';
 
 // rng: () -> float in [0,1). r: min spacing. k: candidate attempts per point.
 export function poissonDisk(rng, { r = 0.1, k = 30 } = {}) {

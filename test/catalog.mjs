@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { CATALOG_SPEC, SECTIONS, specById } from '../src/catalog-spec.js';
-import { buildCatalog, splitId, PLACEHOLDER_HEIGHT_M, fileFor, fitFor, NASA_URL } from '../src/catalog.js';
+import { buildCatalog, splitId, PLACEHOLDER_HEIGHT_M, fileFor, fitFor, NASA_URL, HOUSE_URL } from '../src/catalog.js';
 import { check, done } from './check.mjs';
 
 check('109 asset types', CATALOG_SPEC.length === 109, `got ${CATALOG_SPEC.length}`);
@@ -45,4 +45,9 @@ check('the radome stands in for the uplink', cat2.get('command_uplink').placehol
 check('a nasa fit is carried', fitFor(cat2.get('command_uplink')).span === 11);
 check('the kit still wins its own pieces', fileFor(cat2.get('wall_standard')) === 'assets/base-kit/wall_standard_d0.glb' && fitFor(cat2.get('wall_standard')) === null);
 check('fits stay inside the footprint', nasa.assets.every((a) => a.fit.span <= Math.min(a.plot_m[0], a.plot_m[1])));
+const house = JSON.parse(readFileSync(new URL('../assets/models/manifest.json', import.meta.url), 'utf8'));
+const cat3 = buildCatalog(CATALOG_SPEC, manifest, [{ manifest: nasa, base: NASA_URL }, { manifest: house, base: HOUSE_URL }]);
+check('house manifest ids exist and plots match', house.assets.every((a) => { const r = specById(splitId(a.id).base); return r && a.plot_m[0] === r.plot[0] * 4 && a.plot_m[1] === r.plot[1] * 4; }));
+check('the container is the reference container', fileFor(cat3.get('logistics_container')) === HOUSE_URL + 'container.glb');
+check('the Stalheart is the command nexus', fileFor(cat3.get('command_hq')) === HOUSE_URL + 'terraformer.glb' && fitFor(cat3.get('command_hq')).span === 19);
 done();

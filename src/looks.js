@@ -4,15 +4,12 @@
 // glow bleed. Everything visual that is not a model lives here, so a tab
 // asks for the look rather than owning a palette.
 import * as THREE from '../vendor/three.module.js';
-import { EffectComposer } from '../vendor/EffectComposer.js';
-import { RenderPass } from '../vendor/RenderPass.js';
-import { UnrealBloomPass } from '../vendor/UnrealBloomPass.js';
-import { OutputPass } from '../vendor/OutputPass.js';
-import { tintModel } from './glbmodels.js?v=37da6c2a';
+import { makeBloom } from './postfx.js?v=ad2b0ef0';
+import { tintModel } from './glbmodels.js?v=ad2b0ef0';
 
 export const PALETTE = {
-  bg: 0x02040a,
-  fog: 0x02040a,
+  bg: 0x0d1017,                   // the TD board's mainBg
+  fog: 0x0d1017,
   ground: [0x07131c, 0x0c2433],   // low to high, the fill under the wire
   wire: 0x1fb6cc,                 // terrain edges
   road: 0xff7a1a,                 // road edges and fill tint
@@ -33,13 +30,18 @@ export const PALETTE = {
   },
 };
 
-export function applySpaceScene(scene, fogDensity = 0.0012) {
+// The TD board's light, verbatim: an even-ish hemi so no side goes
+// unreadable, a warm sun, a cool fill from below and behind. No fog — the
+// reference has none, and its bloom weights are tuned against this light.
+export function applySpaceScene(scene) {
   scene.background = new THREE.Color(PALETTE.bg);
-  scene.fog = new THREE.FogExp2(PALETTE.fog, fogDensity);
-  scene.add(new THREE.HemisphereLight(0x2a3d5c, 0x05070c, 0.7));
-  const key = new THREE.DirectionalLight(0x9fb3ff, 0.35);
-  key.position.set(60, 120, -40);
-  scene.add(key);
+  scene.add(new THREE.HemisphereLight(0xc8cfe0, 0x555060, 1.5));
+  const sun = new THREE.DirectionalLight(0xffe8c8, 1.1);
+  sun.position.set(2, 3, 1.5);
+  scene.add(sun);
+  const fill = new THREE.DirectionalLight(0x8a96c8, 0.8);
+  fill.position.set(-2.5, -1.5, -3);
+  scene.add(fill);
 }
 
 export function makeStars(n = 1600, radius = 1800) {
@@ -59,17 +61,18 @@ export function makeStars(n = 1600, radius = 1800) {
   return pts;
 }
 
-// Bloom over the whole frame. `resize(w, h)` keeps the passes in step.
-export function makeComposer(renderer, scene, camera, { strength = 0.85, radius = 0.35, threshold = 0.5 } = {}) {
-  const composer = new EffectComposer(renderer);
-  composer.addPass(new RenderPass(scene, camera));
-  const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), strength, radius, threshold);
-  composer.addPass(bloom);
-  composer.addPass(new OutputPass());
+// The TD board's bloom: postfx.js's two-composer chain at its defaults
+// (strength 0.3, radius 0.5, threshold 0.2, MSAA back on the final pass),
+// with the per-group weights — the map at 0.35 so the wire stays a line
+// rather than a glow, machines and effects at 1. setGroups(fn) names what
+// is what; resize(w, h) keeps the passes in step.
+export function makeComposer(renderer, scene, camera, opts = {}) {
+  const post = makeBloom(renderer, scene, camera, { scale: 1, ...opts });
   return {
-    composer, bloom,
-    render() { composer.render(); },
-    resize(w, h) { composer.setSize(w, h); bloom.setSize(w, h); },
+    post,
+    render() { post.render(); },
+    resize(w, h) { post.setSize(w, h); },
+    setGroups(fn) { post.setGroups(fn); },
   };
 }
 

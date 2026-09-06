@@ -5,11 +5,12 @@
 // as clones with their YAW pivot exposed, and everything else as a labelled
 // placeholder box of its footprint.
 import * as THREE from '../vendor/three.module.js';
-import { KIND, CELL_M, ringCoverage } from './plate.js?v=37da6c2a';
-import { fileFor, fitFor, SECTION_COLOR, PLACEHOLDER_HEIGHT_M } from './catalog.js?v=37da6c2a';
-import { LOB_FAMILIES, LOB_ELEV_DEG } from './drive.js?v=37da6c2a';
-import { PALETTE, neonBox, tintProto } from './looks.js?v=37da6c2a';
-import { loadGlb, loadGlbWithClips, mergeByMaterial, fitModel } from './glbmodels.js?v=37da6c2a';
+import { KIND, CELL_M, ringCoverage } from './plate.js?v=ad2b0ef0';
+import { fileFor, fitFor, SECTION_COLOR, PLACEHOLDER_HEIGHT_M } from './catalog.js?v=ad2b0ef0';
+import { LOB_FAMILIES, LOB_ELEV_DEG } from './drive.js?v=ad2b0ef0';
+import { PALETTE, neonBox } from './looks.js?v=ad2b0ef0';
+import { prepFor, ladderTint, dressMetal } from './casts.js?v=ad2b0ef0';
+import { loadGlb, loadGlbWithClips, mergeByMaterial, fitModel } from './glbmodels.js?v=ad2b0ef0';
 
 const labelCache = new Map();
 function labelTexture(text) {
@@ -36,9 +37,13 @@ export function proto(url, pivots = [], fit = null, tint = null) {
   if (protos.has(key)) return protos.get(key);
   const p = loadGlb(url).then((scene) => {
     if (!scene) return null;
+    // the cast's own prep (empty the container, repaint the terraformer)
+    // BEFORE the merge welds its parts away
+    const prep = prepFor(url);
+    if (prep) prep(scene);
     const merged = mergeByMaterial(scene, pivots);
     const fitted = fit ? fitModel(merged, fit) : merged;
-    if (tint !== null) tintProto(fitted, tint);
+    if (tint !== null) { ladderTint(fitted, tint); dressMetal(fitted); }
     return fitted;
   });
   protos.set(key, p);
@@ -207,7 +212,7 @@ export function buildPlateGroup({ plate, catalog, wallState = 0, showArcs = true
       pending.push(animProto(url).then((res) => {
         if (!res) { fallback(piece); return; }
         const obj = res.root.clone();
-        tintProto(obj, tint);
+        ladderTint(obj, tint); dressMetal(obj);
         placePiece(obj, piece);
         group.add(obj);
         const clip = res.clips.find((c) => /open/i.test(c.name)) || res.clips[0];

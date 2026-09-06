@@ -124,6 +124,21 @@ no build step, Node invariant suites).
   every response; the nav's build token is the visual confirmation. Pages
   still caches 600 s.
 
+## The reference board's light and metal (operator, 2026-09-06 late night)
+- Lights, background and bloom are the TD board's, verbatim: hemi
+  0xc8cfe0/0x555060 at 1.5, sun 0xffe8c8 1.1, fill 0x8a96c8 0.8, bg 0x0d1017,
+  no fog; `postfx.js` (copied) at strength 0.3 / radius 0.5 / threshold 0.2
+  with `bloomweights.js` groups — map 0.35, tank/towers/effects 1.0. Each
+  tab names its groups through `setGroups`.
+- Every cast goes through `casts.js`: `prepFor(url)` (empty the container,
+  repaint the terraformer) BEFORE the merge, then `ladderTint` (tintModel's
+  grey ladder, wash 0.22) and `dressMetal` (`materials.js` +
+  `weathered.js`, seed 4414, size 512, keepColor + keepEmissive). The hull
+  is `castHull`: edge outlines on the prototype first, then the same.
+- House casts: `assets/models/manifest.json` maps the container to
+  `logistics_container` and the terraformer (the Stalheart) to
+  `command_hq`; it loads last so it beats the NASA stand-ins.
+
 ## Verify
 - `npm run serve` then `http://localhost:8150/#plate?seed=7&ascii=1`.
   `?seed= ?w= ?h= ?gates= ?arc= ?density= ?tier=` override the knobs;

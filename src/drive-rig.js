@@ -2,8 +2,9 @@
 // the hull model with a stand-in until it lands, the key state, the tracer
 // meshes, and the two cameras. Rendering only; the rules are drive.js.
 import * as THREE from '../vendor/three.module.js';
-import { applySpaceScene, makeStars, makeComposer, PALETTE, tintProto } from './looks.js?v=37da6c2a';
-import { loadGlb, mergeByMaterial } from './glbmodels.js?v=37da6c2a';
+import { applySpaceScene, makeStars, makeComposer, PALETTE } from './looks.js?v=ad2b0ef0';
+import { castHull } from './casts.js?v=ad2b0ef0';
+import { loadGlb, mergeByMaterial } from './glbmodels.js?v=ad2b0ef0';
 
 const HULL_URL = 'assets/models/mkcx2.glb';
 // The nodes that must keep moving through the merge, and the ones that
@@ -24,7 +25,7 @@ export function makeHullObject() {
   loadGlb(HULL_URL).then((gltfScene) => {
     if (!gltfScene) return;
     obj.remove(stub);
-    obj.add(tintProto(mergeByMaterial(gltfScene, HULL_PIVOTS, HULL_DROP), PALETTE.hull, 0.08));
+    obj.add(castHull(mergeByMaterial(gltfScene, HULL_PIVOTS, HULL_DROP), PALETTE.hull));
     console.log('[drive] hull model loaded');
   });
   // Heading about +y, then the whole thing tilted so its up is the ground's
@@ -174,5 +175,5 @@ export function makeViewer(root) {
   }
   addEventListener('resize', resize);
   resize();
-  return { renderer, scene, camera, hud, notice, resize, render: () => post.render() };
+  return { renderer, scene, camera, hud, notice, resize, render: () => post.render(), setGroups: (fn) => post.setGroups(fn) };
 }

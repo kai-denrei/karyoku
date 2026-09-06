@@ -66,6 +66,7 @@ export function buildCatalog(spec, manifest, extras = []) {
   return cat;
 }
 export const NASA_URL = 'assets/models/nasa/';
+export const HOUSE_URL = 'assets/models/';
 
 // The fit for an entry's state, or null when the model is trusted as authored.
 export function fitFor(entry, state = 0) {
