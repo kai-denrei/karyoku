@@ -206,6 +206,15 @@ no build step, Node invariant suites).
   so `mergeByMaterial` de-interleaves first (glbmodels.js). Five casts were
   silently missing before that.
 
+## Open: a better container (operator, 2026-09-06 late)
+- The reference container.glb is corrugated; in battlezone its ribs make
+  edge lines centimetres apart and a yard of them blooms into a white slab.
+  `BZ_OVERRIDES['container.glb']` (looks.js) tames it for now — sparser
+  edges, dim line, half opacity. WANTED: a container authored for the vector
+  look (flat panels, few edges), or the outpost kit's container tried in its
+  place (it has four damage states already). Same applies to any dense
+  model that lands here.
+
 ## Verify
 - `npm run serve` then `http://localhost:8150/#plate?seed=7&ascii=1`.
   `?seed= ?w= ?h= ?gates= ?arc= ?density= ?tier=` override the knobs;

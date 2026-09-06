@@ -5,14 +5,14 @@
 // as clones with their YAW pivot exposed, and everything else as a labelled
 // placeholder box of its footprint.
 import * as THREE from '../vendor/three.module.js';
-import { KIND, CELL_M, ringCoverage, LANDMARK } from './plate.js?v=e280e775';
-import { fileFor, fitFor, SECTION_COLOR, PLACEHOLDER_HEIGHT_M } from './catalog.js?v=e280e775';
-import { LOB_FAMILIES, LOB_ELEV_DEG } from './drive.js?v=e280e775';
-import { PALETTE, neonBox, BZ, styleForLook, bakeEdges } from './looks.js?v=e280e775';
-import { prepFor, ladderTint, dressMetal } from './casts.js?v=e280e775';
-import { tintModel } from './glbmodels.js?v=e280e775';
-import { BODY_IDS } from './drive.js?v=e280e775';
-import { loadGlb, loadGlbWithClips, mergeByMaterial, fitModel } from './glbmodels.js?v=e280e775';
+import { KIND, CELL_M, ringCoverage, LANDMARK } from './plate.js?v=9a9954fb';
+import { fileFor, fitFor, SECTION_COLOR, PLACEHOLDER_HEIGHT_M } from './catalog.js?v=9a9954fb';
+import { LOB_FAMILIES, LOB_ELEV_DEG } from './drive.js?v=9a9954fb';
+import { PALETTE, neonBox, BZ, styleForLook, bakeEdges } from './looks.js?v=9a9954fb';
+import { prepFor, ladderTint, dressMetal } from './casts.js?v=9a9954fb';
+import { tintModel } from './glbmodels.js?v=9a9954fb';
+import { BODY_IDS } from './drive.js?v=9a9954fb';
+import { loadGlb, loadGlbWithClips, mergeByMaterial, fitModel } from './glbmodels.js?v=9a9954fb';
 
 const labelCache = new Map();
 function labelTexture(text) {
@@ -53,7 +53,7 @@ export function proto(url, pivots = [], fit = null, tint = null) {
       if (url.startsWith('assets/base-kit/') || url.startsWith('assets/outpost/')) tintModel(fitted, tint, { wash: 0.10 });
       else { ladderTint(fitted, tint); dressMetal(fitted); }
     }
-    return styleForLook(fitted);
+    return styleForLook(fitted, url);
   });
   protos.set(key, p);
   return p;
@@ -72,7 +72,7 @@ export function animProto(url) {
     if (!res || !res.scene) return null;
     const pivots = new Set();
     for (const c of res.clips) for (const tr of c.tracks) pivots.add(String(tr.name).split('.')[0]);
-    return { root: styleForLook(mergeByMaterial(res.scene, [...pivots])), clips: res.clips };
+    return { root: styleForLook(mergeByMaterial(res.scene, [...pivots]), url), clips: res.clips };
   });
   animProtos.set(url, p);
   return p;
@@ -105,7 +105,7 @@ function instanced(root, pieces, transformOf) {
     g.add(im);
   }
   // battlezone: the instances' edges, baked once into one line set
-  if (BZ) g.add(bakeEdges(parts, matrices));
+  if (BZ) g.add(bakeEdges(parts, matrices, root.userData.bzStyle || null));
   return g;
 }
 

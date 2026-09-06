@@ -4,9 +4,9 @@
 // glow bleed. Everything visual that is not a model lives here, so a tab
 // asks for the look rather than owning a palette.
 import * as THREE from '../vendor/three.module.js';
-import { makeBloom } from './postfx.js?v=e280e775';
-import { tintModel, addEdgeOutlines } from './glbmodels.js?v=e280e775';
-import { query } from './url.js?v=e280e775';
+import { makeBloom } from './postfx.js?v=9a9954fb';
+import { tintModel, addEdgeOutlines } from './glbmodels.js?v=9a9954fb';
+import { query } from './url.js?v=9a9954fb';
 
 // TWO LOOKS. 'colony' is the Tron-and-TD-board look; 'battlezone' is the
 // 1980 vector display: black, one green, every shape an edge. `?look=`
@@ -69,29 +69,43 @@ export const BZ_BLACK = new THREE.MeshBasicMaterial({ color: 0x000000 });
 export const BZ_WIRE = new THREE.MeshBasicMaterial({ color: G.mid, wireframe: true });
 export const BZ_EDGE_ANGLE = 28;
 
+// Per-model edge overrides, by file name. THE CONTAINER (operator's
+// screenshot, 2026-09-06 23:32): the reference container is corrugated, its
+// ribs give edge lines centimetres apart, and a yard of them blooms into a
+// white slab. Sparser edges, a dimmer line, half the opacity — until a
+// container authored for a vector look replaces it (noted in CLAUDE.md).
+export const BZ_OVERRIDES = {
+  'container.glb': { angle: 60, color: G.dim, opacity: 0.5 },
+};
+export const bzStyleFor = (url) => (url ? BZ_OVERRIDES[url.split('/').pop()] : null) || { angle: BZ_EDGE_ANGLE, color: G.hi, opacity: 0.9 };
+
 // Dress a model for the current look. Colony: nothing (the casts did it).
-// Battlezone: black fills, green edges; skinned meshes go wireframe.
-export function styleForLook(root) {
+// Battlezone: black fills, green edges; skinned meshes go wireframe. The
+// edge style is remembered on the root so instancing can bake the same.
+export function styleForLook(root, url = null) {
   if (!BZ) return root;
+  const style = bzStyleFor(url);
+  root.userData.bzStyle = style;
   root.traverse((o) => {
-    if (o.isLineSegments) { o.material = new THREE.LineBasicMaterial({ color: G.hi, transparent: true, opacity: 0.9 }); return; }
+    if (o.isLineSegments) { o.material = new THREE.LineBasicMaterial({ color: style.color, transparent: true, opacity: style.opacity }); return; }
     if (!o.isMesh) return;
     o.material = o.isSkinnedMesh ? BZ_WIRE : BZ_BLACK;
   });
   const skinned = [];
   root.traverse((o) => { if (o.isSkinnedMesh) skinned.push(o); });
-  if (!skinned.length) addEdgeOutlines(root, { angle: BZ_EDGE_ANGLE, opacity: 0.9, color: G.hi });
+  if (!skinned.length) addEdgeOutlines(root, { angle: style.angle, opacity: style.opacity, color: style.color });
   return root;
 }
 
 // Edges of every mesh in a prototype, baked once per instance transform into
 // ONE LineSegments — the instanced pieces' green lines. `parts` are
 // { geometry, local } as meshesOf() returns them.
-export function bakeEdges(parts, matrices, color = G.hi) {
+export function bakeEdges(parts, matrices, style = null) {
+  const st = style || { angle: BZ_EDGE_ANGLE, color: G.hi, opacity: 0.9 };
   const pos = [];
   const v = new THREE.Vector3(), m = new THREE.Matrix4();
   for (const part of parts) {
-    const eg = new THREE.EdgesGeometry(part.geometry, BZ_EDGE_ANGLE);
+    const eg = new THREE.EdgesGeometry(part.geometry, st.angle);
     const arr = eg.attributes.position.array;
     for (const M of matrices) {
       m.multiplyMatrices(M, part.local);
@@ -101,7 +115,7 @@ export function bakeEdges(parts, matrices, color = G.hi) {
   }
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-  return new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.9 }));
+  return new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color: st.color, transparent: true, opacity: st.opacity }));
 }
 
 export function applySpaceScene(scene) {
