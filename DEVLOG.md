@@ -4,6 +4,27 @@ Newest first. Each entry: what landed, then how it works, for programmers.
 Decisions and dead ends in more detail live in `.deban/` (local, not
 published).
 
+## 48efa34 — the soft bodies
+
+The reference's hit on a soft creature, brought across whole. There the
+tank's shell one-shots anything below the heavy tier, and a death is
+three things at once: one of three cries picked at random and faded by
+distance, a tinted dot burst thrown flat against the surface from the
+body, and the shell's own blast at the impact. Here the soft bodies are
+the astronauts. `shotHits` (crew.js, pure) finds a live walker within
+0.9 m of a shell in flight below 1.9 m and marks them dead; `splashHits`
+kills everyone within 3 m of a shell or lob landing. The tabs stop the
+shell on a direct hit, land the shell blast there, and call
+`sfx.softHit`: the cry (`DEATH_KEYS`, the reference's three clips), the
+burst (`makeSoftBurst`, the reference's makeDotBurst in metres, half the
+dots in suit orange and half in blood red, the way its creatures flash
+two hurt colours), and the light recipe's flash and spark so the strike
+reads at range. The run-over gets the same cry and burst under the splat
+it already left. crew-scene lays the splat for any dead walker whatever
+killed them. The HUD counts `crew down`; the probe lines carry `down=`;
+the Sound Lab lists the three cries as wired and keeps the crunch under a
+run-over as a gap.
+
 ## f513ab7 — the crew stops walking through things
 
 Astronauts walked through containers and through the tank. Two causes,
