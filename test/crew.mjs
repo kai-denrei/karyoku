@@ -1,5 +1,5 @@
 import { generatePlate, makePlateParams, PLATE_TUNE, CELL_M } from '../src/plate.js';
-import { makeCrew, stepCrew, stepSquash, keyAreas, crewWalkableAt, CREW_TUNE, SUIT } from '../src/crew.js';
+import { makeCrew, stepCrew, stepSquash, keyAreas, crewWalkableAt, crewFreeAt, hullCovers, escape, CREW_TUNE, SUIT } from '../src/crew.js';
 import { mulberry32 } from '../src/rng.js';
 import { check, done } from './check.mjs';
 
@@ -54,5 +54,37 @@ check('sometimes they run', ran > 0 && ran < movingFrames * 0.6, `ran ${ran} of 
   check('a moving hull over a walker leaves one dead for the splash', dead.length === 1 && !w.alive);
   stepCrew(c3, plate, 1, rng);
   check('the dead do not walk', !w.moving && !w.alive);
+}
+// SOLIDS the cells do not know: containers as bodies, and the tank
+{
+  check('hullCovers is the hull box, turned by heading', hullCovers({ x: 0, z: 0, heading: 90 }, 3, 0) && !hullCovers({ x: 0, z: 0, heading: 90 }, 0, 3)
+    && hullCovers({ x: 0, z: 0, heading: 0 }, 0, -3) && !hullCovers({ x: 0, z: 0, heading: 0 }, 3, 0) && !hullCovers(null, 0, 0));
+  // a container box parked across the plate's busiest road cell, and a hull
+  // parked on a key area: neither is ever entered in ninety seconds
+  const c4 = makeCrew(plate, 8, mulberry32(3));
+  const road = [];
+  for (let z = 0; z < plate.h; z++) for (let x = 0; x < plate.w; x++) if (plate.cells[z * plate.w + x] === 3 && crewWalkableAt(plate, (x + 0.5) * CELL_M, (z + 0.5) * CELL_M)) road.push([(x + 0.5) * CELL_M, (z + 0.5) * CELL_M]);
+  const box = road[Math.floor(road.length / 2)];
+  const hull = { x: areas[0].x, z: areas[0].z, heading: 45, speed: 0 };
+  const solid = (x, z) => (Math.abs(x - box[0]) <= 3 && Math.abs(z - box[1]) <= 1.5) || hullCovers(hull, x, z);
+  let inside = 0, frames = 0, moving = 0;
+  const r2 = mulberry32(11);
+  for (let i = 0; i < 90 * 60; i++) {
+    stepCrew(c4, plate, 1 / 60, r2, null, CREW_TUNE, solid);
+    for (const w of c4.walkers) { frames++; if (!crewFreeAt(plate, w.x, w.z, solid)) inside++; if (w.moving) moving++; }
+  }
+  check('with a container and a parked hull as solids, no walker is ever inside one', inside === 0, `${inside} of ${frames} frames`);
+  check('and they still walk', moving > 90 * 8, `moving ${moving}`);
+  // the shove: a hull creeping onto a walker moves them out, alive
+  const c5 = makeCrew(plate, 1, mulberry32(4));
+  const w = c5.walkers[0];
+  const creeper = { x: w.x + 0.5, z: w.z, heading: 0, speed: 1 };
+  const under = (x, z) => hullCovers(creeper, x, z);
+  check('the walker starts under the creeping hull', !crewFreeAt(plate, w.x, w.z, under) && escape(plate, w, under) !== null);
+  stepCrew(c5, plate, 1 / 60, mulberry32(5), null, CREW_TUNE, under);
+  check('one step later they have been shoved clear, alive', w.alive && crewFreeAt(plate, w.x, w.z, under) && Math.hypot(w.x - creeper.x, w.z - creeper.z) >= CREW_TUNE.hullHalfW);
+  // the disc: a walker's radius keeps it off a wall it walks past
+  const wallX = plate.pieces.find((p) => p.kind === 1);
+  check('a point a hand off a wall cell is not free for a walker', wallX && !crewFreeAt(plate, (wallX.x + 1) * CELL_M + 0.2, (wallX.z + 0.5) * CELL_M));
 }
 done();

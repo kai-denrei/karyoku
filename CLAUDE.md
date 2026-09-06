@@ -238,6 +238,13 @@ no build step, Node invariant suites).
   red blot. A crew fears the hull only on the hostile plate; the hull
   squashes anyone anywhere. The chase camera backs off only over clear
   ground (a hull just outside a gate had the camera inside the gate).
+- CREW COLLISION: the cells do not know the containers (makeBodies frees
+  their cells) or the hull, so the tabs pass `solid(x, z)` (`bodyAt` plus
+  `hullCovers`, the MKCX as a 8 x 3.8 m box turned by heading) into
+  `makeCrew` / `stepCrew`. `crewFreeAt` tests a walker's disc (radius
+  0.35) against cells AND solids; trips slide along an obstacle or are
+  given up; something rolling onto a walker slowly shoves them out
+  (`escape`), fast squashes them. Probe lines carry `crewIn=` (must be 0).
 - BALLISTICS: a hull shot leaves at `shotSpeed` and `hull.elev` degrees
   (SHIFT+W / SHIFT+S, `elevRate`, stops `elevMin..elevMax`), falls under
   `gravity`, lands on `groundY` or stops on a solid it does not clear

@@ -2,12 +2,12 @@
 // the hull model with a stand-in until it lands, the key state, the tracer
 // meshes, and the two cameras. Rendering only; the rules are drive.js.
 import * as THREE from '../vendor/three.module.js';
-import { applySpaceScene, makeStars, makeComposer, PALETTE } from './looks.js?v=1e2fbf0d';
-import { castHull } from './casts.js?v=1e2fbf0d';
-import { styleForLook, BZ } from './looks.js?v=1e2fbf0d';
-import { STICK, stickVector, knobOffset } from './stick.js?v=1e2fbf0d';
-import { query } from './url.js?v=1e2fbf0d';
-import { loadGlb, mergeByMaterial } from './glbmodels.js?v=1e2fbf0d';
+import { applySpaceScene, makeStars, makeComposer, PALETTE } from './looks.js?v=8de06158';
+import { castHull } from './casts.js?v=8de06158';
+import { styleForLook, BZ } from './looks.js?v=8de06158';
+import { STICK, stickVector, knobOffset } from './stick.js?v=8de06158';
+import { query } from './url.js?v=8de06158';
+import { loadGlb, mergeByMaterial } from './glbmodels.js?v=8de06158';
 
 const HULL_URL = 'assets/models/mkcx2.glb';
 // The nodes that must keep moving through the merge, and the ones that
