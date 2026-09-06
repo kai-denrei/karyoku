@@ -8,7 +8,7 @@ import { EffectComposer } from '../vendor/EffectComposer.js';
 import { RenderPass } from '../vendor/RenderPass.js';
 import { UnrealBloomPass } from '../vendor/UnrealBloomPass.js';
 import { OutputPass } from '../vendor/OutputPass.js';
-import { tintModel } from './glbmodels.js?v=99bd57ab';
+import { tintModel } from './glbmodels.js?v=a93f4dd8';
 
 export const PALETTE = {
   bg: 0x02040a,

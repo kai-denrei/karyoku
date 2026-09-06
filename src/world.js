@@ -10,13 +10,14 @@
 // and the hull samples it where it stands, so the two cannot disagree
 // beyond the mesh's own faceting, and a plate sits on ground that is
 // exactly zero because the mask says so, not because a vertex was edited.
-import { mulberry32 } from './rng.js?v=99bd57ab';
-import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=99bd57ab';
-import { generateMesh, relax } from './organic-grid.js?v=99bd57ab';
-import { valueNoise2D } from './noise.js?v=99bd57ab';
-import { generatePlate, makePlateParams, CELL_M, DIRS, yawOfSide, KIND } from './plate.js?v=99bd57ab';
-import { makeGates, makeSentries, blockedAt, losClear, buildingAt, gateCentre } from './drive.js?v=99bd57ab';
+import { mulberry32 } from './rng.js?v=a93f4dd8';
+import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=a93f4dd8';
+import { generateMesh, relax } from './organic-grid.js?v=a93f4dd8';
+import { valueNoise2D } from './noise.js?v=a93f4dd8';
+import { generatePlate, makePlateParams, CELL_M, DIRS, yawOfSide, KIND } from './plate.js?v=a93f4dd8';
+import { makeGates, makeSentries, blockedAt, losClear, buildingAt, gateCentre } from './drive.js?v=a93f4dd8';
 
+export const ROAD_CLEAR_M = 7;
 export const WORLD_TUNE = {
   size: 760,        // m, the world is a square
   r: 0.04,          // poisson radius in [0,1]; ~11 m quads after subdivision
@@ -216,9 +217,24 @@ export function makeWorld(params, plateParams) {
   // trees and rocks
   const bucket = (x, z) => `${Math.floor(x / 16)},${Math.floor(z / 16)}`;
   const put = (item) => { const k = bucket(item.x, item.z); if (!world.hash.has(k)) world.hash.set(k, []); world.hash.get(k).push(item); };
+  // nothing stands within ROAD_CLEAR_M of the road's own line: a quad off
+  // the road can still put a trunk at the road's edge, and the hull met one
+  // 2.9 m ahead of its spawn
+  const roadPts = world.road.points;
+  const distToRoad = (x, z) => {
+    let best = Infinity;
+    for (let i = 1; i < roadPts.length; i++) {
+      const [ax, az] = roadPts[i - 1], [bx, bz] = roadPts[i];
+      const vx = bx - ax, vz = bz - az, l2 = vx * vx + vz * vz || 1;
+      const t = Math.max(0, Math.min(1, ((x - ax) * vx + (z - az) * vz) / l2));
+      best = Math.min(best, Math.hypot(x - (ax + vx * t), z - (az + vz * t)));
+    }
+    return best;
+  };
   mesh.quads.forEach((q, qi) => {
     if (world.road.set.has(qi)) return;
     const [cx, cz] = world.centroids[qi];
+    if (distToRoad(cx, cz) < ROAD_CLEAR_M + 4) return;
     let mask = 1;
     for (const p of plates) mask = Math.min(mask, smoothstep(0, tune.plateMargin, rectDist(cx, cz, p.ox, p.oz, p.ox + p.wM, p.oz + p.hM)));
     if (mask < 0.5) return;

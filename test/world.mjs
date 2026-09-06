@@ -1,4 +1,4 @@
-import { makeWorld, worldKnobProblems, worldBlocked, gateOutside, groundAt, WORLD_TUNE } from '../src/world.js';
+import { makeWorld, worldKnobProblems, worldBlocked, gateOutside, groundAt, WORLD_TUNE, ROAD_CLEAR_M } from '../src/world.js';
 import { PLATE_TUNE, KIND, CELL_M } from '../src/plate.js';
 import { check, near, done } from './check.mjs';
 
@@ -34,6 +34,11 @@ check('A faces east, B faces west (nearest gates)', A.plate.gates[A.facing].side
 // cover
 check('trees exist', w.trees.length > 20, `got ${w.trees.length}`);
 check('no tree or rock on a road quad', [...w.trees, ...w.rocks].every((t) => !w.road.set.has(t.q)));
+{
+  const pts = w.road.points;
+  const dist = (x, z) => { let best = Infinity; for (let i = 1; i < pts.length; i++) { const [ax, az] = pts[i - 1], [bx, bz] = pts[i]; const vx = bx - ax, vz = bz - az, l2 = vx * vx + vz * vz || 1; const t = Math.max(0, Math.min(1, ((x - ax) * vx + (z - az) * vz) / l2)); best = Math.min(best, Math.hypot(x - (ax + vx * t), z - (az + vz * t))); } return best; };
+  check('no cover within the road clearance of the road line', [...w.trees, ...w.rocks].every((t) => dist(t.x, t.z) >= ROAD_CLEAR_M), 'a trunk at the road edge');
+}
 const inMargin = (t) => [A, B].some((p) => t.x > p.ox - 4 && t.x < p.ox + p.wM + 4 && t.z > p.oz - 4 && t.z < p.oz + p.hM + 4);
 check('no tree or rock inside a plate', ![...w.trees, ...w.rocks].some(inMargin));
 // blocking
