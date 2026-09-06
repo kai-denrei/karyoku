@@ -2,9 +2,10 @@
 // the hull model with a stand-in until it lands, the key state, the tracer
 // meshes, and the two cameras. Rendering only; the rules are drive.js.
 import * as THREE from '../vendor/three.module.js';
-import { applySpaceScene, makeStars, makeComposer, PALETTE } from './looks.js?v=9c7098f2';
-import { castHull } from './casts.js?v=9c7098f2';
-import { loadGlb, mergeByMaterial } from './glbmodels.js?v=9c7098f2';
+import { applySpaceScene, makeStars, makeComposer, PALETTE } from './looks.js?v=b7486121';
+import { castHull } from './casts.js?v=b7486121';
+import { styleForLook, BZ } from './looks.js?v=b7486121';
+import { loadGlb, mergeByMaterial } from './glbmodels.js?v=b7486121';
 
 const HULL_URL = 'assets/models/mkcx2.glb';
 // The nodes that must keep moving through the merge, and the ones that
@@ -19,13 +20,14 @@ export const KEYMAP = { w: 'fwd', ArrowUp: 'fwd', s: 'rev', ArrowDown: 'rev', a:
 // so `setPose` turns it by PI - heading.
 export function makeHullObject() {
   const obj = new THREE.Group();
-  const stub = new THREE.Mesh(new THREE.BoxGeometry(3.2, 1.4, 7.4), new THREE.MeshStandardMaterial({ color: 0x9fb3c8, roughness: 0.6 }));
+  const stub = new THREE.Mesh(new THREE.BoxGeometry(3.2, 1.4, 7.4), BZ ? new THREE.MeshBasicMaterial({ color: PALETTE.hull, wireframe: true }) : new THREE.MeshStandardMaterial({ color: 0x9fb3c8, roughness: 0.6 }));
   stub.position.y = 1.0;
   obj.add(stub);
   loadGlb(HULL_URL).then((gltfScene) => {
     if (!gltfScene) return;
     obj.remove(stub);
-    obj.add(castHull(mergeByMaterial(gltfScene, HULL_PIVOTS, HULL_DROP), PALETTE.hull));
+    const merged = mergeByMaterial(gltfScene, HULL_PIVOTS, HULL_DROP);
+    obj.add(BZ ? styleForLook(merged) : castHull(merged, PALETTE.hull));
     console.log('[drive] hull model loaded');
   });
   // Heading about +y, then the whole thing tilted so its up is the ground's
@@ -62,12 +64,12 @@ export function makeKeys(on = {}) {
 export function makeTracerPool(scene) {
   const meshes = new Map();
   const geo = new THREE.BoxGeometry(0.25, 0.25, 1.6);
-  const mat = new THREE.MeshBasicMaterial({ color: 0xffd166 });
-  const shotMat = new THREE.MeshBasicMaterial({ color: 0x7df9ff });
+  const mat = new THREE.MeshBasicMaterial({ color: PALETTE.tracer });
+  const shotMat = new THREE.MeshBasicMaterial({ color: PALETTE.shot });
   const shellGeo = new THREE.SphereGeometry(0.45, 10, 8);
-  const shellMat = new THREE.MeshBasicMaterial({ color: 0xff8c42 });
+  const shellMat = new THREE.MeshBasicMaterial({ color: PALETTE.shell });
   const shadowGeo = new THREE.CircleGeometry(0.6, 12);
-  const shadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.45, depthWrite: false });
+  const shadowMat = new THREE.MeshBasicMaterial({ color: PALETTE.shadow, transparent: true, opacity: 0.45, depthWrite: false });
   const splashGeo = new THREE.RingGeometry(0.6, 1, 24);
   const splashes = [];
   const lobY = (t) => { const u = Math.min(1, t.t / t.flight); return 4 * t.apex * u * (1 - u); };
@@ -78,7 +80,7 @@ export function makeTracerPool(scene) {
         if (live.has(t)) continue;
         scene.remove(m); meshes.delete(t);
         if (t.kind === 'lob') {
-          const ring = new THREE.Mesh(splashGeo, new THREE.MeshBasicMaterial({ color: 0xff8c42, transparent: true, opacity: 0.8, side: THREE.DoubleSide, depthWrite: false }));
+          const ring = new THREE.Mesh(splashGeo, new THREE.MeshBasicMaterial({ color: PALETTE.splash, transparent: true, opacity: 0.8, side: THREE.DoubleSide, depthWrite: false }));
           ring.rotation.x = -Math.PI / 2;
           ring.position.set(t.tx, yAt(t.tx, t.tz) + 0.15, t.tz);
           ring.scale.setScalar(0.3);

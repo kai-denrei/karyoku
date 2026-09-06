@@ -5,14 +5,14 @@
 // as clones with their YAW pivot exposed, and everything else as a labelled
 // placeholder box of its footprint.
 import * as THREE from '../vendor/three.module.js';
-import { KIND, CELL_M, ringCoverage } from './plate.js?v=9c7098f2';
-import { fileFor, fitFor, SECTION_COLOR, PLACEHOLDER_HEIGHT_M } from './catalog.js?v=9c7098f2';
-import { LOB_FAMILIES, LOB_ELEV_DEG } from './drive.js?v=9c7098f2';
-import { PALETTE, neonBox } from './looks.js?v=9c7098f2';
-import { prepFor, ladderTint, dressMetal } from './casts.js?v=9c7098f2';
-import { tintModel } from './glbmodels.js?v=9c7098f2';
-import { BODY_IDS } from './drive.js?v=9c7098f2';
-import { loadGlb, loadGlbWithClips, mergeByMaterial, fitModel } from './glbmodels.js?v=9c7098f2';
+import { KIND, CELL_M, ringCoverage } from './plate.js?v=b7486121';
+import { fileFor, fitFor, SECTION_COLOR, PLACEHOLDER_HEIGHT_M } from './catalog.js?v=b7486121';
+import { LOB_FAMILIES, LOB_ELEV_DEG } from './drive.js?v=b7486121';
+import { PALETTE, neonBox, BZ, styleForLook, bakeEdges } from './looks.js?v=b7486121';
+import { prepFor, ladderTint, dressMetal } from './casts.js?v=b7486121';
+import { tintModel } from './glbmodels.js?v=b7486121';
+import { BODY_IDS } from './drive.js?v=b7486121';
+import { loadGlb, loadGlbWithClips, mergeByMaterial, fitModel } from './glbmodels.js?v=b7486121';
 
 const labelCache = new Map();
 function labelTexture(text) {
@@ -48,12 +48,12 @@ export function proto(url, pivots = [], fit = null, tint = null) {
     // THE KIT KEEPS ITS PAINT. Its materials are authored colours — blue
     // steel, graphite, amber caution, mint status — and the grey ladder
     // painted over all of them. A faint emissive wash by side is all it gets.
-    if (tint !== null) {
+    if (tint !== null && !BZ) {
       // ...and so does the research-outpost kit, from the same workshop
       if (url.startsWith('assets/base-kit/') || url.startsWith('assets/outpost/')) tintModel(fitted, tint, { wash: 0.10 });
       else { ladderTint(fitted, tint); dressMetal(fitted); }
     }
-    return fitted;
+    return styleForLook(fitted);
   });
   protos.set(key, p);
   return p;
@@ -72,7 +72,7 @@ export function animProto(url) {
     if (!res || !res.scene) return null;
     const pivots = new Set();
     for (const c of res.clips) for (const tr of c.tracks) pivots.add(String(tr.name).split('.')[0]);
-    return { root: mergeByMaterial(res.scene, [...pivots]), clips: res.clips };
+    return { root: styleForLook(mergeByMaterial(res.scene, [...pivots])), clips: res.clips };
   });
   animProtos.set(url, p);
   return p;
@@ -96,12 +96,16 @@ function meshesOf(root) {
 function instanced(root, pieces, transformOf) {
   const g = new THREE.Group();
   const m = new THREE.Matrix4();
-  for (const part of meshesOf(root)) {
+  const parts = meshesOf(root);
+  const matrices = pieces.map((piece) => transformOf(piece));
+  for (const part of parts) {
     const im = new THREE.InstancedMesh(part.geometry, part.material, pieces.length);
-    pieces.forEach((piece, i) => { im.setMatrixAt(i, m.multiplyMatrices(transformOf(piece), part.local)); });
+    matrices.forEach((M, i) => { im.setMatrixAt(i, m.multiplyMatrices(M, part.local)); });
     im.instanceMatrix.needsUpdate = true;
     g.add(im);
   }
+  // battlezone: the instances' edges, baked once into one line set
+  if (BZ) g.add(bakeEdges(parts, matrices));
   return g;
 }
 
@@ -120,7 +124,7 @@ function placeholderMesh(piece, entry) {
     lab.position.y = h + 0.05;
     g.add(lab);
     // an entrance tick on the S face at rot 0 (+z), so the rotation is visible
-    const tick = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.3, 0.4), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+    const tick = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.3, 0.4), new THREE.MeshBasicMaterial({ color: PALETTE.tick }));
     tick.position.set(0, 0.15, (piece.ph * CELL_M) / 2 - inset - 0.2);
     g.add(tick);
   }
@@ -130,8 +134,12 @@ function placeholderMesh(piece, entry) {
 // piece -> world transform. Rect centre in cells, plus the piece's own
 // outward offset (the gate), then rot: clockwise from above is a NEGATIVE
 // rotation about +y.
+// A road deck lies exactly on the slab's top, and two coplanar surfaces
+// shimmer (operator's screenshot, 2026-09-07): roads sit 6 cm proud, above
+// the grid too.
+const ROAD_LIFT = 0.06;
 export function placePiece(obj, piece) {
-  obj.position.set((piece.x + piece.pw / 2 + piece.offset[0]) * CELL_M, 0, (piece.z + piece.ph / 2 + piece.offset[1]) * CELL_M);
+  obj.position.set((piece.x + piece.pw / 2 + piece.offset[0]) * CELL_M, piece.kind === KIND.ROAD ? ROAD_LIFT : 0, (piece.z + piece.ph / 2 + piece.offset[1]) * CELL_M);
   obj.rotation.y = -piece.rot * Math.PI / 2;
 }
 const pieceMatrix = (piece) => {
@@ -155,7 +163,7 @@ function arcWedge(st) {
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
   geo.setIndex(idxs);
-  const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0xc0392b, transparent: true, opacity: 0.09, side: THREE.DoubleSide, depthWrite: false }));
+  const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: PALETTE.arc, transparent: true, opacity: 0.09, side: THREE.DoubleSide, depthWrite: false }));
   m.position.set((st.x + 1) * CELL_M, 0, (st.z + 1) * CELL_M);
   return m;
 }
@@ -184,44 +192,54 @@ export function buildPlateGroup({ plate, catalog, wallState = 0, showArcs = true
   const pending = [];
   const W = plate.w * CELL_M, H = plate.h * CELL_M;
 
-  const slab = new THREE.Mesh(new THREE.BoxGeometry(W, 0.4, H), new THREE.MeshStandardMaterial({ color: PALETTE.slab, roughness: 0.95 }));
+  const slab = new THREE.Mesh(new THREE.BoxGeometry(W, 0.4, H), BZ ? new THREE.MeshBasicMaterial({ color: 0x000000 }) : new THREE.MeshStandardMaterial({ color: PALETTE.slab, roughness: 0.95 }));
   slab.position.set(W / 2, -0.2, H / 2);
   group.add(slab);
   const grid = new THREE.GridHelper(Math.max(W, H), Math.max(plate.w, plate.h), PALETTE.grid, PALETTE.grid);
   grid.material.transparent = true; grid.material.opacity = 0.45;
   grid.position.set(Math.max(W, H) / 2, 0.02, Math.max(W, H) / 2);
-  group.add(grid);
+  if (!BZ) group.add(grid); // in battlezone a dense grid at the horizon is a band of noise
 
-  const fallback = (piece) => { const obj = placeholderMesh(piece, catalog.get(piece.id)); placePiece(obj, piece); group.add(obj); };
-  const wallObjs = [];
-  function drawWalls() {
-    for (const o of wallObjs) group.remove(o);
-    wallObjs.length = 0;
-    const byUrl = new Map();
+  // THE STATIC LAYER: every wall, building, road, prop and socket, instanced
+  // by model, drawn at each piece's own damage state (the plate tab's
+  // selector forces walls to one). `rebuild()` redraws it after a shot
+  // changed a state.
+  const fallback = (piece) => { const obj = placeholderMesh(piece, catalog.get(piece.id)); placePiece(obj, piece); group.add(obj); return obj; };
+  const staticObjs = [];
+  let staticModels = 0;
+  function drawStatic() {
+    for (const o of staticObjs) group.remove(o);
+    staticObjs.length = 0;
+    const byKey = new Map();
     for (const piece of plate.pieces) {
-      if (piece.kind !== KIND.WALL) continue;
+      if (piece.kind === KIND.GATE || BODY_IDS.has(piece.id)) continue;
       const entry = catalog.get(piece.id);
       if (!entry) continue;
-      const url = entry.placeholder ? null : fileFor(entry, wallState === null ? piece.state : wallState);
-      if (!url) { fallback(piece); continue; }
-      if (!byUrl.has(url)) byUrl.set(url, []);
-      byUrl.get(url).push(piece);
+      const state = piece.kind === KIND.WALL && wallState !== null ? wallState : piece.state;
+      const url = entry.placeholder ? null : fileFor(entry, state);
+      if (!url) { staticObjs.push(fallback(piece)); continue; }
+      const fit = fitOf(entry, state);
+      const sectionTint = piece.kind === KIND.WALL ? tint : (PALETTE.section[entry.section] || tint);
+      const key = url + (fit ? JSON.stringify(fit) : '') + '#' + sectionTint;
+      if (!byKey.has(key)) byKey.set(key, { url, fit, tint: sectionTint, pieces: [] });
+      byKey.get(key).pieces.push(piece);
     }
-    for (const [url, pieces] of byUrl) {
-      pending.push(proto(url, [], null, tint).then((root) => {
-        if (!root) { for (const piece of pieces) fallback(piece); return; }
+    staticModels = byKey.size;
+    for (const { url, fit, tint: t, pieces } of byKey.values()) {
+      pending.push(proto(url, [], fit, t).then((root) => {
+        if (!root) { for (const piece of pieces) staticObjs.push(fallback(piece)); return; }
         const g = instanced(root, pieces, pieceMatrix);
-        wallObjs.push(g);
+        staticObjs.push(g);
         group.add(g);
       }));
     }
-    return byUrl.size;
   }
-  const wallModels = drawWalls();
-  const byModel = new Map(); // url -> pieces drawn from it
+  drawStatic();
+  const byModel = new Map();
   for (const piece of plate.pieces) {
+    if (piece.kind !== KIND.GATE && !BODY_IDS.has(piece.id)) continue;
     const entry = catalog.get(piece.id);
-    if (!entry || piece.kind === KIND.WALL) continue;
+    if (!entry) continue;
     const state = piece.state;
     const url = entry.placeholder ? null : fileFor(entry, state);
     if (!url) { fallback(piece); continue; }
@@ -239,12 +257,12 @@ export function buildPlateGroup({ plate, catalog, wallState = 0, showArcs = true
       }));
       continue;
     }
-    if (animatedGates && piece.kind === KIND.GATE) {
+    if (animatedGates) {
       const gi = plate.gates.findIndex((g) => g.pieceIndex === plate.pieces.indexOf(piece));
       pending.push(animProto(url).then((res) => {
         if (!res) { fallback(piece); return; }
         const obj = res.root.clone();
-        tintModel(obj, tint, { wash: 0.10 });
+        if (!BZ) tintModel(obj, tint, { wash: 0.10 });
         placePiece(obj, piece);
         group.add(obj);
         const clip = res.clips.find((c) => /open/i.test(c.name)) || res.clips[0];
@@ -261,12 +279,12 @@ export function buildPlateGroup({ plate, catalog, wallState = 0, showArcs = true
       }));
       continue;
     }
+    // a static gate (the plate tab): instanced like everything else
     if (!byModel.has(mkey)) byModel.set(mkey, { url, fit, pieces: [] });
     byModel.get(mkey).pieces.push(piece);
   }
   for (const { url, fit, pieces } of byModel.values()) {
-    const sectionTint = PALETTE.section[catalog.get(pieces[0].id).section] || tint;
-    pending.push(proto(url, [], fit, sectionTint).then((root) => {
+    pending.push(proto(url, [], fit, tint).then((root) => {
       if (!root) { for (const piece of pieces) fallback(piece); return; }
       group.add(instanced(root, pieces, pieceMatrix));
     }));
@@ -290,11 +308,11 @@ export function buildPlateGroup({ plate, catalog, wallState = 0, showArcs = true
   if (showBlind) {
     for (const c of ringCoverage(plate)) {
       if (c.covered) continue;
-      const m = new THREE.Mesh(new THREE.BoxGeometry(CELL_M * 0.5, 0.2, CELL_M * 0.5), new THREE.MeshBasicMaterial({ color: 0x2ecc71 }));
+      const m = new THREE.Mesh(new THREE.BoxGeometry(CELL_M * 0.5, 0.2, CELL_M * 0.5), new THREE.MeshBasicMaterial({ color: PALETTE.blind }));
       m.position.set((c.x + 0.5) * CELL_M, 3.8, (c.z + 0.5) * CELL_M);
       group.add(m);
     }
   }
-  console.log('[plate] models', byModel.size + wallModels, 'pieces', plate.pieces.length, 'sentries', plate.sentries.length, 'warnings', plate.warnings.length);
-  return { group, sentryYaws, gateRigs, dynamic, ready: Promise.all(pending), rebuildWalls: drawWalls };
+  console.log('[plate] models', byModel.size + staticModels, 'pieces', plate.pieces.length, 'sentries', plate.sentries.length, 'warnings', plate.warnings.length);
+  return { group, sentryYaws, gateRigs, dynamic, ready: Promise.all(pending), rebuildWalls: drawStatic, rebuild: drawStatic };
 }

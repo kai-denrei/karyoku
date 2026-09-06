@@ -25,3 +25,6 @@ main { position: absolute; top: 36px; left: 0; right: 0; bottom: 0; }
 .tab > .lil-gui { position: absolute; top: 8px; right: 8px; z-index: 5; }
 .hud { position: absolute; left: 12px; bottom: 12px; padding: 6px 10px; color: var(--accent);
   background: rgba(10, 13, 18, 0.88); border: 1px solid var(--line); letter-spacing: 0.06em; pointer-events: none; }
+body.look-battlezone { --accent: #7dffa0; --fg: #7dffa0; --dim: #2e8f52; --line: #1c4a2c; }
+body.look-battlezone .hud, body.look-battlezone #tabbar { color: #7dffa0; }
+body.look-battlezone .lil-gui { --text-color: #9cffb8; --number-color: #7dffa0; --title-background-color: #061a0c; --background-color: #030a05; --widget-color: #0c2414; --hover-color: #123820; --focus-color: #1c4a2c; }

@@ -11,8 +11,8 @@
 // THE ANTI-AIMBOT NUMBERS are yawRate and the arc: a sentry cannot point
 // outside its arc, and inside it turns at yawRate, so a hull that crosses
 // the arc fast, or stays in the blind sector, is never fired on.
-import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=9c7098f2';
-import { KIND, CELL_M, wrapDeg, dirOfYaw, DIRS, yawOfSide, rotSide } from './plate.js?v=9c7098f2';
+import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=b7486121';
+import { KIND, CELL_M, wrapDeg, dirOfYaw, DIRS, yawOfSide, rotSide } from './plate.js?v=b7486121';
 
 export const DRIVE_TUNE = {
   speed: 12,        // m/s forward
@@ -220,12 +220,12 @@ export function blockedAt(plate, gates, x, z) {
   const cx = toCell(x), cz = toCell(z);
   const k = cellKind(plate, cx, cz);
   if (k < 0) return false;
-  if (k === KIND.WALL) {
-    // a standard wall segment shot down to D3 is rubble: driveable
+  if (k === KIND.WALL || k === KIND.BUILDING) {
+    // a wall or building shot down to D3 is rubble: driveable
     const pc = plate.pieces[plate.owner[cz * plate.w + cx]];
-    return !(pc && pc.id === 'wall_standard' && pc.state >= 3);
+    return !(pc && pc.state >= 3);
   }
-  if (k === KIND.BUILDING || k === KIND.SENTRY || k === KIND.PROP) return true;
+  if (k === KIND.SENTRY || k === KIND.PROP) return true;
   if (k === KIND.GATE) {
     const pi = plate.owner[cz * plate.w + cx];
     const g = gates.find((gg) => gg.pieceIndex === pi);
@@ -237,14 +237,23 @@ export function blockedAt(plate, gates, x, z) {
   return false;
 }
 
-// A shot landing on a standard wall segment takes it one state down the
-// ladder, D0 to D3. Returns the piece that changed, or null. Corners and
-// gates have no damaged models yet and shrug the round off.
-export function damageAt(plate, x, z) {
+// A shot landing on a destructible piece counts against it; every
+// `hitsPerState` rounds it goes one state down the ladder, D0 to D3.
+// Returns the piece if a STATE changed, else null. What is destructible is
+// the caller's call (the catalog knows which pieces have damaged models);
+// by default only the standard wall. A wall segment takes one round per
+// state; a building takes one per six cells of footprint, at least one.
+export const defaultDestructible = (pc) => pc.id === 'wall_standard';
+export const hitsPerState = (pc) => pc.kind === KIND.WALL ? 1 : Math.max(1, Math.round(pc.pw * pc.ph / 6));
+export function damageAt(plate, x, z, destructible = defaultDestructible) {
   const cx = toCell(x), cz = toCell(z);
-  if (cellKind(plate, cx, cz) !== KIND.WALL) return null;
+  const k = cellKind(plate, cx, cz);
+  if (k !== KIND.WALL && k !== KIND.BUILDING) return null;
   const pc = plate.pieces[plate.owner[cz * plate.w + cx]];
-  if (!pc || pc.id !== 'wall_standard' || pc.state >= 3) return null;
+  if (!pc || pc.state >= 3 || !destructible(pc)) return null;
+  pc.hp = (pc.hp || 0) + 1;
+  if (pc.hp < hitsPerState(pc)) return null;
+  pc.hp = 0;
   pc.state++;
   return pc;
 }
@@ -294,7 +303,10 @@ export function losClear(plate, ax, az, bx, bz) {
   const n = Math.max(1, Math.ceil(d / (CELL_M / 4)));
   for (let i = 1; i < n; i++) {
     const t = i / n;
-    if (cellKind(plate, toCell(ax + (bx - ax) * t), toCell(az + (bz - az) * t)) === KIND.BUILDING) return false;
+    const cx = toCell(ax + (bx - ax) * t), cz = toCell(az + (bz - az) * t);
+    if (cellKind(plate, cx, cz) !== KIND.BUILDING) continue;
+    const pc = plate.pieces[plate.owner[cz * plate.w + cx]];
+    if (!pc || pc.state < 3) return false; // rubble no longer hides anything
   }
   return true;
 }
@@ -384,7 +396,12 @@ export function stepTracers(tracers, hull, dt, blockedRay, tune = DRIVE_TUNE) {
   return hits;
 }
 
-export const buildingAt = (plate, x, z) => cellKind(plate, toCell(x), toCell(z)) === KIND.BUILDING;
+export const buildingAt = (plate, x, z) => {
+  const cx = toCell(x), cz = toCell(z);
+  if (cellKind(plate, cx, cz) !== KIND.BUILDING) return false;
+  const pc = plate.pieces[plate.owner[cz * plate.w + cx]];
+  return !(pc && pc.state >= 3);
+};
 // what a hull shot stops on: anything that is not ground, road or an open lane
 export const solidAt = (plate, gates, x, z) => blockedAt(plate, gates, x, z);
 // the predicate for stepTracers: shots stop on solids, sentry rounds on buildings only

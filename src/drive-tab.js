@@ -5,16 +5,17 @@
 import * as THREE from '../vendor/three.module.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { generatePlate, makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M } from './plate.js?v=9c7098f2';
+import { generatePlate, makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M } from './plate.js?v=b7486121';
 import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, blockedAt, makeGates, stepGates,
-  spawnFor, makeSentries, stepSentries, losClear, stepTracers, rayStop, fireHull, damageAt, makeBodies, stepBodies } from './drive.js?v=9c7098f2';
-import { PALETTE } from './looks.js?v=9c7098f2';
-import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=9c7098f2';
-import { query, loadCatalog } from './plate-tab.js?v=9c7098f2';
-import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS } from './drive-rig.js?v=9c7098f2';
-import { makeCrew, stepCrew } from './crew.js?v=9c7098f2';
-import { makeCrewScene } from './crew-scene.js?v=9c7098f2';
-import { mulberry32 } from './rng.js?v=9c7098f2';
+  spawnFor, makeSentries, stepSentries, losClear, stepTracers, rayStop, fireHull, damageAt, makeBodies, stepBodies } from './drive.js?v=b7486121';
+import { PALETTE, LOOK, LOOKS } from './looks.js?v=b7486121';
+import { withParam } from './url.js?v=b7486121';
+import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=b7486121';
+import { query, loadCatalog } from './plate-tab.js?v=b7486121';
+import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS } from './drive-rig.js?v=b7486121';
+import { makeCrew, stepCrew } from './crew.js?v=b7486121';
+import { makeCrewScene } from './crew-scene.js?v=b7486121';
+import { mulberry32 } from './rng.js?v=b7486121';
 
 export function initDriveTab(root) {
   const { renderer, scene, camera, hud, notice, resize, render, setGroups } = makeViewer(root);
@@ -32,6 +33,7 @@ export function initDriveTab(root) {
 
   let catalog = null, plate = null, rig = null, gates = [], sentries = [], tracers = [], hull = null, bodies = [];
   let crew = [], crewScene = null, crewRng = null;
+  const destructible = (pc) => { const e = catalog && catalog.get(pc.id); return !!(e && e.states[1] && e.states[3]); };
   const CREW_N = Number(q.get('crew') || 6);
   let hits = 0, simT = 0, lastLog = 0, lastDt = 0.016, breached = 0;
 
@@ -70,7 +72,7 @@ export function initDriveTab(root) {
     const stop = rayStop(plate, gates, bodies);
     hits += stepTracers(tracers, hull, dt, (x, z, t) => {
       if (!stop(x, z, t)) return false;
-      if (t && t.kind === 'shot') { const pc = damageAt(plate, x, z); if (pc) { if (pc.state >= 3) breached++; rig.rebuildWalls(); } }
+      if (t && t.kind === 'shot') { const pc = damageAt(plate, x, z, destructible); if (pc) { if (pc.state >= 3) breached++; rig.rebuild(); } }
       return true;
     }, P);
     simT += dt;
@@ -106,6 +108,7 @@ export function initDriveTab(root) {
     const f = folders[k.group] || (folders[k.group] = gui.addFolder(k.group));
     f.add(P, k.key, k.min, k.max, k.step).name(k.label);
   }
+  gui.add({ look: LOOK }, 'look', LOOKS).name('look').onChange((v) => { location.href = withParam('look', v); location.reload(); });
   gui.add(view, 'camera', CAMS).name('camera').onChange((v) => { controls.enabled = v === 'orbit'; camera.userData.placed = false; });
   gui.add({ regenerate }, 'regenerate').name('regenerate (seed+1)');
 
@@ -121,6 +124,20 @@ export function initDriveTab(root) {
       for (let i = 0; i < tick * 60; i++) step(1 / 60, { fwd: q.get('hold') !== '1', fire: firing });
       console.log(logLine());
     }
+    // ?bzprobe=1: anything drawn that is not black-or-green — what escaped the look
+    if (q.get('bzprobe') === '1') rig.ready.then(() => {
+      const seen = new Map();
+      scene.traverse((o) => {
+        if (!o.material) return;
+        for (const m of Array.isArray(o.material) ? o.material : [o.material]) {
+          const c = m.color ? '#' + m.color.getHexString() : 'none';
+          const e = m.emissive ? '#' + m.emissive.getHexString() : '';
+          const k = `${o.type}:${m.type}:${c}:${e}:${m.name || ''}`;
+          seen.set(k, (seen.get(k) || 0) + 1);
+        }
+      });
+      for (const [k, n] of seen) console.log(`[bz] ${n} x ${k}`);
+    });
     // ?gateprobe=1: after the tick, say what each gate rig is actually doing
     if (q.get('gateprobe') === '1') rig.ready.then(() => {
       sync();

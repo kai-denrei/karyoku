@@ -171,6 +171,24 @@ no build step, Node invariant suites).
   walk and idle clips by whether the walker is moving. `?crew=N` sets the
   count (6 on a plate, 5 per plate in the world).
 
+## Battlezone (operator, 2026-09-07)
+- TWO LOOKS in `looks.js`, `?look=battlezone` (default while it is tried)
+  or `?look=colony`; the panels' `look` dropdown reloads with the param.
+  `BZ` is the switch; `PALETTE` is the active palette (tracers, shells,
+  arcs, blind markers, section colours all read from it).
+- Battlezone: black fills (`BZ_BLACK`, they occlude), green edges
+  (`styleForLook` = addEdgeOutlines at 28 degrees), skinned meshes as green
+  wireframe because edge lines cannot follow bones. Instanced pieces get
+  their edges BAKED once per instance into one LineSegments (`bakeEdges`).
+  No ladder, no metal, no tint in this look. The TD bloom stays.
+- DESTRUCTIBLE BUILDINGS: `damageAt(plate, x, z, destructible)` — the tabs
+  pass a predicate from the catalog (states 1 and 3 modelled), so the
+  outpost's twelve and the standard wall take damage; `hitsPerState` is 1
+  for a wall, footprint/6 for a building. D3 is rubble: driveable, no
+  longer stops sentry rounds or blocks sight. The scene's static layer
+  (`rig.rebuild()`) redraws walls AND buildings at their states.
+- Road decks sit 6 cm proud of the slab (`ROAD_LIFT`): coplanar they moire.
+
 ## Verify
 - `npm run serve` then `http://localhost:8150/#plate?seed=7&ascii=1`.
   `?seed= ?w= ?h= ?gates= ?arc= ?density= ?tier=` override the knobs;

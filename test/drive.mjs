@@ -1,6 +1,6 @@
 import { generatePlate, makePlateParams, PLATE_TUNE, KIND, CELL_M, blindCells } from '../src/plate.js';
 import { DRIVE_TUNE, driveKnobProblems, makeHull, stepHull, blockedAt, makeGates, stepGates, spawnFor,
-  makeSentries, stepSentries, losClear, stepTracers, buildingAt, bearingTo, lobHeight, LOB_FAMILIES, fireHull, rayStop, damageAt, autopilotInput, makeBodies, stepBodies, bodyAt, BODY_IDS } from '../src/drive.js';
+  makeSentries, stepSentries, losClear, stepTracers, buildingAt, bearingTo, lobHeight, LOB_FAMILIES, fireHull, rayStop, damageAt, autopilotInput, makeBodies, stepBodies, bodyAt, BODY_IDS, hitsPerState } from '../src/drive.js';
 import { check, near, done } from './check.mjs';
 
 check('knob table is sound', driveKnobProblems().length === 0, driveKnobProblems().join('; '));
@@ -249,5 +249,23 @@ for (let seed = 1; seed <= 50; seed++) {
   while (shots.length && steps < 400) { stepTracers(shots, h, DT, rayStop(p3, g3, lone)); steps++; }
   check('a shot stops on a container', steps < 400 && shot.z > lone[0].z - 3, `z ${shot.z.toFixed(1)} body z ${lone[0].z.toFixed(1)}`);
   check('containers are the only bodies', BODY_IDS.has('logistics_container') && BODY_IDS.size === 1);
+}
+// --- destructible buildings ----------------------------------------------------
+{
+  const p4 = generatePlate(makePlateParams({ ...PLATE_TUNE, seed: 7 }));
+  const g4 = makeGates(p4);
+  const anyBuilding = (pc) => pc.kind === KIND.BUILDING || pc.id === 'wall_standard';
+  const b = p4.pieces.find((pc) => pc.kind === KIND.BUILDING && pc.zone !== 'band' && pc.pw * pc.ph >= 12);
+  check('a big building to shoot', !!b);
+  const bx = (b.x + 0.5) * CELL_M, bz = (b.z + 0.5) * CELL_M;
+  check('by default a building is not destructible', damageAt(p4, bx, bz) === null && b.state === 0);
+  const per = hitsPerState(b);
+  check('a big building takes more than one round per state', per >= 2, `per ${per}`);
+  let changes = 0, rounds = 0;
+  while (b.state < 3 && rounds < 100) { rounds++; if (damageAt(p4, bx, bz, anyBuilding)) changes++; }
+  check('three state changes over per-state rounds', changes === 3 && rounds === per * 3, `changes ${changes} rounds ${rounds} per ${per}`);
+  check('rubble is driveable', !blockedAt(p4, g4, bx, bz));
+  check('rubble no longer stops a sentry round', !buildingAt(p4, bx, bz));
+  check('a wall still takes one round per state', hitsPerState(p4.pieces.find((pc) => pc.id === 'wall_standard')) === 1);
 }
 done();

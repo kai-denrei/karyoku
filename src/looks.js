@@ -4,37 +4,109 @@
 // glow bleed. Everything visual that is not a model lives here, so a tab
 // asks for the look rather than owning a palette.
 import * as THREE from '../vendor/three.module.js';
-import { makeBloom } from './postfx.js?v=9c7098f2';
-import { tintModel } from './glbmodels.js?v=9c7098f2';
+import { makeBloom } from './postfx.js?v=b7486121';
+import { tintModel, addEdgeOutlines } from './glbmodels.js?v=b7486121';
+import { query } from './url.js?v=b7486121';
 
-export const PALETTE = {
-  bg: 0x0d1017,                   // the TD board's mainBg
+// TWO LOOKS. 'colony' is the Tron-and-TD-board look; 'battlezone' is the
+// 1980 vector display: black, one green, every shape an edge. `?look=`
+// picks, battlezone by default while it is being tried.
+export const LOOKS = ['battlezone', 'colony'];
+const wanted = (typeof location !== 'undefined' ? query().get('look') : null) || 'battlezone';
+export const LOOK = LOOKS.includes(wanted) ? wanted : 'battlezone';
+export const BZ = LOOK === 'battlezone';
+
+const G = { dim: 0x1c7a3a, mid: 0x2ecc5e, hi: 0x7dffa0, road: 0xa8ff9a };
+const COLONY = {
+  bg: 0x0d1017,
   fog: 0x0d1017,
-  ground: [0x07131c, 0x0c2433],   // low to high, the fill under the wire
-  wire: 0x1fb6cc,                 // terrain edges
-  road: 0xff7a1a,                 // road edges and fill tint
+  ground: [0x07131c, 0x0c2433],
+  wire: 0x1fb6cc,
+  road: 0xff7a1a,
   roadFill: 0x2a1408,
   slab: 0x070d16,
   grid: 0x0e4b5a,
-  home: 0x2ad2ff,                 // the player's plate
-  hostile: 0xff4d2e,              // the target plate
+  home: 0x2ad2ff,
+  hostile: 0xff4d2e,
   hull: 0x7df9ff,
   crystal: 0xd05cff,
   dome: 0x3cf2b0,
   rock: 0x3a4a5c,
   star: 0x9fb0c8,
-  section: {                      // placeholder edge colours, neon
+  tracer: 0xffd166, shot: 0x7df9ff, shell: 0xff8c42, splash: 0xff8c42, arc: 0xc0392b, blind: 0x2ecc71, shadow: 0x000000, tick: 0xffffff,
+  section: {
     ground: 0x2a3f52, road: 0xff7a1a, perimeter: 0x2ad2ff, defense: 0xff4d2e,
     command: 0x7df9ff, personnel: 0x3cf2b0, logistics: 0xffb347, industry: 0xff8c42,
     utility: 0xf5e663, air: 0xc77dff, field: 0xff6b6b, prop: 0x9fb3c8, research: 0x48dbfb,
   },
 };
+const BATTLEZONE = {
+  bg: 0x000000,
+  fog: 0x000000,
+  ground: [0x000000, 0x000000],
+  wire: G.mid,
+  road: G.road,
+  roadFill: 0x000000,
+  slab: 0x000000,
+  grid: G.dim,
+  home: G.mid,
+  hostile: G.mid,
+  hull: G.hi,
+  crystal: G.mid,
+  dome: G.mid,
+  rock: G.dim,
+  star: 0x1d6b33,
+  tracer: G.hi, shot: G.hi, shell: G.hi, splash: G.hi, arc: G.dim, blind: G.hi, shadow: G.dim, tick: G.mid,
+  section: Object.fromEntries(['ground', 'road', 'perimeter', 'defense', 'command', 'personnel', 'logistics', 'industry', 'utility', 'air', 'field', 'prop', 'research'].map((k) => [k, G.mid])),
+};
+export const PALETTE = BZ ? BATTLEZONE : COLONY;
 
-// The TD board's light, verbatim: an even-ish hemi so no side goes
-// unreadable, a warm sun, a cool fill from below and behind. No fog — the
-// reference has none, and its bloom weights are tuned against this light.
+// --- the battlezone materials ---------------------------------------------------
+// One black fill for everything solid (it occludes; a vector display did
+// not, and that is the one liberty taken), one green line, one green wire
+// for skinned meshes whose edges cannot follow their bones.
+export const BZ_BLACK = new THREE.MeshBasicMaterial({ color: 0x000000 });
+export const BZ_WIRE = new THREE.MeshBasicMaterial({ color: G.mid, wireframe: true });
+export const BZ_EDGE_ANGLE = 28;
+
+// Dress a model for the current look. Colony: nothing (the casts did it).
+// Battlezone: black fills, green edges; skinned meshes go wireframe.
+export function styleForLook(root) {
+  if (!BZ) return root;
+  root.traverse((o) => {
+    if (o.isLineSegments) { o.material = new THREE.LineBasicMaterial({ color: G.hi, transparent: true, opacity: 0.9 }); return; }
+    if (!o.isMesh) return;
+    o.material = o.isSkinnedMesh ? BZ_WIRE : BZ_BLACK;
+  });
+  const skinned = [];
+  root.traverse((o) => { if (o.isSkinnedMesh) skinned.push(o); });
+  if (!skinned.length) addEdgeOutlines(root, { angle: BZ_EDGE_ANGLE, opacity: 0.9, color: G.hi });
+  return root;
+}
+
+// Edges of every mesh in a prototype, baked once per instance transform into
+// ONE LineSegments — the instanced pieces' green lines. `parts` are
+// { geometry, local } as meshesOf() returns them.
+export function bakeEdges(parts, matrices, color = G.hi) {
+  const pos = [];
+  const v = new THREE.Vector3(), m = new THREE.Matrix4();
+  for (const part of parts) {
+    const eg = new THREE.EdgesGeometry(part.geometry, BZ_EDGE_ANGLE);
+    const arr = eg.attributes.position.array;
+    for (const M of matrices) {
+      m.multiplyMatrices(M, part.local);
+      for (let i = 0; i < arr.length; i += 3) { v.set(arr[i], arr[i + 1], arr[i + 2]).applyMatrix4(m); pos.push(v.x, v.y, v.z); }
+    }
+    eg.dispose();
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  return new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.9 }));
+}
+
 export function applySpaceScene(scene) {
   scene.background = new THREE.Color(PALETTE.bg);
+  if (typeof document !== 'undefined') document.body.classList.add(`look-${LOOK}`);
   scene.add(new THREE.HemisphereLight(0xc8cfe0, 0x555060, 1.5));
   const sun = new THREE.DirectionalLight(0xffe8c8, 1.1);
   sun.position.set(2, 3, 1.5);
@@ -86,7 +158,7 @@ export function tintProto(root, color, wash = 0.14) {
 // A placeholder as a dark box with neon edges in its section colour.
 export function neonBox(w, h, d, color) {
   const geo = new THREE.BoxGeometry(w, h, d);
-  const fill = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: 0x08101a, emissive: new THREE.Color(color).multiplyScalar(0.08), roughness: 0.9 }));
+  const fill = new THREE.Mesh(geo, BZ ? BZ_BLACK : new THREE.MeshStandardMaterial({ color: 0x08101a, emissive: new THREE.Color(color).multiplyScalar(0.08), roughness: 0.9 }));
   const edges = new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color }));
   const g = new THREE.Group();
   g.add(fill, edges);
@@ -115,7 +187,9 @@ export function terrainMeshes(world, splitQuad) {
   geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
   geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
   geo.computeVertexNormals();
-  const fill = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, metalness: 0, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 }));
+  const fill = new THREE.Mesh(geo, BZ
+    ? new THREE.MeshBasicMaterial({ color: 0x000000, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 })
+    : new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, metalness: 0, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 }));
   // the wire: every quad edge once, orange where it borders the road
   const seen = new Map();
   mesh.quads.forEach((q, qi) => {
@@ -154,7 +228,7 @@ export function floraMeshes(world) {
   const spires = items.filter((t, i) => i % 3 !== 2), domes = items.filter((t, i) => i % 3 === 2);
   if (spires.length) {
     const geo = new THREE.ConeGeometry(1, 1, 5);
-    const mat = new THREE.MeshStandardMaterial({ color: 0x1a0a2a, emissive: new THREE.Color(PALETTE.crystal), emissiveIntensity: 0.9, roughness: 0.3, metalness: 0.2 });
+    const mat = BZ ? new THREE.MeshBasicMaterial({ color: PALETTE.crystal, wireframe: true }) : new THREE.MeshStandardMaterial({ color: 0x1a0a2a, emissive: new THREE.Color(PALETTE.crystal), emissiveIntensity: 0.9, roughness: 0.3, metalness: 0.2 });
     const im = new THREE.InstancedMesh(geo, mat, spires.length * 2);
     let n = 0;
     for (const t of spires) {
@@ -175,7 +249,7 @@ export function floraMeshes(world) {
   }
   if (domes.length) {
     const geo = new THREE.SphereGeometry(1, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2);
-    const mat = new THREE.MeshStandardMaterial({ color: 0x06201a, emissive: new THREE.Color(PALETTE.dome), emissiveIntensity: 0.55, roughness: 0.6 });
+    const mat = BZ ? new THREE.MeshBasicMaterial({ color: PALETTE.dome, wireframe: true }) : new THREE.MeshStandardMaterial({ color: 0x06201a, emissive: new THREE.Color(PALETTE.dome), emissiveIntensity: 0.55, roughness: 0.6 });
     const im = new THREE.InstancedMesh(geo, mat, domes.length);
     domes.forEach((t, i) => {
       const r = t.h * 0.35;
@@ -186,7 +260,7 @@ export function floraMeshes(world) {
     g.add(im);
   }
   if (world.rocks.length) {
-    const im = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1, 0), new THREE.MeshStandardMaterial({ color: 0x0a121c, emissive: new THREE.Color(PALETTE.rock).multiplyScalar(0.35), roughness: 0.95, flatShading: true }), world.rocks.length);
+    const im = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1, 0), BZ ? new THREE.MeshBasicMaterial({ color: PALETTE.rock, wireframe: true }) : new THREE.MeshStandardMaterial({ color: 0x0a121c, emissive: new THREE.Color(PALETTE.rock).multiplyScalar(0.35), roughness: 0.95, flatShading: true }), world.rocks.length);
     world.rocks.forEach((r, i) => { m.makeScale(r.r, r.h, r.r * 0.8); m.setPosition(r.x, world.heightAt(r.x, r.z) + r.h * 0.35, r.z); im.setMatrixAt(i, m); });
     im.instanceMatrix.needsUpdate = true;
     g.add(im);

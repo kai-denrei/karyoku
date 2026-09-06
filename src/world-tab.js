@@ -5,16 +5,17 @@
 import * as THREE from '../vendor/three.module.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { makePlateParams, clampPlateParams, PLATE_KNOBS } from './plate.js?v=9c7098f2';
-import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, stepGates, stepSentries, stepTracers, fireHull, damageAt, autopilotInput, makeBodies, stepBodies, bodyAt } from './drive.js?v=9c7098f2';
-import { WORLD_KNOBS, makeWorldParams, clampWorldParams, makeWorld, worldBlocked, worldBuildingAt, worldLosFor, worldSentries, worldGates, terrainNormal, splitQuad, groundAt } from './world.js?v=9c7098f2';
-import { PALETTE, terrainMeshes, floraMeshes } from './looks.js?v=9c7098f2';
-import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=9c7098f2';
-import { query, loadCatalog } from './plate-tab.js?v=9c7098f2';
-import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS } from './drive-rig.js?v=9c7098f2';
-import { makeCrew, stepCrew } from './crew.js?v=9c7098f2';
-import { makeCrewScene } from './crew-scene.js?v=9c7098f2';
-import { mulberry32 } from './rng.js?v=9c7098f2';
+import { makePlateParams, clampPlateParams, PLATE_KNOBS } from './plate.js?v=b7486121';
+import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, stepGates, stepSentries, stepTracers, fireHull, damageAt, autopilotInput, makeBodies, stepBodies, bodyAt } from './drive.js?v=b7486121';
+import { WORLD_KNOBS, makeWorldParams, clampWorldParams, makeWorld, worldBlocked, worldBuildingAt, worldLosFor, worldSentries, worldGates, terrainNormal, splitQuad, groundAt } from './world.js?v=b7486121';
+import { PALETTE, terrainMeshes, floraMeshes, LOOK, LOOKS } from './looks.js?v=b7486121';
+import { withParam } from './url.js?v=b7486121';
+import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=b7486121';
+import { query, loadCatalog } from './plate-tab.js?v=b7486121';
+import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS } from './drive-rig.js?v=b7486121';
+import { makeCrew, stepCrew } from './crew.js?v=b7486121';
+import { makeCrewScene } from './crew-scene.js?v=b7486121';
+import { mulberry32 } from './rng.js?v=b7486121';
 
 const ARRIVE_M = 8;
 
@@ -36,6 +37,8 @@ export function initWorldTab(root) {
 
   let catalog = null, world = null, group = null, rigs = [], gates = [], sentries = [], tracers = [], hull = null, bodies = [];
   let crews = [], crewRng = null;
+  // what a shot can damage: anything the catalog has damaged models for
+  const destructible = (pc) => { const e = catalog && catalog.get(pc.id); return !!(e && e.states[1] && e.states[3]); };
   const CREW_N = Number(q.get('crew') || 5);
   let hits = 0, simT = 0, lastLog = 0, arrivedAt = -1, lastDt = 0.016, breached = 0;
 
@@ -87,7 +90,7 @@ export function initWorldTab(root) {
       if (t && t.kind === 'shot') {
         if (bodyAt(bodies, x, z)) return true; // solid, unharmed
         if (!worldBlocked(world, x, z)) return false;
-        world.plates.forEach((p, pi) => { const pc = damageAt(p.plate, x - p.ox, z - p.oz); if (pc) { if (pc.state >= 3) breached++; rigs[pi].rebuildWalls(); } });
+        world.plates.forEach((p, pi) => { const pc = damageAt(p.plate, x - p.ox, z - p.oz, destructible); if (pc) { if (pc.state >= 3) breached++; rigs[pi].rebuild(); } });
         return true;
       }
       return worldBuildingAt(world, x, z);
@@ -129,7 +132,7 @@ export function initWorldTab(root) {
   // the world grows on its own if the bases would not fit.
   const top = { baseSize: plateParams.w };
   gui.add(P, 'speed', 2, 30, 1).name('tank speed (m/s)');
-  gui.add(top, 'baseSize', 12, 60, 2).name('base size (cells)').onFinishChange((v) => {
+  gui.add(top, 'baseSize', 12, 120, 2).name('base size (cells)').onFinishChange((v) => {
     plateParams.w = v; plateParams.h = Math.max(12, Math.round(v * 0.75 / 2) * 2);
     gui.controllersRecursive().forEach((c) => c.updateDisplay()); build();
   });
@@ -146,6 +149,7 @@ export function initWorldTab(root) {
   const df = gui.addFolder('drive');
   for (const k of DRIVE_KNOBS) df.add(P, k.key, k.min, k.max, k.step).name(k.label);
   df.close();
+  gui.add({ look: LOOK }, 'look', LOOKS).name('look').onChange((v) => { location.href = withParam('look', v); location.reload(); });
   gui.add(view, 'camera', CAMS).name('camera').onChange((v) => { controls.enabled = v === 'orbit'; camera.userData.placed = false; });
   gui.add({ regenerate }, 'regenerate').name('regenerate (seed+1)');
 

@@ -6,8 +6,9 @@
 import * as THREE from '../vendor/three.module.js';
 import { GLTFLoader } from '../vendor/GLTFLoader.js';
 import { MeshoptDecoder } from '../vendor/meshopt_decoder.module.js';
-import { fitModel, bustToken } from './glbmodels.js?v=9c7098f2';
-import { SUITS } from './crew.js?v=9c7098f2';
+import { fitModel, bustToken } from './glbmodels.js?v=b7486121';
+import { SUITS } from './crew.js?v=b7486121';
+import { styleForLook, BZ } from './looks.js?v=b7486121';
 
 const ASTRO_URL = 'assets/models/astronaut-compact.glb';
 const PERSON_M = 1.8;
@@ -37,6 +38,9 @@ export async function makeAstronaut(suitIndex = 0) {
   });
   // authored in centimetres; a person is PERSON_M tall here
   const obj = fitModel(scene, { height: PERSON_M, maxSpan: PERSON_M * 2 });
+  // battlezone: a dense wireframe blooms into a blob at full brightness, so
+  // the suit keeps its hue at half strength
+  if (BZ) { styleForLook(obj); obj.traverse((o) => { if (o.isSkinnedMesh) { o.material = o.material.clone(); o.material.color.copy(colour).multiplyScalar(0.45); } }); }
   const mixer = new THREE.AnimationMixer(scene);
   const clipOf = (re) => gltf.animations.find((c) => re.test(c.name));
   const walkClip = clipOf(/walk/i), idleClip = clipOf(/idle/i);

@@ -3,13 +3,20 @@ import { specById } from '../src/catalog-spec.js';
 import { check, near, done } from './check.mjs';
 
 check('knob table is sound', plateKnobProblems().length === 0, plateKnobProblems().join('; '));
+{
+  const t0 = Date.now();
+  const big = generatePlate(makePlateParams({ ...PLATE_TUNE, seed: 3, w: 120, h: 120, gates: 3 }));
+  const ms = Date.now() - t0;
+  check('a 120 x 120 plate generates in under 4 s', ms < 4000, `${ms} ms`);
+  check('...and holds many buildings', big.pieces.filter((pc) => pc.kind === KIND.BUILDING).length > 30);
+}
 check('rotSide: N rotated once is E', rotSide('N', 1) === 'E');
 check('rotSide: W rotated once wraps to N', rotSide('W', 1) === 'N');
 check('dirOfYaw(0) is -z (north)', near(dirOfYaw(0)[0], 0) && near(dirOfYaw(0)[1], -1));
 check('dirOfYaw(90) is +x', near(dirOfYaw(90)[0], 1) && near(dirOfYaw(90)[1], 0));
 
 const SEEDS = Array.from({ length: 50 }, (_, i) => i + 1);
-const SIZES = [[12, 12], [60, 12], [12, 60], [60, 60]];
+const SIZES = [[12, 12], [60, 12], [12, 60], [60, 60], [120, 120]];
 
 const ringCells = (p) => {
   const out = [];

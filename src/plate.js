@@ -13,9 +13,9 @@
 // `rotation.y = -rot * PI/2`. Yaw is compass degrees, 0 = N, 90 = E.
 // Plate width and depth are EVEN, because roads are 2 x 2 pieces laid on
 // even coordinates and a gate's road port has to land on one.
-import { mulberry32 } from './rng.js?v=9c7098f2';
-import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=9c7098f2';
-import { specById } from './catalog-spec.js?v=9c7098f2';
+import { mulberry32 } from './rng.js?v=b7486121';
+import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=b7486121';
+import { specById } from './catalog-spec.js?v=b7486121';
 
 export const CELL_M = 4;
 
@@ -36,8 +36,8 @@ export const PLATE_TUNE = {
 
 export const PLATE_KNOBS = [
   { key: 'seed', label: 'seed', group: 'plate', min: 0, max: 999999, step: 1 },
-  { key: 'w', label: 'width (cells)', group: 'plate', min: 12, max: 60, step: 2 },
-  { key: 'h', label: 'depth (cells)', group: 'plate', min: 12, max: 60, step: 2 },
+  { key: 'w', label: 'width (cells)', group: 'plate', min: 12, max: 120, step: 2 },
+  { key: 'h', label: 'depth (cells)', group: 'plate', min: 12, max: 120, step: 2 },
   { key: 'gates', label: 'gates', group: 'plate', min: 1, max: 3, step: 1 },
   { key: 'moat', label: 'perimeter band (cells)', group: 'plate', min: 0, max: 8, step: 1 },
   { key: 'density', label: 'build density', group: 'packing', min: 0.1, max: 1.0, step: 0.05 },

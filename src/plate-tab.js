@@ -4,21 +4,16 @@
 import * as THREE from '../vendor/three.module.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { generatePlate, PLATE_KNOBS, makePlateParams, clampPlateParams, CELL_M } from './plate.js?v=9c7098f2';
-import { CATALOG_SPEC } from './catalog-spec.js?v=9c7098f2';
-import { buildCatalog, BASE_KIT_URL, NASA_URL, HOUSE_URL, OUTPOST_URL } from './catalog.js?v=9c7098f2';
-import { bustToken } from './glbmodels.js?v=9c7098f2';
-import { applySpaceScene, makeStars, makeComposer } from './looks.js?v=9c7098f2';
-import { buildPlateGroup } from './plate-scene.js?v=9c7098f2';
+import { generatePlate, PLATE_KNOBS, makePlateParams, clampPlateParams, CELL_M } from './plate.js?v=b7486121';
+import { CATALOG_SPEC } from './catalog-spec.js?v=b7486121';
+import { buildCatalog, BASE_KIT_URL, NASA_URL, HOUSE_URL, OUTPOST_URL } from './catalog.js?v=b7486121';
+import { bustToken } from './glbmodels.js?v=b7486121';
+import { applySpaceScene, makeStars, makeComposer, LOOK, LOOKS } from './looks.js?v=b7486121';
+import { withParam } from './url.js?v=b7486121';
+import { buildPlateGroup } from './plate-scene.js?v=b7486121';
 
-// `#plate?seed=7` and `?seed=7#plate` both work: the hash's own query is
-// merged under the real search string.
-export function query() {
-  const q = new URLSearchParams(location.search);
-  const hq = location.hash.indexOf('?');
-  if (hq >= 0) for (const [k, v] of new URLSearchParams(location.hash.slice(hq + 1))) if (!q.has(k)) q.set(k, v);
-  return q;
-}
+import { query } from './url.js?v=b7486121';
+export { query };
 
 // The catalog, once: the manifest fetched and merged, or placeholders only
 // with a reason. Shared by every tab.
@@ -95,6 +90,7 @@ export function initPlateTab(root) {
   }
   gui.add({ regenerate: () => { params.seed = (params.seed + 1) % 1000000; gui.controllersRecursive().forEach((c) => c.updateDisplay()); build(); } }, 'regenerate').name('regenerate (seed+1)');
   gui.add(view, 'wallState', { 'D0 intact': 0, 'D1 damaged': 1, 'D2 critical': 2, 'D3 destroyed': 3 }).name('wall state').onChange(build);
+  gui.add({ look: LOOK }, 'look', LOOKS).name('look').onChange((v) => { location.href = withParam('look', v); location.reload(); });
   gui.add(view, 'ascii').name('ascii overlay').onChange((v) => { overlay.hidden = !v; });
 
   function resize() {
