@@ -4,6 +4,20 @@ Newest first. Each entry: what landed, then how it works, for programmers.
 Decisions and dead ends in more detail live in `.deban/` (local, not
 published).
 
+## e1e0581 — a hollow gantry
+
+Operator's screenshot: one structure in the green look rendered as a
+tangle, every edge from every side showing at once. The fill was not wrong,
+it was ABSENT: the battlezone fill was a front-side-only black material, and
+the NASA gantry is thin single-sided lattice panels (six other NASA models
+are authored double-sided outright), so from most angles the faces were
+culled and nothing occluded the lines behind them. A scan for mirrored
+node transforms found none — it is the geometry, not the transforms.
+`BZ_BLACK` is `DoubleSide` now; the cost is a few hundred thousand extra
+back faces on a frame that draws lines anyway. `?at=x,z&heading=deg` park a
+probe's hull anywhere, which is how the fix was photographed.
+
+
 ## ebb9e10 — a phone shell and an installable app
 
 **The shell**, after the reference's mobile plan: on a coarse pointer with a
