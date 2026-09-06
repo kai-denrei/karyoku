@@ -2,19 +2,48 @@
 // the hull model with a stand-in until it lands, the key state, the tracer
 // meshes, and the two cameras. Rendering only; the rules are drive.js.
 import * as THREE from '../vendor/three.module.js';
-import { applySpaceScene, makeStars, makeComposer, PALETTE } from './looks.js?v=83129e6c';
-import { castHull } from './casts.js?v=83129e6c';
-import { styleForLook, BZ } from './looks.js?v=83129e6c';
-import { STICK, stickVector, knobOffset } from './stick.js?v=83129e6c';
-import { query } from './url.js?v=83129e6c';
-import { loadGlb, mergeByMaterial } from './glbmodels.js?v=83129e6c';
+import { applySpaceScene, makeStars, makeComposer, PALETTE } from './looks.js?v=15d5424a';
+import { castHull } from './casts.js?v=15d5424a';
+import { styleForLook, BZ } from './looks.js?v=15d5424a';
+import { STICK, stickVector, knobOffset } from './stick.js?v=15d5424a';
+import { query } from './url.js?v=15d5424a';
+import { loadGlb, mergeByMaterial } from './glbmodels.js?v=15d5424a';
 
 const HULL_URL = 'assets/models/mkcx2.glb';
 // The nodes that must keep moving through the merge, and the ones that
 // must not be drawn at all (a collision proxy and two floating glow strips)
 // — both lists are the reference project's, learned on the same file.
-// ...plus the barrel, which now PITCHES with the muzzle elevation
-const HULL_PIVOTS = ['Turret_Pivot', 'Barrel_Pivot', 'Secondary_L_Pivot', 'Secondary_R_Pivot'];
+// ...plus the barrel, which PITCHES with the muzzle elevation, and the hover
+// rig's parts: the skirt (Hover_Gear) and the six lift emitters, which the
+// reference's feel driver moves against each other — body up, skirt down,
+// emitters planted — so a lift-off reads as a lift-off.
+const HULL_LIFTERS = ['LiftEmitter_L1', 'LiftEmitter_L2', 'LiftEmitter_L3', 'LiftEmitter_R1', 'LiftEmitter_R2', 'LiftEmitter_R3'];
+const HULL_PIVOTS = ['Turret_Pivot', 'Barrel_Pivot', 'Secondary_L_Pivot', 'Secondary_R_Pivot', 'Secondary_Turrets', 'Hover_Gear', ...HULL_LIFTERS];
+
+// The reference's hover rig, in three tiers: emitters planted, the skirt
+// settling by gearDrop, the body rising by rise — with the hull taking the
+// idle vibration and the weapons a fraction of it. tankfeel.js writes onto
+// these userData names; this only builds the groups.
+function buildHoverSplit(merged, holder) {
+  const gear = merged.getObjectByName('Hover_Gear');
+  const modelRoot = gear && gear.parent;
+  if (!modelRoot) return;
+  const emitters = new THREE.Group(); emitters.name = 'HoverEmitters';
+  modelRoot.add(emitters);
+  for (const name of HULL_LIFTERS) { const e = gear.getObjectByName(name); if (e) emitters.attach(e); }
+  const body = new THREE.Group(); body.name = 'HoverBody';
+  for (const c of [...modelRoot.children]) if (c !== gear && c !== emitters) body.add(c);
+  const weapons = new THREE.Group(); weapons.name = 'Weapons';
+  const secondaries = body.getObjectByName('Secondary_Turrets');
+  for (const name of ['Turret_Pivot', 'Secondary_Turrets']) { const o = body.getObjectByName(name); if (o) weapons.add(o); }
+  const hull = new THREE.Group(); hull.name = 'HullVib';
+  for (const c of [...body.children]) hull.add(c);
+  body.add(hull); body.add(weapons);
+  modelRoot.add(body);
+  const turret = merged.getObjectByName('Turret_Pivot');
+  if (turret) turret.userData.baseZ = turret.position.z;
+  Object.assign(holder.userData, { hoverEmitters: emitters, hoverBody: body, hoverGear: gear, hoverHull: hull, hoverWeapons: weapons, secondaries, turret });
+}
 const HULL_DROP = ['Hull_Collision', 'Barrel_Glow_1', 'Barrel_Glow_2'];
 export const KEYMAP = { w: 'fwd', ArrowUp: 'fwd', s: 'rev', ArrowDown: 'rev', a: 'left', ArrowLeft: 'left', d: 'right', ArrowRight: 'right' };
 // SHIFT+W / SHIFT+S: the muzzle. A shifted W arrives as 'W'.
@@ -33,6 +62,7 @@ export function makeHullObject() {
     obj.remove(stub);
     const merged = mergeByMaterial(gltfScene, HULL_PIVOTS, HULL_DROP);
     obj.add(BZ ? styleForLook(merged) : castHull(merged, PALETTE.hull));
+    buildHoverSplit(merged, obj);
     console.log('[drive] hull model loaded');
   });
   // Heading about +y, then the whole thing tilted so its up is the ground's

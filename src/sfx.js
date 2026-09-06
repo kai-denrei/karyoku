@@ -4,10 +4,11 @@
 // which round, how the engine bed follows the throttle, where a shell's
 // impact goes and which way it faces, how far a machine's hum carries.
 import * as THREE from '../vendor/three.module.js';
-import { makeAudio } from './audio.js?v=83129e6c';
-import { SENTRY_FIRE } from './audiomanifest.js?v=83129e6c';
-import { makeImpactBurst, IMPACT_TUNE, orientImpact } from './impactfx.js?v=83129e6c';
-import { PALETTE, BZ } from './looks.js?v=83129e6c';
+import { makeAudio } from './audio.js?v=15d5424a';
+import { SENTRY_FIRE } from './audiomanifest.js?v=15d5424a';
+import { makeImpactBurst, IMPACT_TUNE, orientImpact } from './impactfx.js?v=15d5424a';
+import { PALETTE, BZ } from './looks.js?v=15d5424a';
+import { makeTankFeel, stepTankFeel, landTankFeel, fireTankFeel, applyTankFeel } from './tankfeel.js?v=15d5424a';
 
 // the impact set is authored for a 4-unit wall; a shell on a 4 m cell
 // wants about this much of it
@@ -17,7 +18,14 @@ const HUM_REACH = 60; // m — a machine's hum is gone past this
 export function makeSfx(scene) {
   const audio = makeAudio({ seed: 1 });
   audio.arm();
-  let thruster = null;
+  // THE ENGINE, the reference's way: a smoothed level (spins up fast, spools
+  // down slow), a spool-up cue the first frame it moves, the bed while it
+  // moves, and a spool-down cue plus the touchdown rock once it has been
+  // still for ENGINE_STOP. The feel state rides the same `running`, so the
+  // visible lift and the audible hydraulics cannot drift apart.
+  const ENGINE_STOP = 0.10;
+  let thruster = null, level = 0, idle = 0, running = false;
+  const feel = makeTankFeel();
   const hums = new Map();   // key -> { h: loop handle | null, e: loop handle | null }
   const fx = [];            // impact groups with userData.tick(dt) -> alive
   // the impacts' colours: the reference's warm sparks in colony, one green in battlezone
@@ -27,14 +35,32 @@ export function makeSfx(scene) {
   let seed = 1;
   return {
     audio,
-    // the bed follows the throttle: idle is a whisper, full speed is the take
-    engine(speed, maxSpeed) {
-      if (!thruster) thruster = audio.loop('tank_thruster', { gain: 0.001, rate: 0.92 });
-      if (!thruster) return;
-      const k = Math.min(1, Math.abs(speed) / Math.max(1e-6, maxSpeed));
-      thruster.set(0.12 + 0.88 * k, 0.9 + 0.35 * k);
+    feel,
+    get running() { return running; },
+    engine(speed, maxSpeed, dt = 0.016) {
+      const target = Math.min(1, Math.abs(speed) / Math.max(1e-6, maxSpeed));
+      const k = target > level ? 6 : 2.5;
+      level += (target - level) * Math.min(1, k * dt);
+      const moving = level > 0.03;
+      idle = moving ? 0 : idle + dt;
+      stepTankFeel(feel, dt, running);
+      if (moving && !running) { audio.play('tank_spool_up'); running = true; }
+      // RETRY every frame while moving: loop() returns null until the buffer
+      // has decoded, and latching a failed handle is what silenced the bed
+      if (moving && !thruster) thruster = audio.loop('tank_thruster', { gain: 0.001, rate: 0.92 });
+      if (!moving && idle >= ENGINE_STOP && running) {
+        if (thruster) thruster.stop(ENGINE_STOP);
+        thruster = null; level = 0;
+        audio.play('tank_spool_down');
+        landTankFeel(feel);
+        running = false;
+      } else if (thruster) {
+        thruster.set(0.34 + 0.66 * level, 0.92 + 0.22 * level);
+      }
     },
-    fire() { audio.play('tank_main'); },
+    // write the lift, the rock, the vibration and the recoil onto the hull
+    applyFeel(hullObj) { applyTankFeel(hullObj, feel); },
+    fire() { audio.play('tank_main'); fireTankFeel(feel); },
     sentryFired(family, dist) { audio.play(SENTRY_FIRE[family] || 'tower_single', { dist }); },
     hitOnHull() { audio.play('impact_hit'); },
     // a machine's beds, kept by key, gain by distance from the listener
