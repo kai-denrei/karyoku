@@ -162,11 +162,130 @@ function stepRing(s, rng) {
   }
 }
 
+// --- step 2: roads -----------------------------------------------------------
+// Roads are 2 x 2 pieces on even coordinates: block (bx, bz) covers cells
+// 2bx..2bx+1, 2bz..2bz+1. A SPINE crosses the plate centre, then each gate's
+// corridor runs straight from its port to the spine. Laying stops at the
+// first block that is not free — a sentry socket, a gate — and that is what
+// road_end is for. We do not draw roads; we lay blocks and then READ the
+// piece off each block's neighbour mask.
+export const roadBlockKey = (bx, bz) => bz * 1000 + bx;
+
+const ROAD_PORTS = {
+  road_end: ['N'],
+  road_straight: ['N', 'S'],
+  road_corner: ['N', 'E'],
+  road_t: ['N', 'E', 'S'],
+  road_cross: ['N', 'E', 'S', 'W'],
+};
+
+// The rotation that turns a piece's authored ports into the wanted set.
+function fitPorts(canon, want) {
+  for (let rot = 0; rot < 4; rot++) {
+    const got = canon.map((sd) => rotSide(sd, rot));
+    if (got.length === want.size && got.every((sd) => want.has(sd))) return rot;
+  }
+  return -1;
+}
+
+function blockFree(s, bx, bz) {
+  const x = 2 * bx, z = 2 * bz;
+  if (!inside(s, x, z) || !inside(s, x + 1, z + 1)) return false;
+  if (x < 1 || z < 1 || x + 1 > s.w - 2 || z + 1 > s.h - 2) return false; // never on the ring
+  for (let dz = 0; dz < 2; dz++) {
+    for (let dx = 0; dx < 2; dx++) {
+      const i = idx(s, x + dx, z + dz);
+      if (s.cells[i] !== KIND.FOUNDATION && s.cells[i] !== KIND.ROAD) return false;
+      if (s.owner[i] !== -1) return false;
+    }
+  }
+  return true;
+}
+
+function layBlock(s, laid, bx, bz) {
+  if (!blockFree(s, bx, bz)) return false;
+  for (let dz = 0; dz < 2; dz++) for (let dx = 0; dx < 2; dx++) s.cells[idx(s, 2 * bx + dx, 2 * bz + dz)] = KIND.ROAD;
+  laid.set(roadBlockKey(bx, bz), { bx, bz, pieceIndex: -1 });
+  return true;
+}
+
+// Lay from (bx, bz) stepping (dx, dz) until the stop predicate holds or a
+// block is not free.
+function layRun(s, laid, bx, bz, dx, dz, stopAt) {
+  let x = bx, z = bz;
+  for (;;) {
+    if (!layBlock(s, laid, x, z)) return false;
+    if (stopAt(x, z)) return true;
+    x += dx; z += dz;
+  }
+}
+
+function stepRoads(s) {
+  const { w, h } = s;
+  const bxMax = (w - 4) / 2, bzMax = (h - 4) / 2;
+  const bxS = Math.min(bxMax - 1, Math.max(2, Math.round((w - 2) / 4)));
+  const bzS = Math.min(bzMax - 1, Math.max(2, Math.round((h - 2) / 4)));
+  const laid = new Map();
+  // spine: from the centre outward in all four directions
+  layBlock(s, laid, bxS, bzS);
+  layRun(s, laid, bxS, bzS + 1, 0, 1, (x, z) => z === bzMax);
+  layRun(s, laid, bxS, bzS - 1, 0, -1, (x, z) => z === 1);
+  layRun(s, laid, bxS + 1, bzS, 1, 0, (x, z) => x === bxMax);
+  layRun(s, laid, bxS - 1, bzS, -1, 0, (x, z) => x === 1);
+  // gate corridors: from the port straight to the spine line
+  for (const g of s.gates) {
+    const { bx, bz } = g.port;
+    let ok;
+    if (g.side === 'N') ok = layRun(s, laid, bx, bz, 0, -1, (x, z) => z === bzS);
+    else if (g.side === 'S') ok = layRun(s, laid, bx, bz, 0, 1, (x, z) => z === bzS);
+    else if (g.side === 'E') ok = layRun(s, laid, bx, bz, -1, 0, (x, z) => x === bxS);
+    else ok = layRun(s, laid, bx, bz, 1, 0, (x, z) => x === bxS);
+    if (!ok) s.warnings.push(`gate ${g.side}@${g.at}: corridor blocked before the spine`);
+  }
+  // read the pieces off the neighbour masks
+  const edges = [];
+  for (const b of laid.values()) {
+    const want = new Set();
+    for (const side of SIDES) {
+      const [dx, dz] = DIRS[side];
+      const nk = roadBlockKey(b.bx + dx, b.bz + dz);
+      if (laid.has(nk)) {
+        want.add(side);
+        if (nk > roadBlockKey(b.bx, b.bz)) edges.push([roadBlockKey(b.bx, b.bz), nk]);
+      }
+    }
+    let id;
+    if (want.size === 0) { id = 'road_end'; want.add('N'); s.warnings.push(`isolated road block at ${b.bx},${b.bz}`); }
+    else if (want.size === 1) id = 'road_end';
+    else if (want.size === 2) id = (want.has('N') && want.has('S')) || (want.has('E') && want.has('W')) ? 'road_straight' : 'road_corner';
+    else if (want.size === 3) id = 'road_t';
+    else id = 'road_cross';
+    const rot = fitPorts(ROAD_PORTS[id], want);
+    b.pieceIndex = place(s, id, 2 * b.bx, 2 * b.bz, 2, 2, rot < 0 ? 0 : rot, KIND.ROAD);
+  }
+  s.roads = { nodes: [...laid.keys()], edges, blocks: laid };
+}
+
+export function roadsConnected(s) {
+  const { nodes, edges } = s.roads;
+  if (nodes.length === 0) return false;
+  const adj = new Map(nodes.map((n) => [n, []]));
+  for (const [a, b] of edges) { adj.get(a).push(b); adj.get(b).push(a); }
+  const seen = new Set([nodes[0]]);
+  const stack = [nodes[0]];
+  while (stack.length) {
+    const n = stack.pop();
+    for (const m of adj.get(n)) if (!seen.has(m)) { seen.add(m); stack.push(m); }
+  }
+  return seen.size === nodes.length;
+}
+
 // --- entry -----------------------------------------------------------------
 export function generatePlate(params) {
   const p = clampPlateParams(makePlateParams(), params);
   const s = makeState(p);
   const rng = mulberry32(p.seed);
   stepRing(s, rng);
+  stepRoads(s);
   return s;
 }

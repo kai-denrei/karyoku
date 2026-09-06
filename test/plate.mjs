@@ -1,4 +1,4 @@
-import { generatePlate, makePlateParams, plateKnobProblems, KIND, rotSide, dirOfYaw, PLATE_TUNE } from '../src/plate.js';
+import { generatePlate, makePlateParams, plateKnobProblems, KIND, rotSide, dirOfYaw, PLATE_TUNE, roadsConnected, roadBlockKey } from '../src/plate.js';
 import { check, near, done } from './check.mjs';
 
 check('knob table is sound', plateKnobProblems().length === 0, plateKnobProblems().join('; '));
@@ -42,4 +42,21 @@ for (const [w, h] of SIZES) {
     checkRing(p, `${w}x${h} g${gates}`);
   }
 }
+function checkRoads(p, label) {
+  check(`${label}: road graph connected`, roadsConnected(p));
+  check(`${label}: every gate port is a road block`, p.gates.every((g) => p.roads.blocks.has(roadBlockKey(g.port.bx, g.port.bz))));
+  check(`${label}: road cells are all owned by road pieces`, (() => {
+    for (let i = 0; i < p.cells.length; i++) {
+      if (p.cells[i] !== KIND.ROAD) continue;
+      const pc = p.pieces[p.owner[i]];
+      if (!pc || !pc.id.startsWith('road_')) return false;
+    }
+    return true;
+  })());
+  check(`${label}: road pieces are 2x2 on even cells`, p.pieces.filter((pc) => pc.kind === KIND.ROAD)
+    .every((pc) => pc.pw === 2 && pc.ph === 2 && pc.x % 2 === 0 && pc.z % 2 === 0));
+  check(`${label}: has a crossroads`, p.pieces.some((pc) => pc.id === 'road_cross'));
+}
+for (const seed of SEEDS) checkRoads(generatePlate(makePlateParams({ ...PLATE_TUNE, seed })), `seed ${seed}`);
+for (const [w, h] of SIZES) checkRoads(generatePlate(makePlateParams({ ...PLATE_TUNE, seed: 3, w, h, gates: 3 })), `${w}x${h}`);
 done();
