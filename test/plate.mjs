@@ -21,8 +21,25 @@ const cellAt = (p, x, z) => p.cells[z * p.w + x];
 
 function checkRing(p, label) {
   check(`${label}: sealed ring`, ringCells(p).every(([x, z]) => cellAt(p, x, z) === KIND.WALL || cellAt(p, x, z) === KIND.GATE));
-  check(`${label}: gate count`, p.gates.length === p.params.gates, `got ${p.gates.length}`);
-  check(`${label}: gates on distinct sides`, new Set(p.gates.map((g) => g.side)).size === p.gates.length);
+  const outer = p.gates.filter((g) => g.ring === 'outer'), inner = p.gates.filter((g) => g.ring === 'inner');
+  check(`${label}: gate count`, inner.length === p.params.gates, `got ${inner.length}`);
+  check(`${label}: gates on distinct sides`, new Set(inner.map((g) => g.side)).size === inner.length);
+  check(`${label}: two rings when there is a band`, p.inset === 0 ? outer.length === 0 : outer.length === inner.length);
+  check(`${label}: outer and inner gates line up`, outer.every((o) => inner.some((i) => i.side === o.side && i.at === o.at)));
+  check(`${label}: inner ring sealed`, (() => {
+    const n = p.inset; if (n === 0) return true;
+    for (let x = n; x <= p.w - 1 - n; x++) for (const z of [n, p.h - 1 - n]) { const k = cellAt(p, x, z); if (k !== KIND.WALL && k !== KIND.GATE) return false; }
+    for (let z = n; z <= p.h - 1 - n; z++) for (const x of [n, p.w - 1 - n]) { const k = cellAt(p, x, z); if (k !== KIND.WALL && k !== KIND.GATE) return false; }
+    return true;
+  })());
+  check(`${label}: the band holds no buildings`, (() => {
+    const n = p.inset; if (n === 0) return true;
+    for (let z = 1; z < p.h - 1; z++) for (let x = 1; x < p.w - 1; x++) {
+      const inBand = x < n || z < n || x > p.w - 1 - n || z > p.h - 1 - n;
+      if (inBand && (cellAt(p, x, z) === KIND.BUILDING || cellAt(p, x, z) === KIND.PROP)) return false;
+    }
+    return true;
+  })());
   check(`${label}: no gate within two cells of a corner`, p.gates.every((g) => g.at >= 3 && g.at <= ((g.side === 'N' || g.side === 'S') ? p.w : p.h) - 4));
   check(`${label}: four corners are wall pieces`, [[0, 0], [p.w - 1, 0], [0, p.h - 1], [p.w - 1, p.h - 1]]
     .every(([x, z]) => p.pieces[p.owner[z * p.w + x]].id === 'wall_corner'));
@@ -45,7 +62,11 @@ for (const [w, h] of SIZES) {
 }
 function checkRoads(p, label) {
   check(`${label}: road graph connected`, roadsConnected(p));
-  check(`${label}: every gate port is a road block`, p.gates.every((g) => p.roads.blocks.has(roadBlockKey(g.port.bx, g.port.bz))));
+  check(`${label}: every inner gate port is a road block`, p.gates.filter((g) => g.port).every((g) => p.roads.blocks.has(roadBlockKey(g.port.bx, g.port.bz))));
+  check(`${label}: every outer gate has road at its inner row`, p.gates.filter((g) => g.ring === 'outer').every((g) => {
+    const [x, z] = g.side === 'N' ? [g.at, 2] : g.side === 'S' ? [g.at, p.h - 3] : g.side === 'E' ? [p.w - 3, g.at] : [2, g.at];
+    return cellAt(p, x, z) === KIND.ROAD;
+  }));
   check(`${label}: road cells are all owned by road pieces`, (() => {
     for (let i = 0; i < p.cells.length; i++) {
       if (p.cells[i] !== KIND.ROAD) continue;
@@ -104,7 +125,7 @@ function checkSentries(p, label) {
     const ox = (st.x + 1) - p.w / 2, oz = (st.z + 1) - p.h / 2;
     return dx * ox + dz * oz > 0;
   }));
-  check(`${label}: every sentry within one cell of the ring`, p.sentries.every((st) => st.x <= 1 || st.z <= 1 || st.x + 2 >= p.w - 1 || st.z + 2 >= p.h - 1));
+  check(`${label}: every sentry within one cell of a ring`, p.sentries.every((st) => [0, p.inset].some((n) => st.x === n + 1 || st.z === n + 1 || st.x + 2 === p.w - 1 - n || st.z + 2 === p.h - 1 - n)));
   check(`${label}: sentry piece owns its cells`, p.sentries.every((st) => p.pieces[st.pieceIndex].id === 'defense_sentry_socket'));
   check(`${label}: no warnings`, p.warnings.length === 0, p.warnings.join('; '));
 }

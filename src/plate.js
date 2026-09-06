@@ -13,9 +13,9 @@
 // `rotation.y = -rot * PI/2`. Yaw is compass degrees, 0 = N, 90 = E.
 // Plate width and depth are EVEN, because roads are 2 x 2 pieces laid on
 // even coordinates and a gate's road port has to land on one.
-import { mulberry32 } from './rng.js?v=b9570818';
-import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=b9570818';
-import { specById } from './catalog-spec.js?v=b9570818';
+import { mulberry32 } from './rng.js?v=bee40328';
+import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=bee40328';
+import { specById } from './catalog-spec.js?v=bee40328';
 
 export const CELL_M = 4;
 
@@ -27,6 +27,7 @@ export const PLATE_TUNE = {
   w: 32,          // cells, including the ring; even — a 7.8 m hull needs room
   h: 26,          // cells, including the ring; even
   gates: 2,
+  moat: 4,        // cells of open ground between the outer perimeter and the base wall; 0 = one ring
   density: 0.55,  // fraction of a block the packer tries to fill; the rest is manoeuvring room
   arc: 110,       // sentry traverse, degrees
   tier: 1,        // sentry tier
@@ -37,6 +38,7 @@ export const PLATE_KNOBS = [
   { key: 'w', label: 'width (cells)', group: 'plate', min: 12, max: 60, step: 2 },
   { key: 'h', label: 'depth (cells)', group: 'plate', min: 12, max: 60, step: 2 },
   { key: 'gates', label: 'gates', group: 'plate', min: 1, max: 3, step: 1 },
+  { key: 'moat', label: 'perimeter band (cells)', group: 'plate', min: 0, max: 8, step: 1 },
   { key: 'density', label: 'build density', group: 'packing', min: 0.3, max: 1.0, step: 0.05 },
   { key: 'arc', label: 'sentry arc (deg)', group: 'sentries', min: 60, max: 180, step: 5 },
   { key: 'tier', label: 'sentry tier', group: 'sentries', min: 1, max: 3, step: 1 },
@@ -61,8 +63,17 @@ const inside = (s, x, z) => x >= 0 && z >= 0 && x < s.w && z < s.h;
 function makeState(p) {
   // even, always: the knob table's step is 2, but a URL can hand us 13
   const w = p.w & ~1, h = p.h & ~1;
+  // THE TWO RINGS. Firepower's bases had a perimeter wall, empty ground,
+  // and then the base proper. `inset` is where the inner ring stands; it
+  // is even so the road blocks inside it stay on even coordinates, and at
+  // least 4 so the outer corner sockets fit in the band. 0 means one ring.
+  let inset = p.moat === 0 ? 0 : Math.max(4, 2 * Math.ceil((p.moat + 1) / 2));
+  // ...and only if the base inside still has 12 cells to work with; a small
+  // plate keeps its single ring rather than a ring around nothing
+  const room = 2 * Math.floor((Math.min(w, h) - 12) / 4);
+  if (inset > room) inset = room >= 4 ? room : 0;
   return {
-    w, h, seed: p.seed, params: { ...p, w, h },
+    w, h, inset, seed: p.seed, params: { ...p, w, h },
     cells: new Uint8Array(w * h),
     owner: new Int16Array(w * h).fill(-1),
     pieces: [], roads: { nodes: [], edges: [], blocks: new Map() }, gates: [], sentries: [], blocks: [],
@@ -104,6 +115,12 @@ function asciiOf(s) {
 // that is `offset`, and the viewer applies it. Gate centres stay at least
 // five cells from a corner so the flank sentry sockets (step 5) clear the
 // corner sockets.
+// The inner ring's rectangle (or the outer one's, at inset 0).
+export const innerRect = (s) => ({ x0: s.inset, z0: s.inset, x1: s.w - 1 - s.inset, z1: s.h - 1 - s.inset });
+const outerRect = (s) => ({ x0: 0, z0: 0, x1: s.w - 1, z1: s.h - 1 });
+// road-block bounds inside the inner ring: 2bx >= x0+1 and 2bx+1 <= x1-1
+export const blockBounds = (s) => ({ bxMin: s.inset / 2 + 1, bxMax: (s.w - 4 - s.inset) / 2, bzMin: s.inset / 2 + 1, bzMax: (s.h - 4 - s.inset) / 2 });
+
 function chooseGates(s, rng) {
   const sides = [...SIDES];
   for (let i = sides.length - 1; i > 0; i--) {
@@ -113,11 +130,11 @@ function chooseGates(s, rng) {
   const out = [];
   for (const side of sides.slice(0, s.params.gates)) {
     const len = (side === 'N' || side === 'S') ? s.w : s.h;
-    // six cells from a corner keeps the flank sockets clear of the corner
-    // sockets; a 12-cell side cannot afford that, and there the flank that
-    // would overlap a corner socket is simply not placed (sentrySockets).
-    let lo = 6, hi = len - 7;
-    if (hi < lo) { lo = 5; hi = len - 6; }
+    // six cells from the INNER ring's corner keeps the flank sockets clear
+    // of the corner sockets; a 12-cell side cannot afford that, and there
+    // the flank that would overlap a corner socket is simply not placed.
+    let lo = s.inset + 6, hi = len - 7 - s.inset;
+    if (hi < lo) { lo = s.inset + 5; hi = len - 6 - s.inset; }
     if (hi < lo) { s.warnings.push(`gate on ${side}: side too short`); continue; }
     const at = lo + Math.floor(rng() * (hi - lo + 1));
     out.push({ side, at });
@@ -125,48 +142,60 @@ function chooseGates(s, rng) {
   return out;
 }
 
-function gateRect(s, g) {
-  // origin, dims, rot, outward offset in cells
+// A gate's rectangle on a ring: origin, dims, rot, outward offset in cells.
+function gateRect(s, g, r) {
   switch (g.side) {
-    case 'N': return { x: g.at - 1, z: 0, pw: 3, ph: 2, rot: 0, offset: [0, -0.5] };
-    case 'S': return { x: g.at - 1, z: s.h - 2, pw: 3, ph: 2, rot: 2, offset: [0, 0.5] };
-    case 'E': return { x: s.w - 2, z: g.at - 1, pw: 2, ph: 3, rot: 1, offset: [0.5, 0] };
-    default: return { x: 0, z: g.at - 1, pw: 2, ph: 3, rot: 3, offset: [-0.5, 0] };
+    case 'N': return { x: g.at - 1, z: r.z0, pw: 3, ph: 2, rot: 0, offset: [0, -0.5] };
+    case 'S': return { x: g.at - 1, z: r.z1 - 1, pw: 3, ph: 2, rot: 2, offset: [0, 0.5] };
+    case 'E': return { x: r.x1 - 1, z: g.at - 1, pw: 2, ph: 3, rot: 1, offset: [0.5, 0] };
+    default: return { x: r.x0, z: g.at - 1, pw: 2, ph: 3, rot: 3, offset: [-0.5, 0] };
+  }
+}
+
+// One ring of wall on a rectangle, with holes for its gates, then the
+// gates. Corners: the kit's authored pose has legs toward +x and +z, which
+// here is E and S — the NW corner. Clockwise from there: NE, SE, SW.
+function layRing(s, r, gates, ring) {
+  const gateCells = new Set();
+  for (const g of gates) {
+    const gr = gateRect(s, g, r);
+    for (let dz = 0; dz < gr.ph; dz++) for (let dx = 0; dx < gr.pw; dx++) gateCells.add(idx(s, gr.x + dx, gr.z + dz));
+  }
+  place(s, 'wall_corner', r.x0, r.z0, 1, 1, 0, KIND.WALL);
+  place(s, 'wall_corner', r.x1, r.z0, 1, 1, 1, KIND.WALL);
+  place(s, 'wall_corner', r.x1, r.z1, 1, 1, 2, KIND.WALL);
+  place(s, 'wall_corner', r.x0, r.z1, 1, 1, 3, KIND.WALL);
+  for (let x = r.x0 + 1; x < r.x1; x++) {
+    if (!gateCells.has(idx(s, x, r.z0))) place(s, 'wall_standard', x, r.z0, 1, 1, 0, KIND.WALL);
+    if (!gateCells.has(idx(s, x, r.z1))) place(s, 'wall_standard', x, r.z1, 1, 1, 0, KIND.WALL);
+  }
+  for (let z = r.z0 + 1; z < r.z1; z++) {
+    if (!gateCells.has(idx(s, r.x0, z))) place(s, 'wall_standard', r.x0, z, 1, 1, 1, KIND.WALL);
+    if (!gateCells.has(idx(s, r.x1, z))) place(s, 'wall_standard', r.x1, z, 1, 1, 1, KIND.WALL);
+  }
+  const B = blockBounds(s);
+  for (const g of gates) {
+    const gr = gateRect(s, g, r);
+    const pieceIndex = place(s, 'gate_vehicle', gr.x, gr.z, gr.pw, gr.ph, gr.rot, KIND.GATE, { offset: gr.offset });
+    // the road port: the 2 x 2 road block just inside an INNER gate, on
+    // even coordinates; an outer gate has none, the band road serves it
+    const even = g.at & ~1;
+    const port = ring !== 'inner' ? null
+      : (g.side === 'N') ? { bx: even / 2, bz: B.bzMin }
+      : (g.side === 'S') ? { bx: even / 2, bz: B.bzMax }
+      : (g.side === 'E') ? { bx: B.bxMax, bz: even / 2 }
+      : { bx: B.bxMin, bz: even / 2 };
+    s.gates.push({ side: g.side, at: g.at, ring, x: gr.x, z: gr.z, rot: gr.rot, pieceIndex, port });
   }
 }
 
 function stepRing(s, rng) {
-  const { w, h } = s;
   const gates = chooseGates(s, rng);
-  const gateCells = new Set();
-  for (const g of gates) {
-    const r = gateRect(s, g);
-    for (let dz = 0; dz < r.ph; dz++) for (let dx = 0; dx < r.pw; dx++) gateCells.add(idx(s, r.x + dx, r.z + dz));
-  }
-  // corners: the kit's authored pose has legs toward +x and +z, which here
-  // is E and S — the NW corner. Clockwise from there: NE, SE, SW.
-  place(s, 'wall_corner', 0, 0, 1, 1, 0, KIND.WALL);
-  place(s, 'wall_corner', w - 1, 0, 1, 1, 1, KIND.WALL);
-  place(s, 'wall_corner', w - 1, h - 1, 1, 1, 2, KIND.WALL);
-  place(s, 'wall_corner', 0, h - 1, 1, 1, 3, KIND.WALL);
-  for (let x = 1; x < w - 1; x++) {
-    if (!gateCells.has(idx(s, x, 0))) place(s, 'wall_standard', x, 0, 1, 1, 0, KIND.WALL);
-    if (!gateCells.has(idx(s, x, h - 1))) place(s, 'wall_standard', x, h - 1, 1, 1, 0, KIND.WALL);
-  }
-  for (let z = 1; z < h - 1; z++) {
-    if (!gateCells.has(idx(s, 0, z))) place(s, 'wall_standard', 0, z, 1, 1, 1, KIND.WALL);
-    if (!gateCells.has(idx(s, w - 1, z))) place(s, 'wall_standard', w - 1, z, 1, 1, 1, KIND.WALL);
-  }
-  for (const g of gates) {
-    const r = gateRect(s, g);
-    const pieceIndex = place(s, 'gate_vehicle', r.x, r.z, r.pw, r.ph, r.rot, KIND.GATE, { offset: r.offset });
-    // the road port: the 2 x 2 road block just inside the gate, on even coordinates
-    const even = g.at & ~1;
-    const port = (g.side === 'N') ? { bx: even / 2, bz: 1 }
-      : (g.side === 'S') ? { bx: even / 2, bz: (h - 4) / 2 }
-      : (g.side === 'E') ? { bx: (w - 4) / 2, bz: even / 2 }
-      : { bx: 1, bz: even / 2 };
-    s.gates.push({ side: g.side, at: g.at, x: r.x, z: r.z, rot: r.rot, pieceIndex, port });
+  if (s.inset > 0) {
+    layRing(s, outerRect(s), gates, 'outer');
+    layRing(s, innerRect(s), gates, 'inner');
+  } else {
+    layRing(s, outerRect(s), gates, 'inner');
   }
 }
 
@@ -196,10 +225,11 @@ function fitPorts(canon, want) {
   return -1;
 }
 
-function blockFree(s, bx, bz) {
+function blockFree(s, bx, bz, bandOk = false) {
   const x = 2 * bx, z = 2 * bz;
   if (!inside(s, x, z) || !inside(s, x + 1, z + 1)) return false;
-  if (x < 1 || z < 1 || x + 1 > s.w - 2 || z + 1 > s.h - 2) return false; // never on the ring
+  if (x < 1 || z < 1 || x + 1 > s.w - 2 || z + 1 > s.h - 2) return false; // never on the outer ring
+  if (!bandOk && (x < s.inset + 1 || z < s.inset + 1 || x + 1 > s.w - 2 - s.inset || z + 1 > s.h - 2 - s.inset)) return false; // nor on the inner one
   for (let dz = 0; dz < 2; dz++) {
     for (let dx = 0; dx < 2; dx++) {
       const i = idx(s, x + dx, z + dz);
@@ -210,8 +240,8 @@ function blockFree(s, bx, bz) {
   return true;
 }
 
-function layBlock(s, laid, bx, bz) {
-  if (!blockFree(s, bx, bz)) return false;
+function layBlock(s, laid, bx, bz, bandOk = false) {
+  if (!blockFree(s, bx, bz, bandOk)) return false;
   for (let dz = 0; dz < 2; dz++) for (let dx = 0; dx < 2; dx++) s.cells[idx(s, 2 * bx + dx, 2 * bz + dz)] = KIND.ROAD;
   laid.set(roadBlockKey(bx, bz), { bx, bz, pieceIndex: -1 });
   return true;
@@ -219,10 +249,10 @@ function layBlock(s, laid, bx, bz) {
 
 // Lay from (bx, bz) stepping (dx, dz) until the stop predicate holds or a
 // block is not free.
-function layRun(s, laid, bx, bz, dx, dz, stopAt) {
+function layRun(s, laid, bx, bz, dx, dz, stopAt, bandOk = false) {
   let x = bx, z = bz;
   for (;;) {
-    if (!layBlock(s, laid, x, z)) return false;
+    if (!layBlock(s, laid, x, z, bandOk)) return false;
     if (stopAt(x, z)) return true;
     x += dx; z += dz;
   }
@@ -230,18 +260,33 @@ function layRun(s, laid, bx, bz, dx, dz, stopAt) {
 
 function stepRoads(s) {
   const { w, h } = s;
-  const bxMax = (w - 4) / 2, bzMax = (h - 4) / 2;
-  const bxS = Math.min(bxMax - 1, Math.max(2, Math.round((w - 2) / 4)));
-  const bzS = Math.min(bzMax - 1, Math.max(2, Math.round((h - 2) / 4)));
+  const { bxMin, bxMax, bzMin, bzMax } = blockBounds(s);
+  const bxS = Math.min(bxMax - 1, Math.max(bxMin + 1, Math.round((w - 2) / 4)));
+  const bzS = Math.min(bzMax - 1, Math.max(bzMin + 1, Math.round((h - 2) / 4)));
   const laid = new Map();
   // spine: from the centre outward in all four directions
   layBlock(s, laid, bxS, bzS);
   layRun(s, laid, bxS, bzS + 1, 0, 1, (x, z) => z === bzMax);
-  layRun(s, laid, bxS, bzS - 1, 0, -1, (x, z) => z === 1);
+  layRun(s, laid, bxS, bzS - 1, 0, -1, (x, z) => z === bzMin);
   layRun(s, laid, bxS + 1, bzS, 1, 0, (x, z) => x === bxMax);
-  layRun(s, laid, bxS - 1, bzS, -1, 0, (x, z) => x === 1);
-  // gate corridors: from the port straight to the spine line
+  layRun(s, laid, bxS - 1, bzS, -1, 0, (x, z) => x === bxMin);
+  // the band: a road from each outer gate across the open ground to its
+  // inner gate, laid with the band's own bounds
   for (const g of s.gates) {
+    if (g.ring !== 'outer') continue;
+    const even = g.at & ~1;
+    const last = s.inset / 2 - 1;
+    if (last < 1) continue;
+    let ok;
+    if (g.side === 'N') ok = layRun(s, laid, even / 2, 1, 0, 1, (x, z) => z === last, true);
+    else if (g.side === 'S') ok = layRun(s, laid, even / 2, (h - 4) / 2, 0, -1, (x, z) => z === (h - 2) / 2 - last, true);
+    else if (g.side === 'E') ok = layRun(s, laid, (w - 4) / 2, even / 2, -1, 0, (x, z) => x === (w - 2) / 2 - last, true);
+    else ok = layRun(s, laid, 1, even / 2, 1, 0, (x, z) => x === last, true);
+    if (!ok) s.warnings.push(`gate ${g.side}@${g.at}: band road blocked`);
+  }
+  // gate corridors: from each inner gate's port straight to the spine line
+  for (const g of s.gates) {
+    if (!g.port) continue;
     const { bx, bz } = g.port;
     let ok;
     if (g.side === 'N') ok = layRun(s, laid, bx, bz, 0, 1, (x, z) => z === bzS);
@@ -271,6 +316,15 @@ function stepRoads(s) {
     const rot = fitPorts(ROAD_PORTS[id], want);
     b.pieceIndex = place(s, id, 2 * b.bx, 2 * b.bz, 2, 2, rot < 0 ? 0 : rot, KIND.ROAD);
     if (want.size === 1) ends.push({ b, open: rotSide([...want][0], 2) });
+  }
+  // an inner gate JOINS its band road to its port: two gate rows apart, the
+  // gate itself is the link, so the graph carries an edge across it
+  for (const g of s.gates) {
+    if (!g.port) continue;
+    const { bx, bz } = g.port;
+    const [ox, oz] = g.side === 'N' ? [0, -2] : g.side === 'S' ? [0, 2] : g.side === 'E' ? [2, 0] : [-2, 0];
+    const a = roadBlockKey(bx, bz), b = roadBlockKey(bx + ox, bz + oz);
+    if (laid.has(a) && laid.has(b)) edges.push([a, b]);
   }
   s.roads = { nodes: [...laid.keys()], edges, blocks: laid };
   extendEnds(s, ends);
@@ -323,18 +377,26 @@ export function roadsConnected(s) {
 // box is the block, and the packer stays inside the region's own cell set
 // so an L-shaped region cannot leak into a neighbour's box.
 export function sentrySockets(s) {
-  const { w, h } = s;
-  const out = [
-    { x: 1, z: 1, yawDeg: 315, where: 'corner' },          // NW
-    { x: w - 3, z: 1, yawDeg: 45, where: 'corner' },       // NE
-    { x: w - 3, z: h - 3, yawDeg: 135, where: 'corner' },  // SE
-    { x: 1, z: h - 3, yawDeg: 225, where: 'corner' },      // SW
-  ];
+  const { w, h, inset: n } = s;
+  const out = [];
+  // the outer perimeter's corners, in the band
+  if (n > 0) out.push(
+    { x: 1, z: 1, yawDeg: 315, where: 'outer' },
+    { x: w - 3, z: 1, yawDeg: 45, where: 'outer' },
+    { x: w - 3, z: h - 3, yawDeg: 135, where: 'outer' },
+    { x: 1, z: h - 3, yawDeg: 225, where: 'outer' });
+  // the base wall's corners and gate flanks, inside it
+  out.push(
+    { x: n + 1, z: n + 1, yawDeg: 315, where: 'corner' },          // NW
+    { x: w - 3 - n, z: n + 1, yawDeg: 45, where: 'corner' },       // NE
+    { x: w - 3 - n, z: h - 3 - n, yawDeg: 135, where: 'corner' },  // SE
+    { x: n + 1, z: h - 3 - n, yawDeg: 225, where: 'corner' });     // SW
   for (const g of s.gates) {
-    if (g.side === 'N') out.push({ x: g.at - 3, z: 1, yawDeg: 0, where: 'flank' }, { x: g.at + 2, z: 1, yawDeg: 0, where: 'flank' });
-    else if (g.side === 'S') out.push({ x: g.at - 3, z: h - 3, yawDeg: 180, where: 'flank' }, { x: g.at + 2, z: h - 3, yawDeg: 180, where: 'flank' });
-    else if (g.side === 'E') out.push({ x: w - 3, z: g.at - 3, yawDeg: 90, where: 'flank' }, { x: w - 3, z: g.at + 2, yawDeg: 90, where: 'flank' });
-    else out.push({ x: 1, z: g.at - 3, yawDeg: 270, where: 'flank' }, { x: 1, z: g.at + 2, yawDeg: 270, where: 'flank' });
+    if (g.ring !== 'inner') continue;
+    if (g.side === 'N') out.push({ x: g.at - 3, z: n + 1, yawDeg: 0, where: 'flank' }, { x: g.at + 2, z: n + 1, yawDeg: 0, where: 'flank' });
+    else if (g.side === 'S') out.push({ x: g.at - 3, z: h - 3 - n, yawDeg: 180, where: 'flank' }, { x: g.at + 2, z: h - 3 - n, yawDeg: 180, where: 'flank' });
+    else if (g.side === 'E') out.push({ x: w - 3 - n, z: g.at - 3, yawDeg: 90, where: 'flank' }, { x: w - 3 - n, z: g.at + 2, yawDeg: 90, where: 'flank' });
+    else out.push({ x: n + 1, z: g.at - 3, yawDeg: 270, where: 'flank' }, { x: n + 1, z: g.at + 2, yawDeg: 270, where: 'flank' });
   }
   // a flank that would overlap an earlier socket (a corner's, on a short
   // side) is dropped rather than doubled up
@@ -382,8 +444,9 @@ const PROP_RATE = 0.12;
 function floodBlocks(s) {
   const seen = new Uint8Array(s.w * s.h);
   const blocks = [];
-  for (let z0 = 1; z0 < s.h - 1; z0++) {
-    for (let x0 = 1; x0 < s.w - 1; x0++) {
+  const R = innerRect(s);
+  for (let z0 = R.z0 + 1; z0 < R.z1; z0++) {
+    for (let x0 = R.x0 + 1; x0 < R.x1; x0++) {
       const i0 = idx(s, x0, z0);
       if (seen[i0] || s.cells[i0] !== KIND.FOUNDATION || s.owner[i0] !== -1) continue;
       const cells = [], stack = [[x0, z0]];
@@ -403,7 +466,7 @@ function floodBlocks(s) {
         }
       }
       blocks.push({ x0: xa, z0: za, x1, z1, cells, cellSet: new Set(cells.map(([x, z]) => idx(s, x, z))), zone: null,
-        touchesRing: xa === 1 || za === 1 || x1 === s.w - 2 || z1 === s.h - 2, gateSides: new Set() });
+        touchesRing: xa === R.x0 + 1 || za === R.z0 + 1 || x1 === R.x1 - 1 || z1 === R.z1 - 1, gateSides: new Set() });
     }
   }
   return blocks;
@@ -413,6 +476,7 @@ function floodBlocks(s) {
 // that gate's corridor — the run from the port up to the first junction.
 function markGateAdjacency(s, blocks) {
   for (const g of s.gates) {
+    if (!g.port) continue;
     const corridor = new Set();
     const { bx, bz } = g.port;
     const [dx, dz] = g.side === 'N' ? [0, 1] : g.side === 'S' ? [0, -1] : g.side === 'E' ? [-1, 0] : [1, 0];
@@ -444,7 +508,7 @@ function assignZones(s, rng, blocks) {
     left.splice(left.indexOf(cmd), 1);
   }
   // logistics: the largest block beside each gate corridor
-  for (const g of s.gates) { const b = take((x) => x.gateSides.has(g.side)); if (b) b.zone = 'logistics'; }
+  for (const g of s.gates) { if (!g.port) continue; const b = take((x) => x.gateSides.has(g.side)); if (b) b.zone = 'logistics'; }
   // air: the largest remaining block if a pad fits, else personnel
   const big = take(() => true);
   if (big) big.zone = (big.x1 - big.x0 + 1 >= 8 && big.z1 - big.z0 + 1 >= 8) ? 'air' : 'personnel';

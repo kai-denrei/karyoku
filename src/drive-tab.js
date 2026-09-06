@@ -4,12 +4,12 @@
 // hit. The rules are drive.js; this file wires the rig around them.
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { generatePlate, makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M } from './plate.js?v=b9570818';
+import { generatePlate, makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M } from './plate.js?v=bee40328';
 import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, blockedAt, makeGates, stepGates,
-  spawnFor, makeSentries, stepSentries, losClear, stepTracers, rayStop, fireHull } from './drive.js?v=b9570818';
-import { buildPlateGroup, yawRotation } from './plate-scene.js?v=b9570818';
-import { query, loadCatalog } from './plate-tab.js?v=b9570818';
-import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS } from './drive-rig.js?v=b9570818';
+  spawnFor, makeSentries, stepSentries, losClear, stepTracers, rayStop, fireHull, damageAt } from './drive.js?v=bee40328';
+import { buildPlateGroup, yawRotation } from './plate-scene.js?v=bee40328';
+import { query, loadCatalog } from './plate-tab.js?v=bee40328';
+import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS } from './drive-rig.js?v=bee40328';
 
 export function initDriveTab(root) {
   const { renderer, scene, camera, hud, notice, resize } = makeViewer(root);
@@ -26,20 +26,23 @@ export function initDriveTab(root) {
   const pool = makeTracerPool(scene);
 
   let catalog = null, plate = null, rig = null, gates = [], sentries = [], tracers = [], hull = null;
-  let hits = 0, simT = 0, lastLog = 0, lastDt = 0.016;
+  let hits = 0, simT = 0, lastLog = 0, lastDt = 0.016, breached = 0;
 
   function build() {
     if (rig) scene.remove(rig.group);
     pool.clear();
     plate = generatePlate(params);
     window.__plate = plate;
-    rig = buildPlateGroup({ plate, catalog, animatedGates: true });
+    rig = buildPlateGroup({ plate, catalog, wallState: null, animatedGates: true });
     scene.add(rig.group);
     gates = makeGates(plate);
     sentries = makeSentries(plate);
     tracers = [];
-    hits = 0; simT = 0; lastLog = 0;
+    hits = 0; simT = 0; lastLog = 0; breached = 0;
     const sp = spawnFor(plate, plate.gates[0]);
+    // ?aim=wall: spawn six cells along the wall from the gate, so a probe's
+    // shots land on standard wall segments rather than the gate
+    if (q.get('aim') === 'wall') { const g = plate.gates[0]; if (g.side === 'N' || g.side === 'S') sp.x += 6 * CELL_M; else sp.z += 6 * CELL_M; }
     hull = makeHull(sp.x, sp.z, sp.heading);
     camera.userData.placed = false;
     window.__drive = { hull, gates, sentries, tracers, get hits() { return hits; } };
@@ -50,12 +53,17 @@ export function initDriveTab(root) {
     if (input.fire) { const shot = fireHull(hull, P); if (shot) tracers.push(shot); }
     stepGates(gates, hull, dt, P);
     for (const t of stepSentries(sentries, hull, dt, (ax, az, bx, bz) => losClear(plate, ax, az, bx, bz), P)) tracers.push(t);
-    hits += stepTracers(tracers, hull, dt, rayStop(plate, gates), P);
+    const stop = rayStop(plate, gates);
+    hits += stepTracers(tracers, hull, dt, (x, z, t) => {
+      if (!stop(x, z, t)) return false;
+      if (t && t.kind === 'shot') { const pc = damageAt(plate, x, z); if (pc) { if (pc.state >= 3) breached++; rig.rebuildWalls(); } }
+      return true;
+    }, P);
     simT += dt;
   }
 
   const gateWord = () => gates.map((g) => `${g.side}:${g.open >= 0.95 ? 'open' : g.open <= 0 ? 'shut' : 'moving'}`).join(' ');
-  const logLine = () => `[drive] t=${simT.toFixed(1)} hull=${hull.x.toFixed(1)},${hull.z.toFixed(1)} heading=${hull.heading.toFixed(0)} gates=${gateWord()} tracking=${sentries.filter((s) => s.tracking).length} lobs=${tracers.filter((t) => t.kind === 'lob').length} hits=${hits}`;
+  const logLine = () => `[drive] t=${simT.toFixed(1)} hull=${hull.x.toFixed(1)},${hull.z.toFixed(1)} heading=${hull.heading.toFixed(0)} gates=${gateWord()} tracking=${sentries.filter((s) => s.tracking).length} lobs=${tracers.filter((t) => t.kind === 'lob').length} hits=${hits} shots=${hull.shots} damaged=${plate.pieces.filter((pc) => pc.kind === 1 && pc.state > 0).length} breached=${breached}`;
 
   function sync() {
     hullObj.userData.setPose(hull, 0);
@@ -63,7 +71,7 @@ export function initDriveTab(root) {
     for (const gr of rig.gateRigs) { const g = gates[gr.index]; if (g && gr.mixer) gr.mixer.setTime(g.open * gr.duration); }
     pool.sync(tracers, () => 0, lastDt, P.splashR);
     followCamera(camera, controls, hull, 0, view.camera, lastDt, null, { cx: plate.w * CELL_M / 2, cz: plate.h * CELL_M / 2, span: Math.max(plate.w, plate.h) * CELL_M });
-    hud.textContent = `hits ${hits} · shots ${hull.shots} · gates ${gateWord()} · cam ${view.camera} · WASD drive · SPACE fire · 1 top 2 chase 3 orbit 4 overview · R regenerate`;
+    hud.textContent = `hits ${hits} · shots ${hull.shots} · breached ${breached} · gates ${gateWord()} · cam ${view.camera} · WASD drive · SPACE fire · 1 top 2 chase 3 orbit 4 overview · R regenerate`;
   }
 
   const regenerate = () => { params.seed = (params.seed + 1) % 1000000; gui.controllersRecursive().forEach((c) => c.updateDisplay()); build(); };
@@ -93,7 +101,8 @@ export function initDriveTab(root) {
     build();
     const tick = Number(q.get('tick') || 0);
     if (tick > 0) {
-      for (let i = 0; i < tick * 60; i++) step(1 / 60, { fwd: true });
+      const firing = q.get('fire') === '1';
+      for (let i = 0; i < tick * 60; i++) step(1 / 60, { fwd: q.get('hold') !== '1', fire: firing });
       console.log(logLine());
     }
     renderer.setAnimationLoop((now) => {

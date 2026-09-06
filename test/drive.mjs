@@ -1,6 +1,6 @@
 import { generatePlate, makePlateParams, PLATE_TUNE, KIND, CELL_M, blindCells } from '../src/plate.js';
 import { DRIVE_TUNE, driveKnobProblems, makeHull, stepHull, blockedAt, makeGates, stepGates, spawnFor,
-  makeSentries, stepSentries, losClear, stepTracers, buildingAt, bearingTo, lobHeight, LOB_FAMILIES, fireHull, rayStop } from '../src/drive.js';
+  makeSentries, stepSentries, losClear, stepTracers, buildingAt, bearingTo, lobHeight, LOB_FAMILIES, fireHull, rayStop, damageAt } from '../src/drive.js';
 import { check, near, done } from './check.mjs';
 
 check('knob table is sound', driveKnobProblems().length === 0, driveKnobProblems().join('; '));
@@ -193,5 +193,20 @@ for (let seed = 1; seed <= 50; seed++) {
   steps = 0;
   while (open.length && steps < 600) { stepTracers(open, h, DT, stop); steps++; }
   check('a shot over open ground flies its range', Math.abs(steps * DT * DRIVE_TUNE.shotSpeed - DRIVE_TUNE.shotRange) < 2, `flew ${steps * DT * DRIVE_TUNE.shotSpeed}`);
+}
+// --- destructible walls -------------------------------------------------------
+{
+  const p2 = generatePlate(makePlateParams({ ...PLATE_TUNE, seed: 7 }));
+  const g2 = makeGates(p2);
+  const wx = 20 + 2, wz = (p2.h - 0.5) * CELL_M; // a standard wall cell on the S outer ring
+  check('the cell is a standard wall', p2.pieces[p2.owner[(p2.h - 1) * p2.w + 5]].id === 'wall_standard');
+  check('intact wall blocks', blockedAt(p2, g2, wx, wz));
+  const pc = damageAt(p2, wx, wz);
+  check('a shot damages it to D1', pc && pc.state === 1);
+  damageAt(p2, wx, wz); damageAt(p2, wx, wz);
+  check('three shots leave rubble at D3', pc.state === 3 && damageAt(p2, wx, wz) === null);
+  check('rubble no longer blocks', !blockedAt(p2, g2, wx, wz));
+  const cx = 0.5 * CELL_M, cz = (p2.h - 0.5) * CELL_M; // the SW corner piece
+  check('a corner shrugs the round off', damageAt(p2, cx, cz) === null && blockedAt(p2, g2, cx, cz));
 }
 done();

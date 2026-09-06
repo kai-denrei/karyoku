@@ -10,12 +10,12 @@
 // and the hull samples it where it stands, so the two cannot disagree
 // beyond the mesh's own faceting, and a plate sits on ground that is
 // exactly zero because the mask says so, not because a vertex was edited.
-import { mulberry32 } from './rng.js?v=b9570818';
-import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=b9570818';
-import { generateMesh, relax } from './organic-grid.js?v=b9570818';
-import { valueNoise2D } from './noise.js?v=b9570818';
-import { generatePlate, makePlateParams, CELL_M, DIRS, yawOfSide, KIND } from './plate.js?v=b9570818';
-import { makeGates, makeSentries, blockedAt, losClear, buildingAt, gateCentre } from './drive.js?v=b9570818';
+import { mulberry32 } from './rng.js?v=bee40328';
+import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=bee40328';
+import { generateMesh, relax } from './organic-grid.js?v=bee40328';
+import { valueNoise2D } from './noise.js?v=bee40328';
+import { generatePlate, makePlateParams, CELL_M, DIRS, yawOfSide, KIND } from './plate.js?v=bee40328';
+import { makeGates, makeSentries, blockedAt, losClear, buildingAt, gateCentre } from './drive.js?v=bee40328';
 
 export const WORLD_TUNE = {
   size: 760,        // m, the world is a square
@@ -123,7 +123,7 @@ export function findRoad(world, fromQ, toQ, tune) {
 // --- plates ------------------------------------------------------------------
 function placePlate(plate, cx, cz) {
   const wM = plate.w * CELL_M, hM = plate.h * CELL_M;
-  return { plate, wM, hM, ox: cx - wM / 2, oz: cz - hM / 2, gates: null, sentries: null, facing: -1 };
+  return { plate, wM, hM, ox: cx - wM / 2, oz: cz - hM / 2, gates: null, sentries: null, facing: -1, hostile: false };
 }
 
 // the gate's outside point, three cells out along its side's normal, in world metres
@@ -151,6 +151,9 @@ export function makeWorld(params, plateParams) {
   if (S > tune.size) warnings.push(`world grown to ${S} m to fit the plates`);
   tune.size = S;
   const plates = [placePlate(pA, S * 0.25, S * 0.5), placePlate(pB, S * 0.75, S * 0.5)];
+  // A is HOME: its gates open for the hull and its sentries hold fire. B is
+  // the target: shut gates, live sentries — you breach it.
+  plates[1].hostile = true;
   for (const p of plates) {
     p.gates = makeGates(p.plate).map((g) => ({ ...g, cx: g.cx + p.ox, cz: g.cz + p.oz }));
     p.sentries = makeSentries(p.plate).map((s) => ({ ...s, cx: s.cx + p.ox, cz: s.cz + p.oz, plate: p }));
@@ -161,6 +164,7 @@ export function makeWorld(params, plateParams) {
     const ocx = o.ox + o.wM / 2, ocz = o.oz + o.hM / 2;
     let best = 0, bd = Infinity;
     p.plate.gates.forEach((g, gi) => {
+      if (g.ring !== 'outer' && p.plate.inset > 0) return; // the road meets the perimeter
       const [cx, cz] = gateCentre(p.plate, g);
       const d = Math.hypot(p.ox + cx - ocx, p.oz + cz - ocz);
       if (d < bd) { bd = d; best = gi; }

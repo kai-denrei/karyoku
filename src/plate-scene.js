@@ -5,10 +5,10 @@
 // as clones with their YAW pivot exposed, and everything else as a labelled
 // placeholder box of its footprint.
 import * as THREE from '../vendor/three.module.js';
-import { KIND, CELL_M, ringCoverage } from './plate.js?v=b9570818';
-import { fileFor, SECTION_COLOR, PLACEHOLDER_HEIGHT_M } from './catalog.js?v=b9570818';
-import { LOB_FAMILIES, LOB_ELEV_DEG } from './drive.js?v=b9570818';
-import { loadGlb, loadGlbWithClips, mergeByMaterial, fitModel } from './glbmodels.js?v=b9570818';
+import { KIND, CELL_M, ringCoverage } from './plate.js?v=bee40328';
+import { fileFor, SECTION_COLOR, PLACEHOLDER_HEIGHT_M } from './catalog.js?v=bee40328';
+import { LOB_FAMILIES, LOB_ELEV_DEG } from './drive.js?v=bee40328';
+import { loadGlb, loadGlbWithClips, mergeByMaterial, fitModel } from './glbmodels.js?v=bee40328';
 
 const labelCache = new Map();
 function labelTexture(text) {
@@ -144,6 +144,9 @@ function arcWedge(st) {
 // The turret's authored forward is its +z, which is S here; yaw 0 faces N.
 export const yawRotation = (yawDeg) => Math.PI - yawDeg * Math.PI / 180;
 
+// `wallState` forces every wall to one state (the plate tab's selector);
+// null draws each wall at its own `piece.state`, and `rebuildWalls()` redraws
+// them after a shot changed one.
 export function buildPlateGroup({ plate, catalog, wallState = 0, showArcs = true, showBlind = true, animatedGates = false }) {
   const group = new THREE.Group();
   const sentryYaws = new Map();   // sentry index -> the node to turn
@@ -159,11 +162,36 @@ export function buildPlateGroup({ plate, catalog, wallState = 0, showArcs = true
   group.add(grid);
 
   const fallback = (piece) => { const obj = placeholderMesh(piece, catalog.get(piece.id)); placePiece(obj, piece); group.add(obj); };
+  const wallObjs = [];
+  function drawWalls() {
+    for (const o of wallObjs) group.remove(o);
+    wallObjs.length = 0;
+    const byUrl = new Map();
+    for (const piece of plate.pieces) {
+      if (piece.kind !== KIND.WALL) continue;
+      const entry = catalog.get(piece.id);
+      if (!entry) continue;
+      const url = entry.placeholder ? null : fileFor(entry, wallState === null ? piece.state : wallState);
+      if (!url) { fallback(piece); continue; }
+      if (!byUrl.has(url)) byUrl.set(url, []);
+      byUrl.get(url).push(piece);
+    }
+    for (const [url, pieces] of byUrl) {
+      pending.push(proto(url).then((root) => {
+        if (!root) { for (const piece of pieces) fallback(piece); return; }
+        const g = instanced(root, pieces, pieceMatrix);
+        wallObjs.push(g);
+        group.add(g);
+      }));
+    }
+    return byUrl.size;
+  }
+  const wallModels = drawWalls();
   const byModel = new Map(); // url -> pieces drawn from it
   for (const piece of plate.pieces) {
     const entry = catalog.get(piece.id);
-    if (!entry) continue;
-    const state = piece.kind === KIND.WALL ? wallState : piece.state;
+    if (!entry || piece.kind === KIND.WALL) continue;
+    const state = piece.state;
     const url = entry.placeholder ? null : fileFor(entry, state);
     if (!url) { fallback(piece); continue; }
     if (animatedGates && piece.kind === KIND.GATE) {
@@ -219,6 +247,6 @@ export function buildPlateGroup({ plate, catalog, wallState = 0, showArcs = true
       group.add(m);
     }
   }
-  console.log('[plate] models', byModel.size, 'pieces', plate.pieces.length, 'sentries', plate.sentries.length, 'warnings', plate.warnings.length);
-  return { group, sentryYaws, gateRigs, ready: Promise.all(pending) };
+  console.log('[plate] models', byModel.size + wallModels, 'pieces', plate.pieces.length, 'sentries', plate.sentries.length, 'warnings', plate.warnings.length);
+  return { group, sentryYaws, gateRigs, ready: Promise.all(pending), rebuildWalls: drawWalls };
 }

@@ -90,6 +90,23 @@ no build step, Node invariant suites).
   fold — 49 inverted, 200 concave — and every fold was a crease the hull
   sank into. `test/world.mjs` asserts zero inverted and zero concave quads.
 
+## Firepower layout, damage, hostility (operator, 2026-09-06 late)
+- A plate has TWO RINGS when it can afford them: outer perimeter, an empty
+  band (`moat` knob; `inset` is the inner ring's row, even, at least 4, and
+  0 on plates under 20 cells), then the base wall. Gates on both rings share
+  side and `at`; a band road joins them; the inner gate carries the `port`
+  and links the graph across itself. `innerRect`, `blockBounds`.
+- Sockets: outer corners in the band (`where: 'outer'`), inner corners and
+  inner-gate flanks inside. Buildings only inside the inner ring.
+- WALLS ARE DESTRUCTIBLE: `damageAt` steps a `wall_standard` piece D0..D3;
+  D3 is rubble and `blockedAt` lets the hull through. The scene draws walls
+  by `piece.state` (`wallState: null`) and `rig.rebuildWalls()` after a hit.
+  Corners and gates have no damaged models yet and shrug rounds off.
+- World: plate A is HOME (gates open, sentries silent), plate B is HOSTILE
+  (gates shut, sentries live) — you breach B through its wall.
+- Probes: `#drive?seed=7&tick=4&fire=1&hold=1&aim=wall` shoots the wall
+  beside the gate and logs `shots= damaged= breached=`.
+
 ## Verify
 - `npm run serve` then `http://localhost:8150/#plate?seed=7&ascii=1`.
   `?seed= ?w= ?h= ?gates= ?arc= ?density= ?tier=` override the knobs;

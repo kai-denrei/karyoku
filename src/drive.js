@@ -11,8 +11,8 @@
 // THE ANTI-AIMBOT NUMBERS are yawRate and the arc: a sentry cannot point
 // outside its arc, and inside it turns at yawRate, so a hull that crosses
 // the arc fast, or stays in the blind sector, is never fired on.
-import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=b9570818';
-import { KIND, CELL_M, wrapDeg, dirOfYaw, DIRS, yawOfSide, rotSide } from './plate.js?v=b9570818';
+import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=bee40328';
+import { KIND, CELL_M, wrapDeg, dirOfYaw, DIRS, yawOfSide, rotSide } from './plate.js?v=bee40328';
 
 export const DRIVE_TUNE = {
   speed: 12,        // m/s forward
@@ -127,7 +127,12 @@ export function blockedAt(plate, gates, x, z) {
   const cx = toCell(x), cz = toCell(z);
   const k = cellKind(plate, cx, cz);
   if (k < 0) return false;
-  if (k === KIND.WALL || k === KIND.BUILDING || k === KIND.SENTRY || k === KIND.PROP) return true;
+  if (k === KIND.WALL) {
+    // a standard wall segment shot down to D3 is rubble: driveable
+    const pc = plate.pieces[plate.owner[cz * plate.w + cx]];
+    return !(pc && pc.id === 'wall_standard' && pc.state >= 3);
+  }
+  if (k === KIND.BUILDING || k === KIND.SENTRY || k === KIND.PROP) return true;
   if (k === KIND.GATE) {
     const pi = plate.owner[cz * plate.w + cx];
     const g = gates.find((gg) => gg.pieceIndex === pi);
@@ -137,6 +142,18 @@ export function blockedAt(plate, gates, x, z) {
     return !(off < GATE_LANE_HALF_M && g.open >= 0.95);
   }
   return false;
+}
+
+// A shot landing on a standard wall segment takes it one state down the
+// ladder, D0 to D3. Returns the piece that changed, or null. Corners and
+// gates have no damaged models yet and shrug the round off.
+export function damageAt(plate, x, z) {
+  const cx = toCell(x), cz = toCell(z);
+  if (cellKind(plate, cx, cz) !== KIND.WALL) return null;
+  const pc = plate.pieces[plate.owner[cz * plate.w + cx]];
+  if (!pc || pc.id !== 'wall_standard' || pc.state >= 3) return null;
+  pc.state++;
+  return pc;
 }
 
 // --- gates -------------------------------------------------------------------
