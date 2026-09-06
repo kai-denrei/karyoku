@@ -4,6 +4,52 @@ Newest first. Each entry: what landed, then how it works, for programmers.
 Decisions and dead ends in more detail live in `.deban/` (local, not
 published).
 
+## ee5219e — the Sound Lab, and the modem cut
+
+`#sounds` is a table, not a canvas: `soundlab.js` (pure) lists every
+element the game has (tank, sentries by family, impacts, gates, assembly
+line, astronauts, containers, interface, world) and every event each one
+makes, with the clip it plays. `labRows` resolves sentry rows through
+`SENTRY_FIRE`, so the lab and the game cannot disagree about which round a
+family fires, and gives each row a status: `wired` (the game fires it),
+`clip unused` (we own it, nothing fires it), `MISSING` (no clip; the row
+carries a brief for what it should sound like). The tab draws the rows
+with a play or loop control per clip, a listener-distance slider through
+the same inverse-distance falloff the game uses, the bus faders, and a
+first-click arm. `test/soundlab.mjs` fails on a key the manifest lacks and
+on a manifest key no element claims, so a new clip has to be placed on an
+element and a deleted one cannot leave a row behind. First count: 19
+wired, 7 unused, 20 missing over 46 events.
+
+The assembly line's electric hum, built from the reference's dial-up
+master, read as a modem and was jarring; it is gone from the manifest,
+the mixer and the disk. The hydraulic bed stays. The lab lists the gap
+with what a replacement wants to be (a clean transformer hum, no
+modulation).
+
+## 1ed0a42 — the engine as three sounds, and the hover feel
+
+The reference's engine sequencing, replicated in `sfx.engine(speed, max,
+dt)`: a smoothed level (spins up at 6/s, spools down at 2.5/s), a
+`tank_spool_up` cue the frame the level passes 0.03, the thruster bed
+while moving (retried every frame until decoded, then gain and rate follow
+the level), and `tank_spool_down` once the hull has been still for 0.10 s.
+The bed stops with the same fade so the two never overlap.
+
+The feel (`tankfeel.js`, copied with its 64-check suite) rides the same
+`running` flag: the hover timer lifts the body 0.095 m and drops the skirt
+0.15 m against planted lift emitters, the hull idles with two
+incommensurate vibrations while the weapons take three quarters of it, the
+stop rocks the body with a decaying sway, and a shot slides the turret
+back 0.5 m on a squared curve. For that, `makeHullObject` now builds the
+reference's hover split after the merge: `HoverEmitters` (the six
+`LiftEmitter_*` re-attached in world space), `Hover_Gear`, and a
+`HoverBody` holding `HullVib` and `Weapons` (`Turret_Pivot` with its
+`baseZ`, `Secondary_Turrets`). `setPose` still writes the root; the feel
+writes the children, so they compose. The probe line prints `engine=`,
+`hover=` and `bodyY=`, and is logged after `sync` so it reports what was
+drawn.
+
 ## 0075ead — sound, and what a hit looks like
 
 The reference's audio engine (`audio.js`, `audiomix.js`, `audiogate.js`)
