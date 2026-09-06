@@ -11,8 +11,8 @@
 // THE ANTI-AIMBOT NUMBERS are yawRate and the arc: a sentry cannot point
 // outside its arc, and inside it turns at yawRate, so a hull that crosses
 // the arc fast, or stays in the blind sector, is never fired on.
-import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=71b390d7';
-import { KIND, CELL_M, wrapDeg, dirOfYaw, DIRS, yawOfSide, rotSide } from './plate.js?v=71b390d7';
+import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=83129e6c';
+import { KIND, CELL_M, wrapDeg, dirOfYaw, DIRS, yawOfSide, rotSide } from './plate.js?v=83129e6c';
 
 export const DRIVE_TUNE = {
   speed: 12,        // m/s forward
@@ -427,6 +427,7 @@ export function stepTracers(tracers, hull, dt, blockedRay, tune = DRIVE_TUNE, gr
       if (u >= 1) {
         t.landed = true;
         if (Math.hypot(hull.x - t.tx, hull.z - t.tz) <= tune.splashR) { t.hit = true; hits++; }
+        blockedRay(t.tx, t.tz, t); // a landing: the tab draws the splash and plays it
         tracers.splice(i, 1);
       }
       continue;

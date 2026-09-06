@@ -36,3 +36,12 @@
 - **Processing:** `scripts/nasa-prep.sh` decodes the Draco originals
   (which the vendored loader cannot read), simplifies the two heaviest
   meshes, and re-encodes with meshopt. The Draco sources are not committed.
+
+## Sound
+
+- **Files:** `assets/audio/*.mp3`
+- **Source:** the operator's own sample set from spherical-stalberg-grid
+  (`assets/audio/src/` there keeps the masters, several from freesound.org
+  with their ids in the file names: minigun 36769, minigun ready 244784).
+  `assembly_hydraulics.mp3` and `assembly_electric.mp3` are built here with
+  ffmpeg from that set's hydraulic and dial-up masters.
