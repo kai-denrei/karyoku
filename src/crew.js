@@ -8,7 +8,7 @@
 // Local plate metres, like drive.js. Walkable is foundation and road; a
 // walker never enters a wall, building, socket or gate cell, and never
 // leaves the plate.
-import { KIND, CELL_M, rotSide, DIRS } from './plate.js?v=15d5424a';
+import { KIND, CELL_M, rotSide, DIRS } from './plate.js?v=1e2fbf0d';
 
 export const CREW_TUNE = {
   walk: 1.4, run: 4.6,      // m/s

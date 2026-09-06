@@ -11,7 +11,7 @@ for (const [key, s] of Object.entries(SOUNDS)) {
 }
 check('every gun family fires a sound that exists', GUN_FAMILIES.every((f) => SOUNDS[SENTRY_FIRE[f]]), GUN_FAMILIES.filter((f) => !SOUNDS[SENTRY_FIRE[f]]).join(' '));
 check('the tank has a shot, a bed and an impact', ['tank_main', 'tank_thruster', 'impact_shell', 'impact_rubble'].every((k) => SOUNDS[k]));
-check('the assembly line has its beds', SOUNDS.assembly_hydraulics && SOUNDS.assembly_electric && SOUNDS.assembly_hydraulics.gain < 0.4);
+check('the assembly line has its hydraulic bed and no electric hum', SOUNDS.assembly_hydraulics && !SOUNDS.assembly_electric && SOUNDS.assembly_hydraulics.gain < 0.4);
 check('every bus has a default level', BUSES.every((b) => typeof DEFAULT_LEVELS[b] === 'number'));
 check('falloff is in metres', DISTANCE_K >= 10 && DISTANCE_K <= 200 && GLOBAL_VOICE_CAP >= 8);
 done();

@@ -5,19 +5,19 @@
 import * as THREE from '../vendor/three.module.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { generatePlate, makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M } from './plate.js?v=15d5424a';
+import { generatePlate, makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M } from './plate.js?v=1e2fbf0d';
 import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, blockedAt, makeGates, stepGates,
-  spawnFor, makeSentries, stepSentries, losClear, stepTracers, rayStop, fireHull, damageAt, makeBodies, stepBodies, shotRangeFor } from './drive.js?v=15d5424a';
-import { PALETTE, LOOK, LOOKS } from './looks.js?v=15d5424a';
-import { withParam } from './url.js?v=15d5424a';
-import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=15d5424a';
-import { query, loadCatalog } from './plate-tab.js?v=15d5424a';
-import { modelledIds } from './catalog.js?v=15d5424a';
-import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS, makeMobileShell, mobileShell } from './drive-rig.js?v=15d5424a';
-import { makeSfx } from './sfx.js?v=15d5424a';
-import { makeCrew, stepCrew, stepSquash } from './crew.js?v=15d5424a';
-import { makeCrewScene } from './crew-scene.js?v=15d5424a';
-import { mulberry32 } from './rng.js?v=15d5424a';
+  spawnFor, makeSentries, stepSentries, losClear, stepTracers, rayStop, fireHull, damageAt, makeBodies, stepBodies, shotRangeFor } from './drive.js?v=1e2fbf0d';
+import { PALETTE, LOOK, LOOKS } from './looks.js?v=1e2fbf0d';
+import { withParam } from './url.js?v=1e2fbf0d';
+import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=1e2fbf0d';
+import { query, loadCatalog } from './plate-tab.js?v=1e2fbf0d';
+import { modelledIds } from './catalog.js?v=1e2fbf0d';
+import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS, makeMobileShell, mobileShell } from './drive-rig.js?v=1e2fbf0d';
+import { makeSfx } from './sfx.js?v=1e2fbf0d';
+import { makeCrew, stepCrew, stepSquash } from './crew.js?v=1e2fbf0d';
+import { makeCrewScene } from './crew-scene.js?v=1e2fbf0d';
+import { mulberry32 } from './rng.js?v=1e2fbf0d';
 
 export function initDriveTab(root) {
   const { renderer, scene, camera, hud, notice, resize, render, setGroups, post } = makeViewer(root);

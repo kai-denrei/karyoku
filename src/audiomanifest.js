@@ -44,9 +44,9 @@ export const SOUNDS = {
   impact_rubble: { file: `${A}/tank_destroyed.mp3`, bus: 'tank', gain: 0.70, maxVoices: 2, minInterval: 0.20, rateJitter: 0.05 },
   impact_hit:    { file: `${A}/tank_secondary.mp3`, bus: 'tank', gain: 0.45, maxVoices: 3, minInterval: 0.08, rateJitter: 0.12 },
 
-  // --- the assembly line: faint hydraulics and an electric hum, as beds ------
+  // --- the assembly line: a faint hydraulic bed per machine ------------------
+  // (an electric hum built from a dial-up master was cut: it read as a modem)
   assembly_hydraulics: { file: `${A}/assembly_hydraulics.mp3`, bus: 'ambient', gain: 0.30, maxVoices: 3, minInterval: 0, rateJitter: 0 },
-  assembly_electric:   { file: `${A}/assembly_electric.mp3`,   bus: 'ambient', gain: 0.22, maxVoices: 3, minInterval: 0, rateJitter: 0 },
 };
 
 // the sentry families' rounds; a lobber's is the aoe thump

@@ -264,7 +264,7 @@ no build step, Node invariant suites).
 - `sfx.js` is the only file that knows what the game sounds like; audio.js,
   audiomix.js, audiogate.js are the reference's engine, copied. Keys:
   `tank_main`, `tank_thruster` (a loop set from speed), `SENTRY_FIRE[family]`
-  with `dist`, `assembly_hydraulics` / `assembly_electric` (loops per machine,
+  with `dist`, `assembly_hydraulics` (a loop per machine; the electric hum was cut as a modem,
   faded by distance), `impact_shell` / `impact_rubble` / `impact_hit`.
   `DISTANCE_K` is 45 METRES. The context needs a gesture (`arm()`).
 - Impacts: `sfx.impact(recipe, point, normal, dist, size, sound)` wraps
@@ -272,6 +272,18 @@ no build step, Node invariant suites).
   Sizes: shell 2.6, breach 4.5, lob landing 3.2, hull hit 2.
 - Lob shells call `blockedRay(tx, tz, t)` with `t.landed` on landing so a tab
   can draw and play it. `?autofire=1` fires live; `fx=` in the drive probe.
+- The engine is THREE sounds (`sfx.engine(speed, max, dt)`): `tank_spool_up`
+  the frame the smoothed level passes 0.03, the thruster bed while moving,
+  `tank_spool_down` after 0.10 s still, which also lands the feel. The feel
+  (`tankfeel.js`, copied) rides `sfx.feel`; `sfx.applyFeel(hullObj)` every
+  frame after `setPose`. `makeHullObject` builds the reference's hover split
+  (HoverEmitters planted, Hover_Gear drops, HoverBody rises 0.095 m, HullVib
+  and Weapons take the vibration, Turret_Pivot the recoil slide).
+- `#sounds` is the Sound Lab: `soundlab.js` (pure) lists every element and
+  event with its clip, `wired` / `clip unused` / `MISSING` plus a brief for
+  each gap; `test/soundlab.mjs` fails on a key the manifest lacks or a
+  manifest key no element claims. Add a row when adding a sound, and set
+  `wired: true` only when game code fires it. Probe line: `[soundlab] ...`.
 
 ## Verify
 - `npm run serve` then `http://localhost:8150/#plate?seed=7&ascii=1`.

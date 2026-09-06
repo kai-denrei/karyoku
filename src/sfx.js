@@ -4,11 +4,11 @@
 // which round, how the engine bed follows the throttle, where a shell's
 // impact goes and which way it faces, how far a machine's hum carries.
 import * as THREE from '../vendor/three.module.js';
-import { makeAudio } from './audio.js?v=15d5424a';
-import { SENTRY_FIRE } from './audiomanifest.js?v=15d5424a';
-import { makeImpactBurst, IMPACT_TUNE, orientImpact } from './impactfx.js?v=15d5424a';
-import { PALETTE, BZ } from './looks.js?v=15d5424a';
-import { makeTankFeel, stepTankFeel, landTankFeel, fireTankFeel, applyTankFeel } from './tankfeel.js?v=15d5424a';
+import { makeAudio } from './audio.js?v=1e2fbf0d';
+import { SENTRY_FIRE } from './audiomanifest.js?v=1e2fbf0d';
+import { makeImpactBurst, IMPACT_TUNE, orientImpact } from './impactfx.js?v=1e2fbf0d';
+import { PALETTE, BZ } from './looks.js?v=1e2fbf0d';
+import { makeTankFeel, stepTankFeel, landTankFeel, fireTankFeel, applyTankFeel } from './tankfeel.js?v=1e2fbf0d';
 
 // the impact set is authored for a 4-unit wall; a shell on a 4 m cell
 // wants about this much of it
@@ -66,14 +66,12 @@ export function makeSfx(scene) {
     // a machine's beds, kept by key, gain by distance from the listener
     machine(key, dist) {
       let m = hums.get(key);
-      if (!m) { m = { h: null, e: null }; hums.set(key, m); }
+      if (!m) { m = { h: null }; hums.set(key, m); }
       const g = Math.max(0, 1 - dist / HUM_REACH);
       if (!m.h) m.h = audio.loop('assembly_hydraulics', { gain: 0.001 });
-      if (!m.e) m.e = audio.loop('assembly_electric', { gain: 0.001 });
       if (m.h) m.h.set(g, 1);
-      if (m.e) m.e.set(g * 0.8, 1);
     },
-    clearMachines() { for (const m of hums.values()) { if (m.h) m.h.stop(); if (m.e) m.e.stop(); } hums.clear(); },
+    clearMachines() { for (const m of hums.values()) if (m.h) m.h.stop(); hums.clear(); },
     // a hit: the recipe at the point, facing along the normal, sized for the
     // board; and its sound, faded by distance from the listener
     impact(recipe, point, normal, dist, size = SHELL_SIZE, sound = 'impact_shell') {

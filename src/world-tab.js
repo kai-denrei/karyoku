@@ -5,19 +5,19 @@
 import * as THREE from '../vendor/three.module.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { makePlateParams, clampPlateParams, PLATE_KNOBS } from './plate.js?v=15d5424a';
-import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, stepGates, stepSentries, stepTracers, fireHull, damageAt, autopilotInput, makeBodies, stepBodies, bodyAt, shotRangeFor, solidHeightAt, SOLID_HEIGHT } from './drive.js?v=15d5424a';
-import { WORLD_KNOBS, makeWorldParams, clampWorldParams, makeWorld, worldBlocked, worldBuildingAt, worldLosFor, worldSentries, worldGates, terrainNormal, splitQuad, groundAt } from './world.js?v=15d5424a';
-import { PALETTE, terrainMeshes, floraMeshes, LOOK, LOOKS } from './looks.js?v=15d5424a';
-import { withParam } from './url.js?v=15d5424a';
-import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=15d5424a';
-import { query, loadCatalog } from './plate-tab.js?v=15d5424a';
-import { modelledIds } from './catalog.js?v=15d5424a';
-import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS, makeMobileShell, mobileShell } from './drive-rig.js?v=15d5424a';
-import { makeSfx } from './sfx.js?v=15d5424a';
-import { makeCrew, stepCrew, stepSquash } from './crew.js?v=15d5424a';
-import { makeCrewScene } from './crew-scene.js?v=15d5424a';
-import { mulberry32 } from './rng.js?v=15d5424a';
+import { makePlateParams, clampPlateParams, PLATE_KNOBS } from './plate.js?v=1e2fbf0d';
+import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, stepGates, stepSentries, stepTracers, fireHull, damageAt, autopilotInput, makeBodies, stepBodies, bodyAt, shotRangeFor, solidHeightAt, SOLID_HEIGHT } from './drive.js?v=1e2fbf0d';
+import { WORLD_KNOBS, makeWorldParams, clampWorldParams, makeWorld, worldBlocked, worldBuildingAt, worldLosFor, worldSentries, worldGates, terrainNormal, splitQuad, groundAt } from './world.js?v=1e2fbf0d';
+import { PALETTE, terrainMeshes, floraMeshes, LOOK, LOOKS } from './looks.js?v=1e2fbf0d';
+import { withParam } from './url.js?v=1e2fbf0d';
+import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=1e2fbf0d';
+import { query, loadCatalog } from './plate-tab.js?v=1e2fbf0d';
+import { modelledIds } from './catalog.js?v=1e2fbf0d';
+import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS, makeMobileShell, mobileShell } from './drive-rig.js?v=1e2fbf0d';
+import { makeSfx } from './sfx.js?v=1e2fbf0d';
+import { makeCrew, stepCrew, stepSquash } from './crew.js?v=1e2fbf0d';
+import { makeCrewScene } from './crew-scene.js?v=1e2fbf0d';
+import { mulberry32 } from './rng.js?v=1e2fbf0d';
 
 const ARRIVE_M = 8;
 
