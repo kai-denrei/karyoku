@@ -4,6 +4,31 @@ Newest first. Each entry: what landed, then how it works, for programmers.
 Decisions and dead ends in more detail live in `.deban/` (local, not
 published).
 
+## f513ab7 — the crew stops walking through things
+
+Astronauts walked through containers and through the tank. Two causes,
+one shape: the crew tested walkability against the plate's CELLS, and the
+cells do not know either. `makeBodies` frees a container's cells the
+moment it becomes a pushable body (the hull needs that), and the hull is
+a vehicle, not a cell. So the crew now takes `solid(x, z)`, a predicate
+the tab composes from `bodyAt` and `hullCovers` (the MKCX as an oriented
+8 x 3.8 m box), and every walkability test asks it: the trip pick, the
+flee fan, the spawn, and each step. `crewFreeAt` tests a walker's DISC
+(radius 0.35 m, centre and four points) rather than a point, so a walker
+no longer clips the corner of a wall it walks past.
+
+A trip that was clear when picked can close: a container gets pushed
+across it, the hull parks on it. The step then slides along the obstacle
+if that still gains ground on the target, else the walker gives the trip
+up and picks another. And something that rolls onto a walker SLOWLY
+shoves them: `escape` finds the nearest free ground in rings up to 3 m
+and moves them there, alive; fast, `stepSquash` still leaves the splash.
+The world tab composes the predicate per plate in plate metres (bodies
+shifted by the plate's origin, the hull's heading carried across). The
+probe lines carry `crewIn=`, the count of walkers inside a solid, and the
+suite holds it at zero for ninety seconds with a box on the busiest road
+cell and a hull parked on a key area.
+
 ## ee5219e — the Sound Lab, and the modem cut
 
 `#sounds` is a table, not a canvas: `soundlab.js` (pure) lists every
