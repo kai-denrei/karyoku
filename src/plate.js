@@ -110,7 +110,11 @@ function chooseGates(s, rng) {
   const out = [];
   for (const side of sides.slice(0, s.params.gates)) {
     const len = (side === 'N' || side === 'S') ? s.w : s.h;
-    const lo = 5, hi = len - 6;
+    // six cells from a corner keeps the flank sockets clear of the corner
+    // sockets; a 12-cell side cannot afford that, and there the flank that
+    // would overlap a corner socket is simply not placed (sentrySockets).
+    let lo = 6, hi = len - 7;
+    if (hi < lo) { lo = 5; hi = len - 6; }
     if (hi < lo) { s.warnings.push(`gate on ${side}: side too short`); continue; }
     const at = lo + Math.floor(rng() * (hi - lo + 1));
     out.push({ side, at });
@@ -243,7 +247,7 @@ function stepRoads(s) {
     if (!ok) s.warnings.push(`gate ${g.side}@${g.at}: corridor blocked before the spine`);
   }
   // read the pieces off the neighbour masks
-  const edges = [];
+  const edges = [], ends = [];
   for (const b of laid.values()) {
     const want = new Set();
     for (const side of SIDES) {
@@ -262,8 +266,36 @@ function stepRoads(s) {
     else id = 'road_cross';
     const rot = fitPorts(ROAD_PORTS[id], want);
     b.pieceIndex = place(s, id, 2 * b.bx, 2 * b.bz, 2, 2, rot < 0 ? 0 : rot, KIND.ROAD);
+    if (want.size === 1) ends.push({ b, open: rotSide([...want][0], 2) });
   }
   s.roads = { nodes: [...laid.keys()], edges, blocks: laid };
+  extendEnds(s, ends);
+}
+
+// A road that ends one cell short of the wall leaves a gap the flood fill
+// walks through, welding two blocks into one. Continue every road end
+// along its axis with 1 x 1 pedestrian corridor cells until something
+// solid — the ring, a socket, a gate — so a block is bounded by
+// circulation on every side.
+function extendEnds(s, ends) {
+  for (const { b, open } of ends) {
+    const [dx, dz] = DIRS[open];
+    const rot = (open === 'N' || open === 'S') ? 0 : 1;
+    // the two cells of the block's open edge
+    const edge = open === 'N' ? [[2 * b.bx, 2 * b.bz + 1], [2 * b.bx + 1, 2 * b.bz + 1]]
+      : open === 'S' ? [[2 * b.bx, 2 * b.bz], [2 * b.bx + 1, 2 * b.bz]]
+      : open === 'E' ? [[2 * b.bx + 1, 2 * b.bz], [2 * b.bx + 1, 2 * b.bz + 1]]
+      : [[2 * b.bx, 2 * b.bz], [2 * b.bx, 2 * b.bz + 1]];
+    for (const [ex, ez] of edge) {
+      for (let k = 1; ; k++) {
+        const x = ex + dx * k, z = ez + dz * k;
+        if (!inside(s, x, z)) break;
+        const i = idx(s, x, z);
+        if (s.cells[i] !== KIND.FOUNDATION || s.owner[i] !== -1) break;
+        place(s, 'walk_straight', x, z, 1, 1, rot, KIND.ROAD);
+      }
+    }
+  }
 }
 
 export function roadsConnected(s) {
@@ -280,12 +312,247 @@ export function roadsConnected(s) {
   return seen.size === nodes.length;
 }
 
+// --- step 3: blocks and zones ----------------------------------------------
+// Sentry sockets are decided by the ring alone, so they are RESERVED here,
+// before anything else can claim their cells, and only cast as pieces in
+// step 5. Then every free cell floods into a region; the region's bounding
+// box is the block, and the packer stays inside the region's own cell set
+// so an L-shaped region cannot leak into a neighbour's box.
+export function sentrySockets(s) {
+  const { w, h } = s;
+  const out = [
+    { x: 1, z: 1, yawDeg: 225, where: 'corner' },
+    { x: 1, z: h - 3, yawDeg: 315, where: 'corner' },
+    { x: w - 3, z: h - 3, yawDeg: 45, where: 'corner' },
+    { x: w - 3, z: 1, yawDeg: 135, where: 'corner' },
+  ];
+  for (const g of s.gates) {
+    if (g.side === 'N') out.push({ x: g.at - 3, z: h - 3, yawDeg: 0, where: 'flank' }, { x: g.at + 2, z: h - 3, yawDeg: 0, where: 'flank' });
+    else if (g.side === 'S') out.push({ x: g.at - 3, z: 1, yawDeg: 180, where: 'flank' }, { x: g.at + 2, z: 1, yawDeg: 180, where: 'flank' });
+    else if (g.side === 'E') out.push({ x: w - 3, z: g.at - 3, yawDeg: 90, where: 'flank' }, { x: w - 3, z: g.at + 2, yawDeg: 90, where: 'flank' });
+    else out.push({ x: 1, z: g.at - 3, yawDeg: 270, where: 'flank' }, { x: 1, z: g.at + 2, yawDeg: 270, where: 'flank' });
+  }
+  // a flank that would overlap an earlier socket (a corner's, on a short
+  // side) is dropped rather than doubled up
+  const kept = [];
+  for (const sk of out) {
+    const clash = kept.some((k) => Math.abs(k.x - sk.x) < 2 && Math.abs(k.z - sk.z) < 2);
+    if (!clash) kept.push(sk);
+  }
+  return kept;
+}
+
+function reserveSentries(s) {
+  for (const sk of sentrySockets(s)) {
+    for (let dz = 0; dz < 2; dz++) {
+      for (let dx = 0; dx < 2; dx++) {
+        const i = idx(s, sk.x + dx, sk.z + dz);
+        if (s.cells[i] === KIND.FOUNDATION && s.owner[i] === -1) s.cells[i] = KIND.SENTRY;
+        else s.warnings.push(`sentry socket at ${sk.x},${sk.z} collides with ${ASCII_OF_KIND[s.cells[i]]}`);
+      }
+    }
+  }
+}
+
+export const ZONES = {
+  command:   { buildings: ['command_hq', 'command_operations', 'command_uplink', 'command_server', 'command_comms'],
+               props: ['command_beacon', 'prop_terminal', 'prop_lamp'] },
+  logistics: { buildings: ['logistics_warehouse', 'logistics_loading_dock', 'logistics_crane', 'ground_hardstand', 'logistics_container'],
+               props: ['crate_general', 'crate_parts', 'logistics_pallet', 'crate_secure'] },
+  defense:   { buildings: ['defense_bunker', 'defense_watchtower', 'defense_radar', 'defense_interceptor'],
+               props: ['defense_searchlight', 'field_barrier', 'field_sensor'] },
+  utility:   { buildings: ['utility_reactor', 'utility_solar', 'utility_water', 'utility_battery', 'utility_waste', 'utility_substation', 'utility_tank', 'utility_cooling'],
+               props: ['utility_junction', 'utility_conduit', 'crate_energy'] },
+  air:       { buildings: ['air_launchpad', 'air_hangar', 'air_control', 'air_fuel_service', 'air_drone_pad'],
+               props: ['field_signal', 'prop_lamp', 'prop_sign'] },
+  personnel: { buildings: ['personnel_mess', 'personnel_barracks', 'personnel_infirmary', 'personnel_recreation', 'personnel_shelter', 'personnel_hygiene', 'personnel_triage'],
+               props: ['prop_seating', 'prop_planter', 'prop_lamp'] },
+  industry:  { buildings: ['industry_garage', 'industry_fabricator', 'industry_workshop', 'industry_recycler', 'industry_test_cell', 'industry_drone_bench', 'industry_service_lift'],
+               props: ['industry_tool_rack', 'crate_parts', 'logistics_pallet'] },
+};
+// Buildings a block may hold more than once. Everything else is one per block.
+const REPEATABLE = new Set(['personnel_barracks', 'logistics_container', 'logistics_warehouse', 'ground_hardstand',
+  'defense_bunker', 'utility_battery', 'industry_workshop', 'utility_solar']);
+const PROP_RATE = 0.12;
+
+function floodBlocks(s) {
+  const seen = new Uint8Array(s.w * s.h);
+  const blocks = [];
+  for (let z0 = 1; z0 < s.h - 1; z0++) {
+    for (let x0 = 1; x0 < s.w - 1; x0++) {
+      const i0 = idx(s, x0, z0);
+      if (seen[i0] || s.cells[i0] !== KIND.FOUNDATION || s.owner[i0] !== -1) continue;
+      const cells = [], stack = [[x0, z0]];
+      seen[i0] = 1;
+      let x1 = x0, z1 = z0, xa = x0, za = z0;
+      while (stack.length) {
+        const [x, z] = stack.pop();
+        cells.push([x, z]);
+        xa = Math.min(xa, x); za = Math.min(za, z); x1 = Math.max(x1, x); z1 = Math.max(z1, z);
+        for (const side of SIDES) {
+          const nx = x + DIRS[side][0], nz = z + DIRS[side][1];
+          if (!inside(s, nx, nz)) continue;
+          const ni = idx(s, nx, nz);
+          if (seen[ni]) continue;
+          if (s.cells[ni] !== KIND.FOUNDATION || s.owner[ni] !== -1) continue;
+          seen[ni] = 1; stack.push([nx, nz]);
+        }
+      }
+      blocks.push({ x0: xa, z0: za, x1, z1, cells, cellSet: new Set(cells.map(([x, z]) => idx(s, x, z))), zone: null,
+        touchesRing: xa === 1 || za === 1 || x1 === s.w - 2 || z1 === s.h - 2, gateSides: new Set() });
+    }
+  }
+  return blocks;
+}
+
+// A block "touches a gate" when one of its cells neighbours a road cell of
+// that gate's corridor — the run from the port up to the first junction.
+function markGateAdjacency(s, blocks) {
+  for (const g of s.gates) {
+    const corridor = new Set();
+    const { bx, bz } = g.port;
+    const [dx, dz] = g.side === 'N' ? [0, -1] : g.side === 'S' ? [0, 1] : g.side === 'E' ? [-1, 0] : [1, 0];
+    for (let x = bx, z = bz; s.roads.blocks.has(roadBlockKey(x, z)); x += dx, z += dz) {
+      for (let cz = 0; cz < 2; cz++) for (let cx = 0; cx < 2; cx++) corridor.add(idx(s, 2 * x + cx, 2 * z + cz));
+      const b = s.roads.blocks.get(roadBlockKey(x, z));
+      const id = s.pieces[b.pieceIndex].id;
+      if (id === 'road_cross' || id === 'road_t') break;
+    }
+    for (const b of blocks) {
+      if (b.cells.some(([x, z]) => SIDES.some((sd) => {
+        const nx = x + DIRS[sd][0], nz = z + DIRS[sd][1];
+        return inside(s, nx, nz) && corridor.has(idx(s, nx, nz));
+      }))) b.gateSides.add(g.side);
+    }
+  }
+}
+
+function assignZones(s, rng, blocks) {
+  const area = (b) => b.cells.length;
+  const cx = s.w / 2, cz = s.h / 2;
+  const dist = (b) => Math.hypot((b.x0 + b.x1) / 2 + 0.5 - cx, (b.z0 + b.z1) / 2 + 0.5 - cz);
+  const left = [...blocks].sort((a, b) => area(b) - area(a));
+  const take = (pred) => { const i = left.findIndex(pred); return i < 0 ? null : left.splice(i, 1)[0]; };
+  // command: the block nearest the centre
+  if (left.length) {
+    const cmd = left.reduce((best, b) => (dist(b) < dist(best) ? b : best), left[0]);
+    cmd.zone = 'command';
+    left.splice(left.indexOf(cmd), 1);
+  }
+  // logistics: the largest block beside each gate corridor
+  for (const g of s.gates) { const b = take((x) => x.gateSides.has(g.side)); if (b) b.zone = 'logistics'; }
+  // air: the largest remaining block if a pad fits, else personnel
+  const big = take(() => true);
+  if (big) big.zone = (big.x1 - big.x0 + 1 >= 8 && big.z1 - big.z0 + 1 >= 8) ? 'air' : 'personnel';
+  // ring-touching: defense or utility by seed; the rest: personnel or industry by seed
+  for (const b of left) {
+    if (b.touchesRing) b.zone = rng() < 0.5 ? 'defense' : 'utility';
+    else b.zone = rng() < 0.5 ? 'personnel' : 'industry';
+  }
+}
+
+function stepBlocks(s, rng) {
+  const blocks = floodBlocks(s);
+  markGateAdjacency(s, blocks);
+  assignZones(s, rng, blocks);
+  s.blocks = blocks;
+}
+
+// --- step 4: packing ----------------------------------------------------------
+function rectFree(s, block, x, z, pw, ph) {
+  for (let dz = 0; dz < ph; dz++) {
+    for (let dx = 0; dx < pw; dx++) {
+      if (!inside(s, x + dx, z + dz)) return false;
+      const i = idx(s, x + dx, z + dz);
+      if (!block.cellSet.has(i)) return false;
+      if (s.cells[i] !== KIND.FOUNDATION || s.owner[i] !== -1) return false;
+    }
+  }
+  return true;
+}
+
+// Which sides of a rect have a road cell directly beyond them.
+function roadSides(s, x, z, pw, ph) {
+  const out = new Set();
+  for (let dx = 0; dx < pw; dx++) {
+    if (inside(s, x + dx, z + ph) && s.cells[idx(s, x + dx, z + ph)] === KIND.ROAD) out.add('N');
+    if (inside(s, x + dx, z - 1) && s.cells[idx(s, x + dx, z - 1)] === KIND.ROAD) out.add('S');
+  }
+  for (let dz = 0; dz < ph; dz++) {
+    if (inside(s, x + pw, z + dz) && s.cells[idx(s, x + pw, z + dz)] === KIND.ROAD) out.add('E');
+    if (inside(s, x - 1, z + dz) && s.cells[idx(s, x - 1, z + dz)] === KIND.ROAD) out.add('W');
+  }
+  return out;
+}
+
+function shuffled(rng, arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+
+// The entrance is the authored S face (rot 0). Unswapped dims allow rot 0
+// (entrance S) or 2 (entrance N); swapped dims allow rot 1 (W) or 3 (E).
+function findSpot(s, rng, block, def) {
+  const [px, pz] = def.plot;
+  const orients = shuffled(rng, [[px, pz, [0, 2]], [pz, px, [1, 3]]]);
+  const spots = [];
+  for (let z = block.z0; z <= block.z1; z++) for (let x = block.x0; x <= block.x1; x++) spots.push([x, z]);
+  const order = shuffled(rng, spots);
+  for (const [pw, ph, rots] of orients) {
+    for (const [x, z] of order) {
+      if (x + pw - 1 > block.x1 || z + ph - 1 > block.z1) continue;
+      if (!rectFree(s, block, x, z, pw, ph)) continue;
+      const sides = roadSides(s, x, z, pw, ph);
+      if (sides.size === 0) continue;
+      const rot = rots.find((r) => sides.has(rotSide('S', r)));
+      return { x, z, pw, ph, rot: rot === undefined ? rots[0] : rot };
+    }
+  }
+  return null;
+}
+
+function packBlock(s, rng, block) {
+  const zone = ZONES[block.zone];
+  const list = zone.buildings.map(specById).sort((a, b) => b.plot[0] * b.plot[1] - a.plot[0] * a.plot[1]);
+  const target = s.params.density * block.cells.length;
+  const used = new Map();
+  let filled = 0, placedAny = true;
+  while (filled < target && placedAny) {
+    placedAny = false;
+    for (const def of list) {
+      if (filled >= target) break;
+      if (used.get(def.id) && !REPEATABLE.has(def.id)) continue;
+      const spot = findSpot(s, rng, block, def);
+      if (!spot) continue;
+      place(s, def.id, spot.x, spot.z, spot.pw, spot.ph, spot.rot, KIND.BUILDING, { zone: block.zone });
+      used.set(def.id, (used.get(def.id) || 0) + 1);
+      filled += spot.pw * spot.ph;
+      placedAny = true;
+    }
+  }
+  for (const [x, z] of block.cells) {
+    const i = idx(s, x, z);
+    if (s.cells[i] !== KIND.FOUNDATION || s.owner[i] !== -1) continue;
+    if (rng() >= PROP_RATE) continue;
+    const id = zone.props[Math.floor(rng() * zone.props.length)];
+    place(s, id, x, z, 1, 1, Math.floor(rng() * 4), KIND.PROP, { zone: block.zone });
+  }
+}
+
+function stepPacking(s, rng) {
+  for (const block of s.blocks) packBlock(s, rng, block);
+}
+
 // --- entry -----------------------------------------------------------------
 export function generatePlate(params) {
   const p = clampPlateParams(makePlateParams(), params);
   const s = makeState(p);
   const rng = mulberry32(p.seed);
   stepRing(s, rng);
+  reserveSentries(s);
   stepRoads(s);
+  stepBlocks(s, rng);
+  stepPacking(s, rng);
   return s;
 }
