@@ -5,17 +5,17 @@
 import * as THREE from '../vendor/three.module.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { makePlateParams, clampPlateParams, PLATE_KNOBS } from './plate.js?v=b7486121';
-import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, stepGates, stepSentries, stepTracers, fireHull, damageAt, autopilotInput, makeBodies, stepBodies, bodyAt } from './drive.js?v=b7486121';
-import { WORLD_KNOBS, makeWorldParams, clampWorldParams, makeWorld, worldBlocked, worldBuildingAt, worldLosFor, worldSentries, worldGates, terrainNormal, splitQuad, groundAt } from './world.js?v=b7486121';
-import { PALETTE, terrainMeshes, floraMeshes, LOOK, LOOKS } from './looks.js?v=b7486121';
-import { withParam } from './url.js?v=b7486121';
-import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=b7486121';
-import { query, loadCatalog } from './plate-tab.js?v=b7486121';
-import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS } from './drive-rig.js?v=b7486121';
-import { makeCrew, stepCrew } from './crew.js?v=b7486121';
-import { makeCrewScene } from './crew-scene.js?v=b7486121';
-import { mulberry32 } from './rng.js?v=b7486121';
+import { makePlateParams, clampPlateParams, PLATE_KNOBS } from './plate.js?v=a379cd79';
+import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, stepGates, stepSentries, stepTracers, fireHull, damageAt, autopilotInput, makeBodies, stepBodies, bodyAt } from './drive.js?v=a379cd79';
+import { WORLD_KNOBS, makeWorldParams, clampWorldParams, makeWorld, worldBlocked, worldBuildingAt, worldLosFor, worldSentries, worldGates, terrainNormal, splitQuad, groundAt } from './world.js?v=a379cd79';
+import { PALETTE, terrainMeshes, floraMeshes, LOOK, LOOKS } from './looks.js?v=a379cd79';
+import { withParam } from './url.js?v=a379cd79';
+import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=a379cd79';
+import { query, loadCatalog } from './plate-tab.js?v=a379cd79';
+import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS } from './drive-rig.js?v=a379cd79';
+import { makeCrew, stepCrew } from './crew.js?v=a379cd79';
+import { makeCrewScene } from './crew-scene.js?v=a379cd79';
+import { mulberry32 } from './rng.js?v=a379cd79';
 
 const ARRIVE_M = 8;
 

@@ -5,14 +5,14 @@
 // as clones with their YAW pivot exposed, and everything else as a labelled
 // placeholder box of its footprint.
 import * as THREE from '../vendor/three.module.js';
-import { KIND, CELL_M, ringCoverage } from './plate.js?v=b7486121';
-import { fileFor, fitFor, SECTION_COLOR, PLACEHOLDER_HEIGHT_M } from './catalog.js?v=b7486121';
-import { LOB_FAMILIES, LOB_ELEV_DEG } from './drive.js?v=b7486121';
-import { PALETTE, neonBox, BZ, styleForLook, bakeEdges } from './looks.js?v=b7486121';
-import { prepFor, ladderTint, dressMetal } from './casts.js?v=b7486121';
-import { tintModel } from './glbmodels.js?v=b7486121';
-import { BODY_IDS } from './drive.js?v=b7486121';
-import { loadGlb, loadGlbWithClips, mergeByMaterial, fitModel } from './glbmodels.js?v=b7486121';
+import { KIND, CELL_M, ringCoverage } from './plate.js?v=a379cd79';
+import { fileFor, fitFor, SECTION_COLOR, PLACEHOLDER_HEIGHT_M } from './catalog.js?v=a379cd79';
+import { LOB_FAMILIES, LOB_ELEV_DEG } from './drive.js?v=a379cd79';
+import { PALETTE, neonBox, BZ, styleForLook, bakeEdges } from './looks.js?v=a379cd79';
+import { prepFor, ladderTint, dressMetal } from './casts.js?v=a379cd79';
+import { tintModel } from './glbmodels.js?v=a379cd79';
+import { BODY_IDS } from './drive.js?v=a379cd79';
+import { loadGlb, loadGlbWithClips, mergeByMaterial, fitModel } from './glbmodels.js?v=a379cd79';
 
 const labelCache = new Map();
 function labelTexture(text) {
