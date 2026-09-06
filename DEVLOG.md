@@ -4,6 +4,34 @@ Newest first. Each entry: what landed, then how it works, for programmers.
 Decisions and dead ends in more detail live in `.deban/` (local, not
 published).
 
+## ebb9e10 — a phone shell and an installable app
+
+**The shell**, after the reference's mobile plan: on a coarse pointer with a
+short side under 900 px (`?mobile=1|0` overrides), the drive and world tabs
+grow a FLOATING STICK on the left half — touch anywhere, a ring appears
+under the finger, drag to drive; the reference's `stick.js` is copied
+verbatim with its test, pixels in, a throttle and two steer booleans out —
+and four thumbs on the right: MUZZLE up and down held, CAM tapped, FIRE
+held. The rules gained one thing: `input.throttle` (-rev..1) scales the
+speed, so a half-pushed stick is half speed. The shell writes into the
+keys' `extra` input, so drive.js never knows a phone from a keyboard. The
+HUD shrinks to the numbers; the knob panel hides behind a `knobs` button.
+
+**The app.** `manifest.webmanifest` (fullscreen, landscape, `#world` as the
+start), icons drawn by a forty-line PNG writer (no Pillow on the machine),
+the iOS head tags, and `sw.js` copied in shape from the reference: a RUNTIME
+cache only — no precache list, this project's runtime is 70 MB of GLBs —
+keyed on the build token, which `bust.sh` already stamped in `sw.js`;
+`test/pwa.mjs` fails the suite if the worker's key and `index.html`'s token
+ever differ. Navigations are network-first with a 3 s timeout, tokened
+assets cache-first (a changed file is a changed URL), everything else
+stale-while-revalidate. The worker never calls `skipWaiting()` on its own;
+a new build shows `new build ready: reload` in the nav and waits.
+
+Untested on a real device. The reference's own lesson stands: headless
+clamps and crops, and "verified by feel" is not verified.
+
+
 ## ebc9452 — the assembly line, the crew in orange, ballistic shells, and why the walls flickered
 
 Three operator asks and one report landed together.

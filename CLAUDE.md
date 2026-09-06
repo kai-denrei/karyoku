@@ -242,6 +242,21 @@ no build step, Node invariant suites).
   `shotRange` is a safety cap only. The barrel pitches (`Barrel_Pivot` is a
   hull pivot now). `?elev=N` sets a probe's muzzle.
 
+## Phone shell and PWA (2026-09-07)
+- `mobileShell` (drive-rig.js): coarse pointer and short side < 900, or
+  `?mobile=1`. `makeMobileShell` adds the stick (left half, `stick.js`) and
+  the thumbs; it writes `keys.extra` (throttle, left, right, fire, elevUp,
+  elevDown) which `input()` merges over the keys. `input.throttle` scales
+  speed in `stepHull`. `body.mobile-shell` CSS: compact HUD, panel behind
+  `#gear`. Probe: `?mobile=1` at 844x390 headless.
+- PWA: `sw.js` is a runtime cache keyed on `CB_TOKEN` (bust.sh stamps it;
+  `test/pwa.mjs` asserts it equals the meta token); no precache; no
+  skipWaiting without the player's tap on the nav's update button.
+  `manifest.webmanifest`, `icons/` (hand-written PNGs), iOS tags in the head.
+- DEVLOG.md: per-commit entries, newest first, in the reference's style —
+  get the hash first, then append. `.deban/` is the local decision vault
+  (gitignored): sync it after meaningful sessions.
+
 ## Verify
 - `npm run serve` then `http://localhost:8150/#plate?seed=7&ascii=1`.
   `?seed= ?w= ?h= ?gates= ?arc= ?density= ?tier=` override the knobs;
