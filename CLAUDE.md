@@ -189,6 +189,23 @@ no build step, Node invariant suites).
   (`rig.rebuild()`) redraws walls AND buildings at their states.
 - Road decks sit 6 cm proud of the slab (`ROAD_LIFT`): coplanar they moire.
 
+## Modelled only (operator, 2026-09-07)
+- The generator places ONLY ids in `allowed` (`generatePlate(params, allowed)`,
+  default `MODELLED` in plate.js; the tabs pass `modelledIds(catalog)`).
+  `test/catalog.mjs` asserts MODELLED is inside the live catalog. Zone lists
+  are modelled ids only; road junctions and the sentry socket are structural
+  and exempt. The scene draws NOTHING for a placeholder except the socket's
+  plinth.
+- THE LANDMARK: `personnel_infirmary` goes first, into the largest non-command
+  block, once per plate (`stepLandmark`), and wears a `roofCross` in
+  `PALETTE.cross`. A plate under 400 interior cells skips it silently.
+- CONTAINER YARDS: `NO_LANE` / `NO_ROAD` ids (the container) pack with gap 0,
+  beside their own kind first, keeping the block's first orientation. A
+  cramped yard may still hold one per orientation; the test is a rate.
+- meshopt-encoded models load INTERLEAVED and `mergeGeometries` refuses them,
+  so `mergeByMaterial` de-interleaves first (glbmodels.js). Five casts were
+  silently missing before that.
+
 ## Verify
 - `npm run serve` then `http://localhost:8150/#plate?seed=7&ascii=1`.
   `?seed= ?w= ?h= ?gates= ?arc= ?density= ?tier=` override the knobs;

@@ -18,7 +18,7 @@
 import * as THREE from '../vendor/three.module.js';
 import { GLTFLoader } from '../vendor/GLTFLoader.js';
 import { MeshoptDecoder } from '../vendor/meshopt_decoder.module.js';
-import { mergeGeometries } from '../vendor/BufferGeometryUtils.js';
+import { mergeGeometries, deinterleaveGeometry } from '../vendor/BufferGeometryUtils.js';
 
 // MESHOPT. A model exported with EXT_meshopt_compression does not fail with a
 // bad mesh or a warning — GLTFLoader THROWS on the first compressed buffer
@@ -121,7 +121,19 @@ function boxProjectUv(g) {
   return new THREE.BufferAttribute(uv, 2);
 }
 
+// meshopt-encoded models (gltf-transform's output: the NASA stand-ins) load
+// with INTERLEAVED vertex buffers, which mergeGeometries refuses — the whole
+// cast then resolves to nothing. De-interleave first; the utils know how.
+function deinterleaveAll(root) {
+  root.traverse((o) => {
+    if (!o.isMesh || !o.geometry) return;
+    const g = o.geometry;
+    if (Object.values(g.attributes).some((a) => a.isInterleavedBufferAttribute)) deinterleaveGeometry(g);
+  });
+}
+
 export function mergeByMaterial(root, pivotNames = [], exclude = []) {
+  deinterleaveAll(root);
   root.updateMatrixWorld(true);
   // Drop unwanted parts BEFORE merging — afterwards they are welded into a
   // shared mesh and can no longer be addressed individually.

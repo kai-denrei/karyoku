@@ -10,12 +10,12 @@
 // and the hull samples it where it stands, so the two cannot disagree
 // beyond the mesh's own faceting, and a plate sits on ground that is
 // exactly zero because the mask says so, not because a vertex was edited.
-import { mulberry32 } from './rng.js?v=a379cd79';
-import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=a379cd79';
-import { generateMesh, relax } from './organic-grid.js?v=a379cd79';
-import { valueNoise2D } from './noise.js?v=a379cd79';
-import { generatePlate, makePlateParams, CELL_M, DIRS, yawOfSide, KIND } from './plate.js?v=a379cd79';
-import { makeGates, makeSentries, blockedAt, losClear, buildingAt, gateCentre } from './drive.js?v=a379cd79';
+import { mulberry32 } from './rng.js?v=e280e775';
+import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=e280e775';
+import { generateMesh, relax } from './organic-grid.js?v=e280e775';
+import { valueNoise2D } from './noise.js?v=e280e775';
+import { generatePlate, makePlateParams, CELL_M, DIRS, yawOfSide, KIND } from './plate.js?v=e280e775';
+import { makeGates, makeSentries, blockedAt, losClear, buildingAt, gateCentre } from './drive.js?v=e280e775';
 
 export const ROAD_CLEAR_M = 7;
 export const WORLD_TUNE = {
@@ -136,7 +136,7 @@ export function gateOutside(p, gi) {
 }
 
 // --- the world ---------------------------------------------------------------
-export function makeWorld(params, plateParams) {
+export function makeWorld(params, plateParams, allowed = undefined) {
   const tune = clampWorldParams(makeWorldParams(), params);
   const seed = Number(params.seed) || 0;
   const rng = mulberry32(seed ^ 0x9e3779b9);
@@ -144,8 +144,8 @@ export function makeWorld(params, plateParams) {
 
   // plates first: the world must be big enough to hold them with ground
   // between, so a base that outgrows the world grows the world
-  const pA = generatePlate(makePlateParams({ ...plateParams, seed }));
-  const pB = generatePlate(makePlateParams({ ...plateParams, seed: seed + 1 }));
+  const pA = generatePlate(makePlateParams({ ...plateParams, seed }), allowed);
+  const pB = generatePlate(makePlateParams({ ...plateParams, seed: seed + 1 }), allowed);
   const widest = Math.max(pA.w, pB.w) * CELL_M, deepest = Math.max(pA.h, pB.h) * CELL_M;
   const need = Math.max(widest * 2.6 + tune.plateMargin * 4, deepest * 1.8 + tune.plateMargin * 4);
   const S = Math.max(tune.size, Math.ceil(need / 40) * 40);

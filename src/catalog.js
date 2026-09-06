@@ -65,6 +65,8 @@ export function buildCatalog(spec, manifest, extras = []) {
   }
   return cat;
 }
+// every id the catalog can draw — what the generator may place
+export const modelledIds = (cat) => new Set([...cat].filter(([, e]) => !e.placeholder).map(([id]) => id));
 export const NASA_URL = 'assets/models/nasa/';
 export const HOUSE_URL = 'assets/models/';
 export const OUTPOST_URL = 'assets/outpost/';

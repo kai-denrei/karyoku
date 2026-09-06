@@ -227,7 +227,7 @@ for (let seed = 1; seed <= 50; seed++) {
   check('the band holds containers as bodies', bodies.length >= 4, `got ${bodies.length}`);
   const b0 = bodies[0];
   check('a body\'s cells are freed for the hull', !blockedAt(p3, g3, b0.x, b0.z));
-  check('bodyAt sees the body', bodyAt(bodies, b0.x, b0.z) && !bodyAt(bodies, b0.x + 40, b0.z + 40));
+  check('bodyAt sees the body', bodyAt(bodies, b0.x, b0.z) && !bodyAt(bodies, -100, -100));
   // push a lone body on open ground: it gives way
   const lone = [{ pieceIndex: -1, plate: p3, x: 500, z: 500, hw: 5.8, hd: 1.8, rot: 0 }];
   const h = makeHull(500, 500 + 1.8 + 2 + 0.5, 0); // just south of the long side, facing it

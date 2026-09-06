@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { CATALOG_SPEC, SECTIONS, specById } from '../src/catalog-spec.js';
-import { buildCatalog, splitId, PLACEHOLDER_HEIGHT_M, fileFor, fitFor, NASA_URL, HOUSE_URL, OUTPOST_URL } from '../src/catalog.js';
+import { MODELLED } from '../src/plate.js';
+import { buildCatalog, splitId, PLACEHOLDER_HEIGHT_M, fileFor, fitFor, modelledIds, NASA_URL, HOUSE_URL, OUTPOST_URL } from '../src/catalog.js';
 import { check, done } from './check.mjs';
 
 check('111 asset types', CATALOG_SPEC.length === 111, `got ${CATALOG_SPEC.length}`);
@@ -61,4 +62,9 @@ check('the barracks has four states from the outpost', [0, 1, 2, 3].every((n) =>
 check('the outpost beats the NASA launcher for comms', fileFor(cat4.get('command_comms')) === OUTPOST_URL + 'command_comms_d0.glb');
 check('the house container still beats the outpost container', fileFor(cat4.get('logistics_container')) === HOUSE_URL + 'container.glb');
 check('the xenobiology lab is placeable', cat4.get('research_xenobiology') && !cat4.get('research_xenobiology').placeholder);
+{
+  const live = modelledIds(cat4);
+  const missing = [...MODELLED].filter((id) => !live.has(id));
+  check('the generator\'s default MODELLED set is inside the live catalog', missing.length === 0, missing.join(' '));
+}
 done();

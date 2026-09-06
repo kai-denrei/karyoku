@@ -13,9 +13,9 @@
 // `rotation.y = -rot * PI/2`. Yaw is compass degrees, 0 = N, 90 = E.
 // Plate width and depth are EVEN, because roads are 2 x 2 pieces laid on
 // even coordinates and a gate's road port has to land on one.
-import { mulberry32 } from './rng.js?v=a379cd79';
-import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=a379cd79';
-import { specById } from './catalog-spec.js?v=a379cd79';
+import { mulberry32 } from './rng.js?v=e280e775';
+import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=e280e775';
+import { specById } from './catalog-spec.js?v=e280e775';
 
 export const CELL_M = 4;
 
@@ -422,25 +422,48 @@ function reserveSentries(s) {
   }
 }
 
+// WHAT HAS A MODEL. The generator places nothing it cannot draw (operator,
+// 2026-09-07: "remove the placeholder black boxes"), so every zone list is
+// modelled ids only. This set is the default; the tabs hand in the live
+// catalog's own list, and test/catalog.mjs asserts this set is inside it.
+export const MODELLED = new Set([
+  // the research-outpost kit
+  'command_operations', 'personnel_barracks', 'personnel_infirmary', 'research_xenobiology', 'utility_reactor',
+  'command_comms', 'air_launchpad', 'industry_garage', 'logistics_container', 'research_specimen_crate', 'road_straight', 'utility_conduit',
+  // house casts and NASA stand-ins
+  'command_hq', 'command_uplink', 'personnel_recreation', 'personnel_shelter', 'logistics_crane', 'air_drone_pad', 'defense_radar', 'field_signal',
+  // the base kit
+  'wall_standard', 'wall_corner', 'gate_vehicle', 'foundation_flat',
+]);
+// the sentry socket has no model of its own — its plinth is the placeholder
+// the scene keeps — and is placed regardless of what is modelled
+export const SOCKET_ID = 'defense_sentry_socket';
 export const ZONES = {
-  command:   { buildings: ['command_hq', 'command_operations', 'command_uplink', 'command_server', 'command_comms'],
-               props: ['command_beacon', 'prop_terminal', 'prop_lamp'] },
-  logistics: { buildings: ['logistics_warehouse', 'logistics_loading_dock', 'logistics_crane', 'ground_hardstand', 'logistics_container'],
-               props: ['crate_general', 'crate_parts', 'logistics_pallet', 'crate_secure', 'research_specimen_crate'] },
-  defense:   { buildings: ['defense_bunker', 'defense_watchtower', 'defense_radar', 'defense_interceptor'],
-               props: ['defense_searchlight', 'field_barrier', 'field_sensor'] },
-  utility:   { buildings: ['utility_reactor', 'utility_solar', 'utility_water', 'utility_battery', 'utility_waste', 'utility_substation', 'utility_tank', 'utility_cooling'],
-               props: ['utility_junction', 'utility_conduit', 'crate_energy'] },
-  air:       { buildings: ['air_launchpad', 'air_hangar', 'air_control', 'air_fuel_service', 'air_drone_pad'],
-               props: ['field_signal', 'prop_lamp', 'prop_sign'] },
-  personnel: { buildings: ['personnel_mess', 'personnel_barracks', 'personnel_infirmary', 'research_xenobiology', 'personnel_recreation', 'personnel_shelter', 'personnel_hygiene', 'personnel_triage'],
-               props: ['prop_seating', 'prop_planter', 'prop_lamp'] },
-  industry:  { buildings: ['industry_garage', 'industry_fabricator', 'industry_workshop', 'research_xenobiology', 'industry_recycler', 'industry_test_cell', 'industry_drone_bench', 'industry_service_lift'],
-               props: ['industry_tool_rack', 'crate_parts', 'research_specimen_crate'] },
+  command:   { buildings: ['command_hq', 'command_operations', 'command_uplink', 'command_comms'],
+               props: ['field_signal', 'utility_conduit'] },
+  logistics: { buildings: ['logistics_crane', 'logistics_container'],
+               props: ['research_specimen_crate'] },
+  defense:   { buildings: ['defense_radar', 'command_comms'],
+               props: ['field_signal'] },
+  utility:   { buildings: ['utility_reactor', 'logistics_container'],
+               props: ['utility_conduit'] },
+  air:       { buildings: ['air_launchpad', 'air_drone_pad', 'command_comms'],
+               props: ['field_signal'] },
+  personnel: { buildings: ['personnel_barracks', 'research_xenobiology', 'personnel_recreation', 'personnel_shelter'],
+               props: ['research_specimen_crate', 'utility_conduit'] },
+  industry:  { buildings: ['industry_garage', 'research_xenobiology', 'logistics_crane', 'logistics_container'],
+               props: ['research_specimen_crate', 'utility_conduit'] },
 };
+// THE LANDMARK: the Isolation Infirmary takes a prime block of its own before
+// any zone packs — the largest block that is not the command block — and
+// stands once per plate, with a cross on its roof (plate-scene.js).
+export const LANDMARK = 'personnel_infirmary';
 // Buildings a block may hold more than once. Everything else is one per block.
-const REPEATABLE = new Set(['personnel_barracks', 'logistics_container', 'logistics_warehouse', 'ground_hardstand',
-  'defense_bunker', 'utility_battery', 'industry_workshop', 'utility_solar']);
+const REPEATABLE = new Set(['personnel_barracks', 'logistics_container', 'command_comms', 'personnel_shelter']);
+// Containers pack in ROWS, touching, and need no road of their own: the
+// warehouse feeling is a yard of containers, not a hall.
+const NO_LANE = new Set(['logistics_container']);
+const NO_ROAD = new Set(['logistics_container']);
 const PROP_RATE = 0.12;
 
 function floodBlocks(s) {
@@ -583,17 +606,32 @@ function shuffled(rng, arr) {
 // (entrance S) or 2 (entrance N); swapped dims allow rot 1 (W) or 3 (E).
 function findSpot(s, rng, block, def) {
   const [px, pz] = def.plot;
-  const orients = shuffled(rng, [[px, pz, [0, 2]], [pz, px, [1, 3]]]);
+  let orients = shuffled(rng, [[px, pz, [0, 2]], [pz, px, [1, 3]]]);
+  // a row packer keeps the orientation its block already has, so the rows stay rows
+  if (NO_LANE.has(def.id)) {
+    const first = s.pieces.find((pc) => pc.id === def.id && pc.zone === block.zone && block.cellSet.has(idx(s, pc.x, pc.z)));
+    if (first) orients = [...orients.filter((o) => o[0] === first.pw && o[1] === first.ph), ...orients.filter((o) => !(o[0] === first.pw && o[1] === first.ph))];
+  }
   const spots = [];
   for (let z = block.z0; z <= block.z1; z++) for (let x = block.x0; x <= block.x1; x++) spots.push([x, z]);
   const order = shuffled(rng, spots);
+  const gap = NO_LANE.has(def.id) ? 0 : s.params.gap;
   for (const [pw, ph, rots] of orients) {
-    for (const [x, z] of order) {
-      if (x + pw - 1 > block.x1 || z + ph - 1 > block.z1) continue;
+    // a row-packer goes BESIDE its own kind first, same orientation, so
+    // containers line up into a yard rather than scatter
+    const beside = [];
+    if (NO_LANE.has(def.id)) {
+      for (const pc of s.pieces) {
+        if (pc.id !== def.id || pc.zone !== block.zone || pc.pw !== pw || pc.ph !== ph || !block.cellSet.has(idx(s, pc.x, pc.z))) continue;
+        beside.push([pc.x + pw, pc.z], [pc.x - pw, pc.z], [pc.x, pc.z + ph], [pc.x, pc.z - ph]);
+      }
+    }
+    for (const [x, z] of [...beside, ...order]) {
+      if (x < block.x0 || z < block.z0 || x + pw - 1 > block.x1 || z + ph - 1 > block.z1) continue;
       if (!rectFree(s, block, x, z, pw, ph)) continue;
-      if (!laneClear(s, block, x, z, pw, ph, s.params.gap)) continue;
+      if (!laneClear(s, block, x, z, pw, ph, gap)) continue;
       const sides = roadSides(s, x, z, pw, ph);
-      if (sides.size === 0) continue;
+      if (sides.size === 0 && !NO_ROAD.has(def.id)) continue;
       const rot = rots.find((r) => sides.has(rotSide('S', r)));
       return { x, z, pw, ph, rot: rot === undefined ? rots[0] : rot };
     }
@@ -604,8 +642,9 @@ function findSpot(s, rng, block, def) {
 function packBlock(s, rng, block) {
   const zone = ZONES[block.zone];
   // the zone's biggest building anchors the block; the rest come in a
-  // seeded order, so a plate is not the same three warehouses every time
-  const sorted = zone.buildings.map(specById).sort((a, b) => b.plot[0] * b.plot[1] - a.plot[0] * a.plot[1]);
+  // seeded order, so a plate is not the same three of anything every time
+  const sorted = zone.buildings.filter((id) => s.allowed.has(id)).map(specById).sort((a, b) => b.plot[0] * b.plot[1] - a.plot[0] * a.plot[1]);
+  if (!sorted.length) return;
   const list = [sorted[0], ...shuffled(rng, sorted.slice(1))];
   const target = s.params.density * block.cells.length;
   const used = new Map();
@@ -627,12 +666,30 @@ function packBlock(s, rng, block) {
     const i = idx(s, x, z);
     if (s.cells[i] !== KIND.FOUNDATION || s.owner[i] !== -1) continue;
     if (rng() >= PROP_RATE) continue;
-    const id = zone.props[Math.floor(rng() * zone.props.length)];
+    const props = zone.props.filter((id) => s.allowed.has(id));
+    if (!props.length) break;
+    const id = props[Math.floor(rng() * props.length)];
     place(s, id, x, z, 1, 1, Math.floor(rng() * 4), KIND.PROP, { zone: block.zone });
   }
 }
 
+// The landmark first: the infirmary into the largest non-command block.
+function stepLandmark(s, rng) {
+  if (!s.allowed.has(LANDMARK)) return;
+  const def = specById(LANDMARK);
+  const blocks = s.blocks.filter((b) => b.zone !== 'command').sort((a, b) => b.cells.length - a.cells.length);
+  for (const block of blocks.length ? blocks : s.blocks) {
+    const spot = findSpot(s, rng, block, def);
+    if (!spot) continue;
+    place(s, LANDMARK, spot.x, spot.z, spot.pw, spot.ph, spot.rot, KIND.BUILDING, { zone: block.zone, landmark: true });
+    return;
+  }
+  // a small plate has no room for a landmark, and that is not a fault
+  if ((s.w - 2 * s.inset) * (s.h - 2 * s.inset) >= 400) s.warnings.push('no room for the infirmary');
+}
+
 function stepPacking(s, rng) {
+  stepLandmark(s, rng);
   for (const block of s.blocks) packBlock(s, rng, block);
   stepBand(s, rng);
 }
@@ -648,6 +705,7 @@ function stepBand(s, rng) {
   if (s.inset === 0) return;
   const R = innerRect(s);
   const inBand = (x, z) => x > 0 && z > 0 && x < s.w - 1 && z < s.h - 1 && (x < R.x0 || z < R.z0 || x > R.x1 || z > R.z1);
+  if (!s.allowed.has(BAND_PROP)) return;
   const spec = specById(BAND_PROP);
   const want = Math.round((s.w + s.h) / 8);
   const spots = [];
@@ -715,9 +773,11 @@ export function ringCoverage(s) {
 export const blindCells = (s) => ringCoverage(s).filter((c) => !c.covered).map((c) => [c.x, c.z]);
 
 // --- entry -----------------------------------------------------------------
-export function generatePlate(params) {
+// `allowed` is the set of ids that have a model; nothing outside it is placed.
+export function generatePlate(params, allowed = MODELLED) {
   const p = clampPlateParams(makePlateParams(), params);
   const s = makeState(p);
+  s.allowed = allowed;
   const rng = mulberry32(p.seed);
   stepRing(s, rng);
   reserveSentries(s);

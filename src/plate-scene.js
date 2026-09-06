@@ -5,14 +5,14 @@
 // as clones with their YAW pivot exposed, and everything else as a labelled
 // placeholder box of its footprint.
 import * as THREE from '../vendor/three.module.js';
-import { KIND, CELL_M, ringCoverage } from './plate.js?v=a379cd79';
-import { fileFor, fitFor, SECTION_COLOR, PLACEHOLDER_HEIGHT_M } from './catalog.js?v=a379cd79';
-import { LOB_FAMILIES, LOB_ELEV_DEG } from './drive.js?v=a379cd79';
-import { PALETTE, neonBox, BZ, styleForLook, bakeEdges } from './looks.js?v=a379cd79';
-import { prepFor, ladderTint, dressMetal } from './casts.js?v=a379cd79';
-import { tintModel } from './glbmodels.js?v=a379cd79';
-import { BODY_IDS } from './drive.js?v=a379cd79';
-import { loadGlb, loadGlbWithClips, mergeByMaterial, fitModel } from './glbmodels.js?v=a379cd79';
+import { KIND, CELL_M, ringCoverage, LANDMARK } from './plate.js?v=e280e775';
+import { fileFor, fitFor, SECTION_COLOR, PLACEHOLDER_HEIGHT_M } from './catalog.js?v=e280e775';
+import { LOB_FAMILIES, LOB_ELEV_DEG } from './drive.js?v=e280e775';
+import { PALETTE, neonBox, BZ, styleForLook, bakeEdges } from './looks.js?v=e280e775';
+import { prepFor, ladderTint, dressMetal } from './casts.js?v=e280e775';
+import { tintModel } from './glbmodels.js?v=e280e775';
+import { BODY_IDS } from './drive.js?v=e280e775';
+import { loadGlb, loadGlbWithClips, mergeByMaterial, fitModel } from './glbmodels.js?v=e280e775';
 
 const labelCache = new Map();
 function labelTexture(text) {
@@ -168,6 +168,17 @@ function arcWedge(st) {
   return m;
 }
 
+// A large + for a roof: two flat bars, lit, in the look's cross colour.
+function roofCross(size) {
+  const g = new THREE.Group();
+  const mat = new THREE.MeshBasicMaterial({ color: PALETTE.cross });
+  const a = new THREE.Mesh(new THREE.BoxGeometry(size, 0.25, size * 0.28), mat);
+  const b = new THREE.Mesh(new THREE.BoxGeometry(size * 0.28, 0.25, size), mat);
+  g.add(a, b);
+  if (BZ) for (const m of [a, b]) m.add(new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry), new THREE.LineBasicMaterial({ color: PALETTE.cross })));
+  return g;
+}
+
 // The turret's authored forward is its +z, which is S here; yaw 0 faces N.
 export const yawRotation = (yawDeg) => Math.PI - yawDeg * Math.PI / 180;
 
@@ -204,7 +215,12 @@ export function buildPlateGroup({ plate, catalog, wallState = 0, showArcs = true
   // by model, drawn at each piece's own damage state (the plate tab's
   // selector forces walls to one). `rebuild()` redraws it after a shot
   // changed a state.
-  const fallback = (piece) => { const obj = placeholderMesh(piece, catalog.get(piece.id)); placePiece(obj, piece); group.add(obj); return obj; };
+  // NO PLACEHOLDER BOXES (operator, 2026-09-07). A piece with no model draws
+  // nothing — except a sentry socket, whose plinth IS the socket.
+  const fallback = (piece) => {
+    if (piece.kind !== KIND.SENTRY) return new THREE.Group();
+    const obj = placeholderMesh(piece, catalog.get(piece.id)); placePiece(obj, piece); group.add(obj); return obj;
+  };
   const staticObjs = [];
   let staticModels = 0;
   function drawStatic() {
@@ -231,6 +247,17 @@ export function buildPlateGroup({ plate, catalog, wallState = 0, showArcs = true
         const g = instanced(root, pieces, pieceMatrix);
         staticObjs.push(g);
         group.add(g);
+        if (pieces[0].id === LANDMARK) {
+          // the Isolation Infirmary wears a cross on its roof, sized to the plot
+          const top = new THREE.Box3().setFromObject(root).max.y + 0.15;
+          for (const piece of pieces) {
+            const c = roofCross(Math.min(piece.pw, piece.ph) * CELL_M * 0.55);
+            placePiece(c, piece);
+            c.position.y = top;
+            staticObjs.push(c);
+            group.add(c);
+          }
+        }
       }));
     }
   }

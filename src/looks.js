@@ -4,9 +4,9 @@
 // glow bleed. Everything visual that is not a model lives here, so a tab
 // asks for the look rather than owning a palette.
 import * as THREE from '../vendor/three.module.js';
-import { makeBloom } from './postfx.js?v=a379cd79';
-import { tintModel, addEdgeOutlines } from './glbmodels.js?v=a379cd79';
-import { query } from './url.js?v=a379cd79';
+import { makeBloom } from './postfx.js?v=e280e775';
+import { tintModel, addEdgeOutlines } from './glbmodels.js?v=e280e775';
+import { query } from './url.js?v=e280e775';
 
 // TWO LOOKS. 'colony' is the Tron-and-TD-board look; 'battlezone' is the
 // 1980 vector display: black, one green, every shape an edge. `?look=`
@@ -33,7 +33,7 @@ const COLONY = {
   dome: 0x3cf2b0,
   rock: 0x3a4a5c,
   star: 0x9fb0c8,
-  tracer: 0xffd166, shot: 0x7df9ff, shell: 0xff8c42, splash: 0xff8c42, arc: 0xc0392b, blind: 0x2ecc71, shadow: 0x000000, tick: 0xffffff,
+  tracer: 0xffd166, shot: 0x7df9ff, shell: 0xff8c42, splash: 0xff8c42, arc: 0xc0392b, blind: 0x2ecc71, shadow: 0x000000, tick: 0xffffff, cross: 0xff5c5c,
   section: {
     ground: 0x2a3f52, road: 0xff7a1a, perimeter: 0x2ad2ff, defense: 0xff4d2e,
     command: 0x7df9ff, personnel: 0x3cf2b0, logistics: 0xffb347, industry: 0xff8c42,
@@ -56,7 +56,7 @@ const BATTLEZONE = {
   dome: G.mid,
   rock: G.dim,
   star: 0x1d6b33,
-  tracer: G.hi, shot: G.hi, shell: G.hi, splash: G.hi, arc: G.dim, blind: G.hi, shadow: G.dim, tick: G.mid,
+  tracer: G.hi, shot: G.hi, shell: G.hi, splash: G.hi, arc: G.dim, blind: G.hi, shadow: G.dim, tick: G.mid, cross: G.hi,
   section: Object.fromEntries(['ground', 'road', 'perimeter', 'defense', 'command', 'personnel', 'logistics', 'industry', 'utility', 'air', 'field', 'prop', 'research'].map((k) => [k, G.mid])),
 };
 export const PALETTE = BZ ? BATTLEZONE : COLONY;

@@ -5,17 +5,18 @@
 import * as THREE from '../vendor/three.module.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { generatePlate, makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M } from './plate.js?v=a379cd79';
+import { generatePlate, makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M } from './plate.js?v=e280e775';
 import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, blockedAt, makeGates, stepGates,
-  spawnFor, makeSentries, stepSentries, losClear, stepTracers, rayStop, fireHull, damageAt, makeBodies, stepBodies } from './drive.js?v=a379cd79';
-import { PALETTE, LOOK, LOOKS } from './looks.js?v=a379cd79';
-import { withParam } from './url.js?v=a379cd79';
-import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=a379cd79';
-import { query, loadCatalog } from './plate-tab.js?v=a379cd79';
-import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS } from './drive-rig.js?v=a379cd79';
-import { makeCrew, stepCrew } from './crew.js?v=a379cd79';
-import { makeCrewScene } from './crew-scene.js?v=a379cd79';
-import { mulberry32 } from './rng.js?v=a379cd79';
+  spawnFor, makeSentries, stepSentries, losClear, stepTracers, rayStop, fireHull, damageAt, makeBodies, stepBodies } from './drive.js?v=e280e775';
+import { PALETTE, LOOK, LOOKS } from './looks.js?v=e280e775';
+import { withParam } from './url.js?v=e280e775';
+import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=e280e775';
+import { query, loadCatalog } from './plate-tab.js?v=e280e775';
+import { modelledIds } from './catalog.js?v=e280e775';
+import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS } from './drive-rig.js?v=e280e775';
+import { makeCrew, stepCrew } from './crew.js?v=e280e775';
+import { makeCrewScene } from './crew-scene.js?v=e280e775';
+import { mulberry32 } from './rng.js?v=e280e775';
 
 export function initDriveTab(root) {
   const { renderer, scene, camera, hud, notice, resize, render, setGroups } = makeViewer(root);
@@ -40,7 +41,7 @@ export function initDriveTab(root) {
   function build() {
     if (rig) scene.remove(rig.group);
     pool.clear();
-    plate = generatePlate(params);
+    plate = generatePlate(params, modelledIds(catalog));
     window.__plate = plate;
     rig = buildPlateGroup({ plate, catalog, wallState: null, animatedGates: true, tint: PALETTE.hostile });
     scene.add(rig.group);
