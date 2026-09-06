@@ -1,9 +1,9 @@
 # karyoku — working notes for Claude sessions
 
-Firepower homage. Sub-project 1 (plate generator, `#plate`) and 2 (drive,
-`#drive`) are built; World is briefed in
-`docs/superpowers/specs/2026-09-06-plate-generator-design.md`. Drive's
-rules: `docs/superpowers/specs/2026-09-06-drive-design.md`.
+Firepower homage. All three PoC sub-projects are built: `#plate` (generator),
+`#drive` (the MKCX-2 on a plate), `#world` (two plates on Stalberg terrain,
+a road found between them). Specs in `docs/superpowers/specs/`, one per
+sub-project, plans beside them.
 Stack and rules mirror ~/Dev/spherical-stalberg-grid (three r160 vendored,
 no build step, Node invariant suites).
 
@@ -46,6 +46,21 @@ no build step, Node invariant suites).
   the spawn outside the first gate and logs `[drive] t= hull= gates= hits=`;
   `?probe=1` logs it every simulated second. `window.__drive` is the state.
 - Keys: WASD / arrows drive, C toggles top-down and orbit, R regenerates.
+
+## World
+- `src/world.js` is pure: the 2D Stalberg kernel copied from oskar-procedure
+  (`organic-grid.js`, `poisson.js`, `hex.js`, `vec2.js`, vendored
+  `delaunator.js` + `robust-predicates.js`) and its value noise (`noise.js`).
+  Height is a FUNCTION (`world.heightAt`), masked flat around the plates;
+  the mesh samples it, the hull samples it, they cannot disagree.
+- The kernel's quads are CCW in its (x, y) plane and y becomes z here, which
+  flips handedness: terrain triangles are emitted REVERSED or every face
+  culls from above and the ground is a field of slivers.
+- The road is Dijkstra over quads sharing an edge, slope-penalised, from A's
+  facing gate to B's. Trees and rocks never sit on road quads or in a plate's
+  margin. Trunks and rocks block the hull; canopies do not.
+- `#world?seed=7&tick=8` logs `[world] t= hull= y= goal= hits=`; `?view=overview`
+  parks the camera above the whole world for a screenshot. `window.__world`.
 
 ## Verify
 - `npm run serve` then `http://localhost:8150/#plate?seed=7&ascii=1`.

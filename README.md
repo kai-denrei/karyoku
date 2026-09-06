@@ -17,6 +17,10 @@ gate opens on approach, the sentries sweep their arcs and fire tracers at
 what they can see, and the HUD counts the rounds that would have hit. C
 switches between the top-down and orbit cameras.
 
+The `#world` tab is the whole PoC: two plates on organic Stalberg terrain,
+a dirt road found between their facing gates, trees and rocks. Drive from
+plate A's gate to plate B's. `?view=overview` shows it all from above.
+
     npm run serve        # http://localhost:8150/#plate
     npm test             # Node invariant suites
     ./scripts/bust.sh    # bump cache-bust tokens after editing src/, HTML, CSS
