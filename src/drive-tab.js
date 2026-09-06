@@ -5,18 +5,18 @@
 import * as THREE from '../vendor/three.module.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { generatePlate, makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M } from './plate.js?v=0d3dc4c2';
+import { generatePlate, makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M } from './plate.js?v=2b5e6f89';
 import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, blockedAt, makeGates, stepGates,
-  spawnFor, makeSentries, stepSentries, losClear, stepTracers, rayStop, fireHull, damageAt, makeBodies, stepBodies, shotRangeFor } from './drive.js?v=0d3dc4c2';
-import { PALETTE, LOOK, LOOKS } from './looks.js?v=0d3dc4c2';
-import { withParam } from './url.js?v=0d3dc4c2';
-import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=0d3dc4c2';
-import { query, loadCatalog } from './plate-tab.js?v=0d3dc4c2';
-import { modelledIds } from './catalog.js?v=0d3dc4c2';
-import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS } from './drive-rig.js?v=0d3dc4c2';
-import { makeCrew, stepCrew, stepSquash } from './crew.js?v=0d3dc4c2';
-import { makeCrewScene } from './crew-scene.js?v=0d3dc4c2';
-import { mulberry32 } from './rng.js?v=0d3dc4c2';
+  spawnFor, makeSentries, stepSentries, losClear, stepTracers, rayStop, fireHull, damageAt, makeBodies, stepBodies, shotRangeFor } from './drive.js?v=2b5e6f89';
+import { PALETTE, LOOK, LOOKS } from './looks.js?v=2b5e6f89';
+import { withParam } from './url.js?v=2b5e6f89';
+import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=2b5e6f89';
+import { query, loadCatalog } from './plate-tab.js?v=2b5e6f89';
+import { modelledIds } from './catalog.js?v=2b5e6f89';
+import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS, makeMobileShell, mobileShell } from './drive-rig.js?v=2b5e6f89';
+import { makeCrew, stepCrew, stepSquash } from './crew.js?v=2b5e6f89';
+import { makeCrewScene } from './crew-scene.js?v=2b5e6f89';
+import { mulberry32 } from './rng.js?v=2b5e6f89';
 
 export function initDriveTab(root) {
   const { renderer, scene, camera, hud, notice, resize, render, setGroups, post } = makeViewer(root);
@@ -99,7 +99,9 @@ export function initDriveTab(root) {
     for (const r of rig.loopRigs) r.mixer.update(lastDt);
     pool.sync(tracers, () => 0, lastDt, P.splashR);
     followCamera(camera, controls, hull, 0, view.camera, lastDt, null, { cx: plate.w * CELL_M / 2, cz: plate.h * CELL_M / 2, span: Math.max(plate.w, plate.h) * CELL_M }, (x, z) => blockedAt(plate, gates, x, z));
-    hud.textContent = `muzzle ${hull.elev.toFixed(0)} deg · range ${shotRangeFor(hull, P).toFixed(0)} m · hits ${hits} · shots ${hull.shots} · breached ${breached} · squashed ${squashed} · gates ${gateWord()} · cam ${view.camera} · WASD drive · SPACE fire · SHIFT+W/S muzzle · 1-4 cameras · R regenerate`;
+    hud.textContent = mobileShell
+      ? `muzzle ${hull.elev.toFixed(0)} · range ${shotRangeFor(hull, P).toFixed(0)} m · hits ${hits} · breached ${breached} · squashed ${squashed}`
+      : `muzzle ${hull.elev.toFixed(0)} deg · range ${shotRangeFor(hull, P).toFixed(0)} m · hits ${hits} · shots ${hull.shots} · breached ${breached} · squashed ${squashed} · gates ${gateWord()} · cam ${view.camera} · WASD drive · SPACE fire · SHIFT+W/S muzzle · 1-4 cameras · R regenerate`;
   }
 
   const regenerate = () => { params.seed = (params.seed + 1) % 1000000; gui.controllersRecursive().forEach((c) => c.updateDisplay()); build(); };
@@ -107,6 +109,7 @@ export function initDriveTab(root) {
   const setCam = (m) => { view.camera = m; controls.enabled = m === 'orbit'; camera.userData.placed = false; gui.controllersRecursive().forEach((c) => c.updateDisplay()); };
   const toggleCam = () => setCam(CAMS[(CAMS.indexOf(view.camera) + 1) % CAMS.length]);
   const keys = makeKeys({ c: toggleCam, r: regenerate, ...Object.fromEntries(Object.entries(CAMERA_KEYS).map(([k, m]) => [k, () => setCam(m)])) });
+  makeMobileShell(root, keys, { onCamera: toggleCam });
 
   const gui = new GUI({ title: 'DRIVE', container: root });
   gui.add(P, 'speed', 2, 30, 1).name('tank speed (m/s)');

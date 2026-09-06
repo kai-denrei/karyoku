@@ -5,18 +5,18 @@
 import * as THREE from '../vendor/three.module.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { makePlateParams, clampPlateParams, PLATE_KNOBS } from './plate.js?v=0d3dc4c2';
-import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, stepGates, stepSentries, stepTracers, fireHull, damageAt, autopilotInput, makeBodies, stepBodies, bodyAt, shotRangeFor, solidHeightAt, SOLID_HEIGHT } from './drive.js?v=0d3dc4c2';
-import { WORLD_KNOBS, makeWorldParams, clampWorldParams, makeWorld, worldBlocked, worldBuildingAt, worldLosFor, worldSentries, worldGates, terrainNormal, splitQuad, groundAt } from './world.js?v=0d3dc4c2';
-import { PALETTE, terrainMeshes, floraMeshes, LOOK, LOOKS } from './looks.js?v=0d3dc4c2';
-import { withParam } from './url.js?v=0d3dc4c2';
-import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=0d3dc4c2';
-import { query, loadCatalog } from './plate-tab.js?v=0d3dc4c2';
-import { modelledIds } from './catalog.js?v=0d3dc4c2';
-import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS } from './drive-rig.js?v=0d3dc4c2';
-import { makeCrew, stepCrew, stepSquash } from './crew.js?v=0d3dc4c2';
-import { makeCrewScene } from './crew-scene.js?v=0d3dc4c2';
-import { mulberry32 } from './rng.js?v=0d3dc4c2';
+import { makePlateParams, clampPlateParams, PLATE_KNOBS } from './plate.js?v=2b5e6f89';
+import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, stepGates, stepSentries, stepTracers, fireHull, damageAt, autopilotInput, makeBodies, stepBodies, bodyAt, shotRangeFor, solidHeightAt, SOLID_HEIGHT } from './drive.js?v=2b5e6f89';
+import { WORLD_KNOBS, makeWorldParams, clampWorldParams, makeWorld, worldBlocked, worldBuildingAt, worldLosFor, worldSentries, worldGates, terrainNormal, splitQuad, groundAt } from './world.js?v=2b5e6f89';
+import { PALETTE, terrainMeshes, floraMeshes, LOOK, LOOKS } from './looks.js?v=2b5e6f89';
+import { withParam } from './url.js?v=2b5e6f89';
+import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=2b5e6f89';
+import { query, loadCatalog } from './plate-tab.js?v=2b5e6f89';
+import { modelledIds } from './catalog.js?v=2b5e6f89';
+import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS, makeMobileShell, mobileShell } from './drive-rig.js?v=2b5e6f89';
+import { makeCrew, stepCrew, stepSquash } from './crew.js?v=2b5e6f89';
+import { makeCrewScene } from './crew-scene.js?v=2b5e6f89';
+import { mulberry32 } from './rng.js?v=2b5e6f89';
 
 const ARRIVE_M = 8;
 
@@ -133,7 +133,9 @@ export function initWorldTab(root) {
     }
     pool.sync(tracers, (x, z) => world.heightAt(x, z), lastDt, P.splashR);
     followCamera(camera, controls, hull, y, view.camera, lastDt, (x, z) => groundAt(world, x, z).y, { cx: world.size / 2, cz: world.size / 2, span: world.size }, (x, z) => worldBlocked(world, x, z));
-    hud.textContent = `goal ${goalDist().toFixed(0)} m${arrivedAt >= 0 ? ` · ARRIVED at ${arrivedAt.toFixed(1)} s` : ''} · muzzle ${hull.elev.toFixed(0)} deg · range ${shotRangeFor(hull, P).toFixed(0)} m · hits ${hits} · shots ${hull.shots} · breached ${breached} · squashed ${squashed} · cam ${view.camera} · WASD drive · SPACE fire · SHIFT+W/S muzzle · 1-4 cameras · R regenerate`;
+    hud.textContent = mobileShell
+      ? `goal ${goalDist().toFixed(0)} m${arrivedAt >= 0 ? ' · ARRIVED' : ''} · muzzle ${hull.elev.toFixed(0)} · range ${shotRangeFor(hull, P).toFixed(0)} m · hits ${hits} · breached ${breached} · squashed ${squashed}`
+      : `goal ${goalDist().toFixed(0)} m${arrivedAt >= 0 ? ` · ARRIVED at ${arrivedAt.toFixed(1)} s` : ''} · muzzle ${hull.elev.toFixed(0)} deg · range ${shotRangeFor(hull, P).toFixed(0)} m · hits ${hits} · shots ${hull.shots} · breached ${breached} · squashed ${squashed} · cam ${view.camera} · WASD drive · SPACE fire · SHIFT+W/S muzzle · 1-4 cameras · R regenerate`;
   }
 
   const regenerate = () => { plateParams.seed = (plateParams.seed + 1) % 1000000; gui.controllersRecursive().forEach((c) => c.updateDisplay()); build(); };
@@ -141,6 +143,7 @@ export function initWorldTab(root) {
   const setCam = (m) => { view.camera = m; controls.enabled = m === 'orbit'; camera.userData.placed = false; gui.controllersRecursive().forEach((c) => c.updateDisplay()); };
   const toggleCam = () => setCam(CAMS[(CAMS.indexOf(view.camera) + 1) % CAMS.length]);
   const keys = makeKeys({ c: toggleCam, r: regenerate, ...Object.fromEntries(Object.entries(CAMERA_KEYS).map(([k, m]) => [k, () => setCam(m)])) });
+  makeMobileShell(root, keys, { onCamera: toggleCam });
 
   const gui = new GUI({ title: 'WORLD', container: root });
   // THE THREE NUMBERS A PLAYER TOUCHES, at the top: how fast, how big a

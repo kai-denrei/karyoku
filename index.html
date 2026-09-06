@@ -2,12 +2,19 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>karyoku</title>
-  <meta name="theme-color" content="#0e1116">
-  <link rel="stylesheet" href="./styles.css?v=0d3dc4c2">
+  <meta name="theme-color" content="#0d1017">
+  <link rel="manifest" href="./manifest.webmanifest?v=2b5e6f89">
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png?v=2b5e6f89">
+  <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png?v=2b5e6f89">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="karyoku">
+  <link rel="stylesheet" href="./styles.css?v=2b5e6f89">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-  <meta name="cb" content="0d3dc4c2">
+  <meta name="cb" content="2b5e6f89">
 </head>
 <body>
   <nav id="tabbar">
@@ -15,13 +22,15 @@
     <button data-tab="plate" class="active">plate</button>
     <button data-tab="drive">drive</button>
     <button data-tab="world">world</button>
+    <button class="gear" id="gear" title="panel">knobs</button>
     <span class="build">build <code id="build-token"></code></span>
+    <span class="update" id="update" hidden><button id="update-apply">new build ready: reload</button></span>
   </nav>
   <main>
     <section id="tab-plate" class="tab active"></section>
     <section id="tab-drive" class="tab"></section>
     <section id="tab-world" class="tab"></section>
   </main>
-  <script type="module" src="./src/main.js?v=0d3dc4c2"></script>
+  <script type="module" src="./src/main.js?v=2b5e6f89"></script>
 </body>
 </html>

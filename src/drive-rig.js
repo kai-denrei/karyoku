@@ -2,10 +2,12 @@
 // the hull model with a stand-in until it lands, the key state, the tracer
 // meshes, and the two cameras. Rendering only; the rules are drive.js.
 import * as THREE from '../vendor/three.module.js';
-import { applySpaceScene, makeStars, makeComposer, PALETTE } from './looks.js?v=0d3dc4c2';
-import { castHull } from './casts.js?v=0d3dc4c2';
-import { styleForLook, BZ } from './looks.js?v=0d3dc4c2';
-import { loadGlb, mergeByMaterial } from './glbmodels.js?v=0d3dc4c2';
+import { applySpaceScene, makeStars, makeComposer, PALETTE } from './looks.js?v=2b5e6f89';
+import { castHull } from './casts.js?v=2b5e6f89';
+import { styleForLook, BZ } from './looks.js?v=2b5e6f89';
+import { STICK, stickVector, knobOffset } from './stick.js?v=2b5e6f89';
+import { query } from './url.js?v=2b5e6f89';
+import { loadGlb, mergeByMaterial } from './glbmodels.js?v=2b5e6f89';
 
 const HULL_URL = 'assets/models/mkcx2.glb';
 // The nodes that must keep moving through the merge, and the ones that
@@ -51,6 +53,7 @@ export function makeHullObject() {
 // Key state as a drive input. Extra single-press keys go through `on`.
 export function makeKeys(on = {}) {
   const keys = {};
+  const extra = {};
   addEventListener('keydown', (e) => {
     if (e.target && /input|textarea|select/i.test(e.target.tagName)) return;
     if (KEYMAP[e.key] !== undefined || SHIFTMAP[e.key] !== undefined || e.key === ' ') { keys[e.key] = true; e.preventDefault(); }
@@ -64,7 +67,9 @@ export function makeKeys(on = {}) {
     if (e.key.length === 1) { keys[e.key.toLowerCase()] = false; keys[e.key.toUpperCase()] = false; }
   });
   return {
-    input() { const inp = {}; for (const [k, name] of Object.entries(KEYMAP)) if (keys[k]) inp[name] = true; for (const [k, name] of Object.entries(SHIFTMAP)) if (keys[k]) inp[name] = true; if (keys[' ']) inp.fire = true; return inp; },
+    input() { const inp = {}; for (const [k, name] of Object.entries(KEYMAP)) if (keys[k]) inp[name] = true; for (const [k, name] of Object.entries(SHIFTMAP)) if (keys[k]) inp[name] = true; if (keys[' ']) inp.fire = true; return Object.assign(inp, extra); },
+    // a second input source (the mobile shell) merged over the keys
+    extra,
   };
 }
 
@@ -172,6 +177,74 @@ export function followCamera(camera, controls, hull, y, mode, dt = 0.016, ground
     if (!camera.userData.placed) { camera.position.set(hull.x + 30, y + 25, hull.z + 30); camera.userData.placed = true; }
     controls.update();
   }
+}
+
+// THE MOBILE SHELL, after the reference's: a floating stick on the left
+// half (touch anywhere, a ring appears, drag to drive; a finger that never
+// leaves the dead zone was a tap), and thumbs on the right — FIRE held,
+// MUZZLE up and down held, CAM tapped. Detection is (pointer: coarse) and a
+// short side under 900 px, `?mobile=1|0` overriding. The shell writes into
+// the keys' `extra` input, so the rules never know a phone from a keyboard.
+export const mobileShell = (() => {
+  const q = query().get('mobile');
+  if (q === '1') return true;
+  if (q === '0') return false;
+  return typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches && Math.min(innerWidth, innerHeight) < 900;
+})();
+
+export function makeMobileShell(root, keys, { onCamera = () => {} } = {}) {
+  if (!mobileShell) return null;
+  document.body.classList.add('mobile-shell');
+  const stickEl = document.createElement('div');
+  stickEl.className = 'stick hidden';
+  stickEl.innerHTML = '<div class="stick-ring"></div><div class="stick-knob"></div>';
+  root.appendChild(stickEl);
+  const knob = stickEl.querySelector('.stick-knob');
+  let stick = null;
+  const canvas = root.querySelector('canvas');
+  const clear = () => { delete keys.extra.throttle; delete keys.extra.left; delete keys.extra.right; };
+  canvas.addEventListener('pointerdown', (ev) => {
+    if (ev.pointerType === 'mouse' && ev.button !== 0) return;
+    if (ev.clientX > innerWidth * 0.5 || stick) return;
+    stick = { id: ev.pointerId, x: ev.clientX, y: ev.clientY };
+    stickEl.style.left = `${ev.clientX}px`; stickEl.style.top = `${ev.clientY}px`;
+    knob.style.transform = 'translate(0px, 0px)';
+    stickEl.classList.remove('hidden');
+    canvas.setPointerCapture(ev.pointerId);
+  });
+  canvas.addEventListener('pointermove', (ev) => {
+    if (!stick || ev.pointerId !== stick.id) return;
+    const dx = ev.clientX - stick.x, dy = ev.clientY - stick.y;
+    const v = stickVector(dx, dy, STICK);
+    if (!v.active) { clear(); return; }
+    keys.extra.throttle = v.throttle; keys.extra.left = v.left; keys.extra.right = v.right;
+    const [kx, ky] = knobOffset(dx, dy, STICK);
+    knob.style.transform = `translate(${kx}px, ${ky}px)`;
+  });
+  const end = (ev) => { if (!stick || ev.pointerId !== stick.id) return; stick = null; clear(); stickEl.classList.add('hidden'); };
+  canvas.addEventListener('pointerup', end);
+  canvas.addEventListener('pointercancel', end);
+  // the thumbs
+  const thumbs = document.createElement('div');
+  thumbs.className = 'thumbs';
+  const hold = (label, name, cls = '') => {
+    const b = document.createElement('button');
+    b.className = `thumb ${cls}`; b.textContent = label;
+    const on = (ev) => { ev.preventDefault(); keys.extra[name] = true; b.classList.add('down'); };
+    const off = () => { delete keys.extra[name]; b.classList.remove('down'); };
+    b.addEventListener('pointerdown', on); b.addEventListener('pointerup', off); b.addEventListener('pointercancel', off); b.addEventListener('pointerleave', off);
+    thumbs.appendChild(b);
+    return b;
+  };
+  hold('MUZZLE +', 'elevUp', 'small');
+  hold('MUZZLE -', 'elevDown', 'small');
+  const cam = document.createElement('button');
+  cam.className = 'thumb small'; cam.textContent = 'CAM';
+  cam.addEventListener('pointerdown', (ev) => { ev.preventDefault(); onCamera(); });
+  thumbs.appendChild(cam);
+  hold('FIRE', 'fire', 'fire');
+  root.appendChild(thumbs);
+  return { stickEl, thumbs };
 }
 
 export function makeViewer(root) {

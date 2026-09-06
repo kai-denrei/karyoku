@@ -1,0 +1,20 @@
+import { STICK, stickVector, knobOffset } from '../src/stick.js';
+let failures = 0;
+const check = (name, cond, detail = '') => { if (cond) console.log(`  ok   ${name}`); else { console.error(`  FAIL ${name} ${detail}`); failures++; } };
+const near = (a, b, e = 1e-9) => Math.abs(a - b) < e;
+console.log('the stick:');
+check('inside the dead zone it is not a stick (a tap stays a tap)', !stickVector(5, -8).active);
+const f = stickVector(0, -72);
+check('straight up at the ring = full throttle, no steer', f.active && near(f.throttle, 1) && !f.left && !f.right);
+check('half up = half throttle', near(stickVector(0, -36).throttle, 0.5));
+check('past the ring clamps to 1', near(stickVector(0, -300).throttle, 1));
+const b = stickVector(0, 72);
+check('straight down = reverse, capped at the reverse fraction', near(b.throttle, -STICK.rev));
+check('a little down is a little reverse, still under the cap', stickVector(0, 20).throttle < 0 && stickVector(0, 20).throttle > -STICK.rev);
+const l = stickVector(-60, -40);
+check('left of the band steers left', l.left && !l.right && l.throttle > 0);
+check('right of the band steers right', stickVector(60, -40).right);
+check('inside the band does not steer', !stickVector(10, -60).left && !stickVector(10, -60).right);
+check('the knob clamps to the ring', near(Math.hypot(...knobOffset(300, 400)), STICK.radius) && knobOffset(10, 10)[0] === 10);
+if (failures) { console.error(`stick: ${failures} FAILED`); process.exit(1); }
+console.log('stick: all good');

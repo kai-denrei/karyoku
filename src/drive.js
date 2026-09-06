@@ -11,8 +11,8 @@
 // THE ANTI-AIMBOT NUMBERS are yawRate and the arc: a sentry cannot point
 // outside its arc, and inside it turns at yawRate, so a hull that crosses
 // the arc fast, or stays in the blind sector, is never fired on.
-import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=0d3dc4c2';
-import { KIND, CELL_M, wrapDeg, dirOfYaw, DIRS, yawOfSide, rotSide } from './plate.js?v=0d3dc4c2';
+import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=2b5e6f89';
+import { KIND, CELL_M, wrapDeg, dirOfYaw, DIRS, yawOfSide, rotSide } from './plate.js?v=2b5e6f89';
 
 export const DRIVE_TUNE = {
   speed: 12,        // m/s forward
@@ -106,7 +106,11 @@ export function stepHull(hull, input, dt, blocked, tune = DRIVE_TUNE) {
   if (dElev) hull.elev = Math.max(tune.elevMin, Math.min(tune.elevMax, hull.elev + dElev));
   const turn = ((input.right ? 1 : 0) - (input.left ? 1 : 0)) * tune.turnRate * dt;
   hull.heading = wrapDeg(hull.heading + turn);
-  const v = input.fwd ? tune.speed : input.rev ? -tune.reverse : 0;
+  // a stick hands in a throttle (-rev..1) instead of the two keys: forward
+  // scales the speed, backward scales the reverse speed
+  const v = typeof input.throttle === 'number'
+    ? (input.throttle > 0 ? input.throttle * tune.speed : input.throttle * tune.reverse)
+    : input.fwd ? tune.speed : input.rev ? -tune.reverse : 0;
   hull.speed = v;
   hull.vx = 0; hull.vz = 0;
   if (v === 0) return false;

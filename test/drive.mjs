@@ -292,4 +292,16 @@ for (let seed = 1; seed <= 50; seed++) {
   check('rubble no longer stops a sentry round', !buildingAt(p4, bx, bz));
   check('a wall still takes one round per state', hitsPerState(p4.pieces.find((pc) => pc.id === 'wall_standard')) === 1);
 }
+// --- a stick's throttle ---------------------------------------------------------
+{
+  const h = makeHull(100, 100, 0);
+  stepHull(h, { throttle: 0.5 }, 1, noBlock);
+  check('half throttle is half speed', near(h.z, 100 - DRIVE_TUNE.speed * 0.5));
+  const b = makeHull(100, 100, 0);
+  stepHull(b, { throttle: -0.5 }, 1, noBlock);
+  check('a negative throttle backs up at that fraction of reverse', near(b.z, 100 + DRIVE_TUNE.reverse * 0.5));
+  const k = makeHull(100, 100, 0);
+  stepHull(k, { fwd: true }, 1, noBlock);
+  check('the keys still drive at full speed', near(k.z, 100 - DRIVE_TUNE.speed));
+}
 done();
