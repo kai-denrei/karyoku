@@ -5,12 +5,12 @@
 import * as THREE from '../vendor/three.module.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { makePlateParams, clampPlateParams, PLATE_KNOBS } from './plate.js?v=979b8ccb';
-import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, stepGates, stepSentries, stepTracers } from './drive.js?v=979b8ccb';
-import { WORLD_KNOBS, makeWorldParams, clampWorldParams, makeWorld, worldBlocked, worldBuildingAt, worldLosFor, worldSentries, worldGates } from './world.js?v=979b8ccb';
-import { buildPlateGroup, yawRotation } from './plate-scene.js?v=979b8ccb';
-import { query, loadCatalog } from './plate-tab.js?v=979b8ccb';
-import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera } from './drive-rig.js?v=979b8ccb';
+import { makePlateParams, clampPlateParams, PLATE_KNOBS } from './plate.js?v=01da3658';
+import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, stepGates, stepSentries, stepTracers } from './drive.js?v=01da3658';
+import { WORLD_KNOBS, makeWorldParams, clampWorldParams, makeWorld, worldBlocked, worldBuildingAt, worldLosFor, worldSentries, worldGates } from './world.js?v=01da3658';
+import { buildPlateGroup, yawRotation } from './plate-scene.js?v=01da3658';
+import { query, loadCatalog } from './plate-tab.js?v=01da3658';
+import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera } from './drive-rig.js?v=01da3658';
 
 const ARRIVE_M = 8;
 
@@ -23,7 +23,9 @@ function terrainMesh(world) {
   const lo = Math.min(...heights), hi = Math.max(...heights);
   mesh.quads.forEach((q, qi) => {
     const road = world.road.set.has(qi);
-    const tri = [q[0], q[1], q[2], q[0], q[2], q[3]];
+    // the kernel's quads are CCW in its (x, y) plane; y becomes z here, which
+    // flips handedness, so the triangles are emitted reversed to face up
+    const tri = [q[0], q[2], q[1], q[0], q[3], q[2]];
     const hAvg = (heights[q[0]] + heights[q[1]] + heights[q[2]] + heights[q[3]]) / 4;
     const t = hi > lo ? (hAvg - lo) / (hi - lo) : 0.5;
     if (road) c.setHSL(0.08, 0.35, 0.28);
@@ -80,7 +82,7 @@ export function initWorldTab(root) {
   const plateParams = clampPlateParams(makePlateParams(), qo);
   const W = clampWorldParams(makeWorldParams(), qo);
   const P = clampDriveParams(makeDriveParams(), qo);
-  const view = { camera: 'top' };
+  const view = { camera: q.get('view') === 'overview' ? 'overview' : 'top' };
   const hullObj = makeHullObject();
   scene.add(hullObj);
   const pool = makeTracerPool(scene);
@@ -134,7 +136,11 @@ export function initWorldTab(root) {
       for (const gr of rigs[pi].gateRigs) { const g = p.gates[gr.index]; if (g && gr.mixer) gr.mixer.setTime(g.open * gr.duration); }
     });
     pool.sync(tracers, (x, z) => world.heightAt(x, z));
-    followCamera(camera, controls, hull, y, view.camera);
+    if (view.camera === 'overview') {
+      // the whole world from high above its centre, north up: a screenshot pose
+      camera.position.set(world.size / 2, world.size * 1.05, world.size / 2 + world.size * 0.35);
+      camera.lookAt(world.size / 2, 0, world.size / 2);
+    } else followCamera(camera, controls, hull, y, view.camera);
     hud.textContent = `goal ${goalDist().toFixed(0)} m${arrivedAt >= 0 ? ` · ARRIVED at ${arrivedAt.toFixed(1)} s` : ''} · hits ${hits} · cam ${view.camera} · WASD / arrows drive · C camera · R regenerate`;
   }
 
@@ -154,7 +160,7 @@ export function initWorldTab(root) {
   const df = gui.addFolder('drive');
   for (const k of DRIVE_KNOBS) df.add(P, k.key, k.min, k.max, k.step).name(k.label);
   df.close();
-  gui.add(view, 'camera', ['top', 'orbit']).name('camera').onChange((v) => { controls.enabled = v === 'orbit'; camera.userData.placed = false; });
+  gui.add(view, 'camera', ['top', 'orbit', 'overview']).name('camera').onChange((v) => { controls.enabled = v === 'orbit'; camera.userData.placed = false; });
   gui.add({ regenerate }, 'regenerate').name('regenerate (seed+1)');
 
   let last = 0;

@@ -4,12 +4,12 @@
 // hit. The rules are drive.js; this file wires the rig around them.
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { generatePlate, makePlateParams, clampPlateParams, PLATE_KNOBS } from './plate.js?v=979b8ccb';
+import { generatePlate, makePlateParams, clampPlateParams, PLATE_KNOBS } from './plate.js?v=01da3658';
 import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, blockedAt, makeGates, stepGates,
-  spawnFor, makeSentries, stepSentries, losClear, stepTracers, buildingAt } from './drive.js?v=979b8ccb';
-import { buildPlateGroup, yawRotation } from './plate-scene.js?v=979b8ccb';
-import { query, loadCatalog } from './plate-tab.js?v=979b8ccb';
-import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera } from './drive-rig.js?v=979b8ccb';
+  spawnFor, makeSentries, stepSentries, losClear, stepTracers, buildingAt } from './drive.js?v=01da3658';
+import { buildPlateGroup, yawRotation } from './plate-scene.js?v=01da3658';
+import { query, loadCatalog } from './plate-tab.js?v=01da3658';
+import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera } from './drive-rig.js?v=01da3658';
 
 export function initDriveTab(root) {
   const { renderer, scene, camera, hud, notice, resize } = makeViewer(root);
