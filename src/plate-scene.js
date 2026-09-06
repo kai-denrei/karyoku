@@ -5,14 +5,14 @@
 // as clones with their YAW pivot exposed, and everything else as a labelled
 // placeholder box of its footprint.
 import * as THREE from '../vendor/three.module.js';
-import { KIND, CELL_M, ringCoverage } from './plate.js?v=7033258d';
-import { fileFor, fitFor, SECTION_COLOR, PLACEHOLDER_HEIGHT_M } from './catalog.js?v=7033258d';
-import { LOB_FAMILIES, LOB_ELEV_DEG } from './drive.js?v=7033258d';
-import { PALETTE, neonBox } from './looks.js?v=7033258d';
-import { prepFor, ladderTint, dressMetal } from './casts.js?v=7033258d';
-import { tintModel } from './glbmodels.js?v=7033258d';
-import { BODY_IDS } from './drive.js?v=7033258d';
-import { loadGlb, loadGlbWithClips, mergeByMaterial, fitModel } from './glbmodels.js?v=7033258d';
+import { KIND, CELL_M, ringCoverage } from './plate.js?v=965abc95';
+import { fileFor, fitFor, SECTION_COLOR, PLACEHOLDER_HEIGHT_M } from './catalog.js?v=965abc95';
+import { LOB_FAMILIES, LOB_ELEV_DEG } from './drive.js?v=965abc95';
+import { PALETTE, neonBox } from './looks.js?v=965abc95';
+import { prepFor, ladderTint, dressMetal } from './casts.js?v=965abc95';
+import { tintModel } from './glbmodels.js?v=965abc95';
+import { BODY_IDS } from './drive.js?v=965abc95';
+import { loadGlb, loadGlbWithClips, mergeByMaterial, fitModel } from './glbmodels.js?v=965abc95';
 
 const labelCache = new Map();
 function labelTexture(text) {
@@ -165,6 +165,16 @@ export const yawRotation = (yawDeg) => Math.PI - yawDeg * Math.PI / 180;
 // `wallState` forces every wall to one state (the plate tab's selector);
 // null draws each wall at its own `piece.state`, and `rebuildWalls()` redraws
 // them after a shot changed one.
+// Scrub a gate rig to a fraction open. NOT mixer.setTime on a paused
+// action: a paused action ignores it and the gate stays shut while the
+// rules say open (measured: actionTime 0.00 at open 1.00). The action's own
+// clock is set and the mixer evaluated with a zero step.
+export function setGateOpen(gr, open) {
+  if (!gr.action || !gr.mixer) return;
+  gr.action.time = Math.max(0, Math.min(gr.duration, open * gr.duration));
+  gr.mixer.update(0);
+}
+
 export function buildPlateGroup({ plate, catalog, wallState = 0, showArcs = true, showBlind = true, animatedGates = false, tint = PALETTE.home }) {
   const group = new THREE.Group();
   const sentryYaws = new Map();   // sentry index -> the node to turn
@@ -241,9 +251,10 @@ export function buildPlateGroup({ plate, catalog, wallState = 0, showArcs = true
         if (clip) {
           mixer = new THREE.AnimationMixer(obj);
           action = mixer.clipAction(clip);
+          action.setLoop(THREE.LoopOnce, 1);
+          action.clampWhenFinished = true;
           action.play();
-          action.paused = true;
-          mixer.setTime(0);
+          mixer.update(0);
         }
         gateRigs.push({ index: gi, obj, mixer, action, duration: clip ? clip.duration : 0 });
       }));

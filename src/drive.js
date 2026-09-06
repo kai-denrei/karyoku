@@ -11,8 +11,8 @@
 // THE ANTI-AIMBOT NUMBERS are yawRate and the arc: a sentry cannot point
 // outside its arc, and inside it turns at yawRate, so a hull that crosses
 // the arc fast, or stays in the blind sector, is never fired on.
-import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=7033258d';
-import { KIND, CELL_M, wrapDeg, dirOfYaw, DIRS, yawOfSide, rotSide } from './plate.js?v=7033258d';
+import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=965abc95';
+import { KIND, CELL_M, wrapDeg, dirOfYaw, DIRS, yawOfSide, rotSide } from './plate.js?v=965abc95';
 
 export const DRIVE_TUNE = {
   speed: 12,        // m/s forward
@@ -258,7 +258,7 @@ export function gateCentre(plate, g) {
 export function makeGates(plate) {
   return plate.gates.map((g) => {
     const [cx, cz] = gateCentre(plate, g);
-    return { side: g.side, at: g.at, pieceIndex: g.pieceIndex, cx, cz, open: 0 };
+    return { side: g.side, at: g.at, ring: g.ring, pieceIndex: g.pieceIndex, cx, cz, open: 0 };
   });
 }
 

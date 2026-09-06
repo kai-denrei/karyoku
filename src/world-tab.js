@@ -5,13 +5,13 @@
 import * as THREE from '../vendor/three.module.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { makePlateParams, clampPlateParams, PLATE_KNOBS } from './plate.js?v=7033258d';
-import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, stepGates, stepSentries, stepTracers, fireHull, damageAt, autopilotInput, makeBodies, stepBodies, bodyAt } from './drive.js?v=7033258d';
-import { WORLD_KNOBS, makeWorldParams, clampWorldParams, makeWorld, worldBlocked, worldBuildingAt, worldLosFor, worldSentries, worldGates, terrainNormal, splitQuad, groundAt } from './world.js?v=7033258d';
-import { PALETTE, terrainMeshes, floraMeshes } from './looks.js?v=7033258d';
-import { buildPlateGroup, yawRotation } from './plate-scene.js?v=7033258d';
-import { query, loadCatalog } from './plate-tab.js?v=7033258d';
-import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS } from './drive-rig.js?v=7033258d';
+import { makePlateParams, clampPlateParams, PLATE_KNOBS } from './plate.js?v=965abc95';
+import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, stepGates, stepSentries, stepTracers, fireHull, damageAt, autopilotInput, makeBodies, stepBodies, bodyAt } from './drive.js?v=965abc95';
+import { WORLD_KNOBS, makeWorldParams, clampWorldParams, makeWorld, worldBlocked, worldBuildingAt, worldLosFor, worldSentries, worldGates, terrainNormal, splitQuad, groundAt } from './world.js?v=965abc95';
+import { PALETTE, terrainMeshes, floraMeshes } from './looks.js?v=965abc95';
+import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=965abc95';
+import { query, loadCatalog } from './plate-tab.js?v=965abc95';
+import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS } from './drive-rig.js?v=965abc95';
 
 const ARRIVE_M = 8;
 
@@ -95,7 +95,7 @@ export function initWorldTab(root) {
     hullObj.userData.setPose(hull, y + 0.3, g.normal);
     world.plates.forEach((p, pi) => {
       p.sentries.forEach((s, i) => { const node = rigs[pi].sentryYaws.get(i); if (node) node.rotation.y = yawRotation(s.yaw); });
-      for (const gr of rigs[pi].gateRigs) { const g = p.gates[gr.index]; if (g && gr.mixer) gr.mixer.setTime(g.open * gr.duration); }
+      for (const gr of rigs[pi].gateRigs) { const g = p.gates[gr.index]; if (g) setGateOpen(gr, g.open); }
     });
     for (const b of bodies) {
       const pi = world.plates.findIndex((p) => p.plate === b.plate);

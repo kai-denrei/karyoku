@@ -148,7 +148,9 @@ no build step, Node invariant suites).
   unless something static or another body is behind them. Shots stop on
   them. The scene keeps each one as its own object (`rig.dynamic`).
 - EVERY gate opens for the hull — both rings, both plates — for now; only
-  the hostile plate's sentries fire.
+  the hostile plate's sentries fire. The clip is scrubbed by `setGateOpen`
+  (action.time + mixer.update(0)): `mixer.setTime` on a PAUSED action does
+  nothing, and the gate stood shut at open=1.00 until `?gateprobe=1` said so.
 - The kit has no image textures: its look is authored material colours,
   and the grey ladder painted over them. Kit URLs get a 0.10 emissive wash
   only; house and NASA casts get the ladder and the metal.

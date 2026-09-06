@@ -2,15 +2,16 @@
 // hull, gates open as it nears them, sentries sweep their arcs and fire
 // tracers at what they can see, and a counter says how many would have
 // hit. The rules are drive.js; this file wires the rig around them.
+import * as THREE from '../vendor/three.module.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { generatePlate, makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M } from './plate.js?v=7033258d';
+import { generatePlate, makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M } from './plate.js?v=965abc95';
 import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, blockedAt, makeGates, stepGates,
-  spawnFor, makeSentries, stepSentries, losClear, stepTracers, rayStop, fireHull, damageAt, makeBodies, stepBodies } from './drive.js?v=7033258d';
-import { PALETTE } from './looks.js?v=7033258d';
-import { buildPlateGroup, yawRotation } from './plate-scene.js?v=7033258d';
-import { query, loadCatalog } from './plate-tab.js?v=7033258d';
-import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS } from './drive-rig.js?v=7033258d';
+  spawnFor, makeSentries, stepSentries, losClear, stepTracers, rayStop, fireHull, damageAt, makeBodies, stepBodies } from './drive.js?v=965abc95';
+import { PALETTE } from './looks.js?v=965abc95';
+import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=965abc95';
+import { query, loadCatalog } from './plate-tab.js?v=965abc95';
+import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS } from './drive-rig.js?v=965abc95';
 
 export function initDriveTab(root) {
   const { renderer, scene, camera, hud, notice, resize, render, setGroups } = makeViewer(root);
@@ -72,7 +73,7 @@ export function initDriveTab(root) {
   function sync() {
     hullObj.userData.setPose(hull, 0);
     sentries.forEach((s, i) => { const node = rig.sentryYaws.get(i); if (node) node.rotation.y = yawRotation(s.yaw); });
-    for (const gr of rig.gateRigs) { const g = gates[gr.index]; if (g && gr.mixer) gr.mixer.setTime(g.open * gr.duration); }
+    for (const gr of rig.gateRigs) { const g = gates[gr.index]; if (g) setGateOpen(gr, g.open); }
     for (const b of bodies) { const obj = rig.dynamic.get(b.pieceIndex); if (obj) obj.position.set(b.x, 0, b.z); }
     pool.sync(tracers, () => 0, lastDt, P.splashR);
     followCamera(camera, controls, hull, 0, view.camera, lastDt, null, { cx: plate.w * CELL_M / 2, cz: plate.h * CELL_M / 2, span: Math.max(plate.w, plate.h) * CELL_M });
@@ -110,6 +111,16 @@ export function initDriveTab(root) {
       for (let i = 0; i < tick * 60; i++) step(1 / 60, { fwd: q.get('hold') !== '1', fire: firing });
       console.log(logLine());
     }
+    // ?gateprobe=1: after the tick, say what each gate rig is actually doing
+    if (q.get('gateprobe') === '1') rig.ready.then(() => {
+      sync();
+      for (const gr of rig.gateRigs) {
+        const g = gates[gr.index];
+        const slat = gr.obj.getObjectByName('GATE_SLAT_00');
+        const p0 = slat ? slat.getWorldPosition(new THREE.Vector3()) : null;
+        console.log(`[gate] ${g ? g.side + ':' + g.ring : '?'} open=${g ? g.open.toFixed(2) : '?'} duration=${gr.duration.toFixed(2)} actionTime=${gr.action ? gr.action.time.toFixed(2) : 'none'} slatY=${p0 ? p0.y.toFixed(2) : 'no slat'} clips=${gr.mixer ? 'yes' : 'no'}`);
+      }
+    });
     renderer.setAnimationLoop((now) => {
       const dt = Math.min(0.05, last ? (now - last) / 1000 : 0);
       last = now;
