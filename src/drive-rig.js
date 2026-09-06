@@ -2,7 +2,7 @@
 // the hull model with a stand-in until it lands, the key state, the tracer
 // meshes, and the two cameras. Rendering only; the rules are drive.js.
 import * as THREE from '../vendor/three.module.js';
-import { loadGlb, mergeByMaterial } from './glbmodels.js?v=bf234634';
+import { loadGlb, mergeByMaterial } from './glbmodels.js?v=b9570818';
 
 const HULL_URL = 'assets/models/mkcx2.glb';
 // The nodes that must keep moving through the merge, and the ones that
@@ -43,12 +43,12 @@ export function makeKeys(on = {}) {
   const keys = {};
   addEventListener('keydown', (e) => {
     if (e.target && /input|textarea|select/i.test(e.target.tagName)) return;
-    if (KEYMAP[e.key] !== undefined) { keys[e.key] = true; e.preventDefault(); }
+    if (KEYMAP[e.key] !== undefined || e.key === ' ') { keys[e.key] = true; e.preventDefault(); }
     if (on[e.key]) on[e.key]();
   });
-  addEventListener('keyup', (e) => { if (KEYMAP[e.key] !== undefined) keys[e.key] = false; });
+  addEventListener('keyup', (e) => { if (KEYMAP[e.key] !== undefined || e.key === ' ') keys[e.key] = false; });
   return {
-    input() { const inp = {}; for (const [k, name] of Object.entries(KEYMAP)) if (keys[k]) inp[name] = true; return inp; },
+    input() { const inp = {}; for (const [k, name] of Object.entries(KEYMAP)) if (keys[k]) inp[name] = true; if (keys[' ']) inp.fire = true; return inp; },
   };
 }
 
@@ -61,6 +61,7 @@ export function makeTracerPool(scene) {
   const meshes = new Map();
   const geo = new THREE.BoxGeometry(0.25, 0.25, 1.6);
   const mat = new THREE.MeshBasicMaterial({ color: 0xffd166 });
+  const shotMat = new THREE.MeshBasicMaterial({ color: 0x7df9ff });
   const shellGeo = new THREE.SphereGeometry(0.45, 10, 8);
   const shellMat = new THREE.MeshBasicMaterial({ color: 0xff8c42 });
   const shadowGeo = new THREE.CircleGeometry(0.6, 12);
@@ -99,8 +100,8 @@ export function makeTracerPool(scene) {
           m.getObjectByName('shadow').position.y = g + 0.12;
           continue;
         }
-        if (!m) { m = new THREE.Mesh(geo, mat); meshes.set(t, m); scene.add(m); }
-        m.position.set(t.x, yAt(t.x, t.z) + 3.0, t.z);
+        if (!m) { m = new THREE.Mesh(geo, t.kind === 'shot' ? shotMat : mat); meshes.set(t, m); scene.add(m); }
+        m.position.set(t.x, yAt(t.x, t.z) + (t.kind === 'shot' ? 1.6 : 3.0), t.z);
         m.rotation.y = Math.PI - t.heading * Math.PI / 180;
       }
       for (let i = splashes.length - 1; i >= 0; i--) {
@@ -120,12 +121,19 @@ export function makeTracerPool(scene) {
 // should be, so a turn swings the view rather than snapping it. Top-down
 // follows from the south so north is up and east is right; orbit hands the
 // camera to OrbitControls with its target on the hull.
+export const CAMERA_KEYS = { 1: 'top', 2: 'chase', 3: 'orbit', 4: 'overview' };
 const chaseWant = new THREE.Vector3(), chaseLook = new THREE.Vector3();
-export function followCamera(camera, controls, hull, y, mode, dt = 0.016) {
-  if (mode === 'chase') {
+// `groundY(x, z)` keeps the chase camera out of a hill behind the hull;
+// `overview` is { cx, cz, span } for the 4 key.
+export function followCamera(camera, controls, hull, y, mode, dt = 0.016, groundY = null, overview = null) {
+  if (mode === 'overview' && overview) {
+    camera.position.set(overview.cx, overview.span * 1.05, overview.cz + overview.span * 0.35);
+    camera.lookAt(overview.cx, 0, overview.cz);
+  } else if (mode === 'chase') {
     const h = hull.heading * Math.PI / 180;
     const fx = Math.sin(h), fz = -Math.cos(h);
     chaseWant.set(hull.x - fx * 24, y + 11, hull.z - fz * 24);
+    if (groundY) chaseWant.y = Math.max(chaseWant.y, groundY(chaseWant.x, chaseWant.z) + 6);
     if (!camera.userData.placed) { camera.position.copy(chaseWant); camera.userData.placed = true; }
     else camera.position.lerp(chaseWant, Math.min(1, dt * 4));
     chaseLook.set(hull.x + fx * 10, y + 2, hull.z + fz * 10);

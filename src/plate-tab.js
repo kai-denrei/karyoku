@@ -4,11 +4,11 @@
 import * as THREE from '../vendor/three.module.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { generatePlate, PLATE_KNOBS, makePlateParams, clampPlateParams, CELL_M } from './plate.js?v=bf234634';
-import { CATALOG_SPEC } from './catalog-spec.js?v=bf234634';
-import { buildCatalog, BASE_KIT_URL } from './catalog.js?v=bf234634';
-import { bustToken } from './glbmodels.js?v=bf234634';
-import { buildPlateGroup } from './plate-scene.js?v=bf234634';
+import { generatePlate, PLATE_KNOBS, makePlateParams, clampPlateParams, CELL_M } from './plate.js?v=b9570818';
+import { CATALOG_SPEC } from './catalog-spec.js?v=b9570818';
+import { buildCatalog, BASE_KIT_URL } from './catalog.js?v=b9570818';
+import { bustToken } from './glbmodels.js?v=b9570818';
+import { buildPlateGroup } from './plate-scene.js?v=b9570818';
 
 // `#plate?seed=7` and `?seed=7#plate` both work: the hash's own query is
 // merged under the real search string.

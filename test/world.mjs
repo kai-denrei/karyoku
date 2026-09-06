@@ -1,4 +1,4 @@
-import { makeWorld, worldKnobProblems, worldBlocked, gateOutside, WORLD_TUNE } from '../src/world.js';
+import { makeWorld, worldKnobProblems, worldBlocked, gateOutside, groundAt, WORLD_TUNE } from '../src/world.js';
 import { PLATE_TUNE, KIND, CELL_M } from '../src/plate.js';
 import { check, near, done } from './check.mjs';
 
@@ -42,4 +42,30 @@ check('A\'s corner wall cell blocks in world coordinates', worldBlocked(w, wallC
 check('a trunk blocks', worldBlocked(w, w.trees[0].x, w.trees[0].z));
 check('open ground beside the road does not block', !worldBlocked(w, ax, az));
 check('spawn is at A\'s gate outside point', near(w.spawn.x, ax) && near(w.spawn.z, az));
+// the rendered ground: exact at vertices, close to the function between them, flat on a plate
+{
+  let maxDev = 0, exact = true;
+  for (let i = 0; i < w.mesh.vertices.length; i += 37) {
+    const [x, z] = w.mesh.vertices[i];
+    const g = groundAt(w, x, z);
+    if (Math.abs(g.y - w.heights[i]) > 1e-6 && !w.plates.some((p) => x >= p.ox && x < p.ox + p.wM && z >= p.oz && z < p.oz + p.hM)) exact = false;
+  }
+  for (let i = 0; i < 300; i++) { const x = 80 + (i * 7) % (w.size - 160), z = 80 + (i * 13) % (w.size - 160); maxDev = Math.max(maxDev, Math.abs(groundAt(w, x, z).y - w.heightAt(x, z))); }
+  check('groundAt equals the vertex height at a vertex', exact);
+  check('groundAt stays within 4 m of the function in the interior', maxDev < 4, `max ${maxDev}`);
+  const inA = groundAt(w, A.ox + A.wM / 2, A.oz + A.hM / 2);
+  check('groundAt on a plate is flat at zero', inA.y === 0 && inA.normal[1] === 1);
+  const n = groundAt(w, 120, 120).normal;
+  check('groundAt normal is unit and up', near(Math.hypot(...n), 1, 1e-6) && n[1] > 0);
+}
+{
+  const big = makeWorld({ ...WORLD_TUNE, seed: 7, size: 320 }, { ...PLATE_TUNE, w: 60, h: 60 });
+  check('the world grows to fit big plates', big.size > 320 && big.plates[0].ox + big.plates[0].wM < big.plates[1].ox && big.warnings.some((x) => /grown/.test(x)));
+}
+{
+  const V = w.mesh.vertices; let inv = 0, concave = 0;
+  for (const q of w.mesh.quads) { const signs = []; for (let i = 0; i < 4; i++) { const a = V[q[i]], b = V[q[(i + 1) % 4]], c = V[q[(i + 2) % 4]]; signs.push(Math.sign((b[0] - a[0]) * (c[1] - b[1]) - (b[1] - a[1]) * (c[0] - b[0]))); } if (new Set(signs).size > 1) concave++; else if (signs[0] < 0) inv++; }
+  check('no inverted quads after relaxation', inv === 0, `got ${inv}`);
+  check('no concave quads after relaxation', concave === 0, `got ${concave}`);
+}
 done();

@@ -1,6 +1,6 @@
 import { generatePlate, makePlateParams, PLATE_TUNE, KIND, CELL_M, blindCells } from '../src/plate.js';
 import { DRIVE_TUNE, driveKnobProblems, makeHull, stepHull, blockedAt, makeGates, stepGates, spawnFor,
-  makeSentries, stepSentries, losClear, stepTracers, buildingAt, bearingTo, lobHeight, LOB_FAMILIES } from '../src/drive.js';
+  makeSentries, stepSentries, losClear, stepTracers, buildingAt, bearingTo, lobHeight, LOB_FAMILIES, fireHull, rayStop } from '../src/drive.js';
 import { check, near, done } from './check.mjs';
 
 check('knob table is sound', driveKnobProblems().length === 0, driveKnobProblems().join('; '));
@@ -173,5 +173,25 @@ for (let seed = 1; seed <= 50; seed++) {
   for (let i = 0; i < 400 && shells2.length; i++) { dodger.x += 12 / 60; hits2 += stepTracers(shells2, dodger, 1 / 60, noBlock); }
   check('a hull that drives out of the splash is missed', hits2 === 0 && shells2.length === 0);
   check('LOB_FAMILIES names the two lobbers', LOB_FAMILIES.has('mortar') && LOB_FAMILIES.has('howitzer') && !LOB_FAMILIES.has('needle'));
+}
+// --- the hull's gun -------------------------------------------------------------
+{
+  const wallFace = plate.h * CELL_M;
+  const h = makeHull(20, wallFace + 30, 0); // 30 m south of the S wall, facing it
+  const shot = fireHull(h);
+  check('the gun fires a shot ahead of the hull', shot && shot.kind === 'shot' && near(shot.z, h.z - 4) && near(shot.x, h.x));
+  check('the gun then cools', fireHull(h) === null && near(h.cool, DRIVE_TUNE.shotCooldown));
+  stepHull(h, {}, 1, noBlock);
+  check('cooling counts down through stepHull', h.cool === 0 && fireHull(h) !== null);
+  const shots = [shot];
+  let hits = 0, steps = 0;
+  const stop = rayStop(plate, gates);
+  while (shots.length && steps < 600) { hits += stepTracers(shots, h, DT, stop); steps++; }
+  check('a shot never counts as a hit on its own hull', hits === 0);
+  check('a shot stops at the wall', shot.z >= wallFace - CELL_M && shot.z <= wallFace + 1, `z=${shot.z} wall ${wallFace}`);
+  const open = [fireHull(makeHull(500, 500, 90))];
+  steps = 0;
+  while (open.length && steps < 600) { stepTracers(open, h, DT, stop); steps++; }
+  check('a shot over open ground flies its range', Math.abs(steps * DT * DRIVE_TUNE.shotSpeed - DRIVE_TUNE.shotRange) < 2, `flew ${steps * DT * DRIVE_TUNE.shotSpeed}`);
 }
 done();

@@ -5,12 +5,12 @@
 import * as THREE from '../vendor/three.module.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { makePlateParams, clampPlateParams, PLATE_KNOBS } from './plate.js?v=bf234634';
-import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, stepGates, stepSentries, stepTracers } from './drive.js?v=bf234634';
-import { WORLD_KNOBS, makeWorldParams, clampWorldParams, makeWorld, worldBlocked, worldBuildingAt, worldLosFor, worldSentries, worldGates, terrainNormal } from './world.js?v=bf234634';
-import { buildPlateGroup, yawRotation } from './plate-scene.js?v=bf234634';
-import { query, loadCatalog } from './plate-tab.js?v=bf234634';
-import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera } from './drive-rig.js?v=bf234634';
+import { makePlateParams, clampPlateParams, PLATE_KNOBS } from './plate.js?v=b9570818';
+import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, stepGates, stepSentries, stepTracers, fireHull } from './drive.js?v=b9570818';
+import { WORLD_KNOBS, makeWorldParams, clampWorldParams, makeWorld, worldBlocked, worldBuildingAt, worldLosFor, worldSentries, worldGates, terrainNormal, splitQuad, groundAt } from './world.js?v=b9570818';
+import { buildPlateGroup, yawRotation } from './plate-scene.js?v=b9570818';
+import { query, loadCatalog } from './plate-tab.js?v=b9570818';
+import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS } from './drive-rig.js?v=b9570818';
 
 const ARRIVE_M = 8;
 
@@ -23,9 +23,9 @@ function terrainMesh(world) {
   const lo = Math.min(...heights), hi = Math.max(...heights);
   mesh.quads.forEach((q, qi) => {
     const road = world.road.set.has(qi);
-    // the kernel's quads are CCW in its (x, y) plane; y becomes z here, which
-    // flips handedness, so the triangles are emitted reversed to face up
-    const tri = [q[0], q[2], q[1], q[0], q[3], q[2]];
+    // splitQuad picks the diagonal inside a concave quad and orients both
+    // triangles to face up, whatever the kernel's winding did
+    const tri = splitQuad(mesh.vertices, q).flat();
     const hAvg = (heights[q[0]] + heights[q[1]] + heights[q[2]] + heights[q[3]]) / 4;
     const t = hi > lo ? (hAvg - lo) / (hi - lo) : 0.5;
     if (road) c.setHSL(0.08, 0.35, 0.28);
@@ -122,9 +122,10 @@ export function initWorldTab(root) {
 
   function step(dt, input) {
     stepHull(hull, input, dt, (x, z) => worldBlocked(world, x, z), P);
+    if (input.fire) { const shot = fireHull(hull, P); if (shot) tracers.push(shot); }
     stepGates(gates, hull, dt, P);
     for (const p of world.plates) for (const t of stepSentries(p.sentries, hull, dt, worldLosFor(p), P)) tracers.push(t);
-    hits += stepTracers(tracers, hull, dt, (x, z) => worldBuildingAt(world, x, z), P);
+    hits += stepTracers(tracers, hull, dt, (x, z, t) => (t && t.kind === 'shot') ? worldBlocked(world, x, z) : worldBuildingAt(world, x, z), P);
     simT += dt;
     if (arrivedAt < 0 && goalDist() <= ARRIVE_M) arrivedAt = simT;
   }
@@ -132,29 +133,38 @@ export function initWorldTab(root) {
   const logLine = () => `[world] t=${simT.toFixed(1)} hull=${hull.x.toFixed(1)},${hull.z.toFixed(1)} y=${world.heightAt(hull.x, hull.z).toFixed(2)} heading=${hull.heading.toFixed(0)} goal=${goalDist().toFixed(1)} tracking=${sentries.filter((s) => s.tracking).length} lobs=${tracers.filter((t) => t.kind === 'lob').length} hits=${hits}${arrivedAt >= 0 ? ' ARRIVED' : ''}`;
 
   function sync() {
-    const y = world.heightAt(hull.x, hull.z);
-    hullObj.userData.setPose(hull, y, terrainNormal(world.heightAt, hull.x, hull.z));
+    const g = groundAt(world, hull.x, hull.z);
+    const y = g.y;
+    hullObj.userData.setPose(hull, y + 0.3, g.normal);
     world.plates.forEach((p, pi) => {
       p.sentries.forEach((s, i) => { const node = rigs[pi].sentryYaws.get(i); if (node) node.rotation.y = yawRotation(s.yaw); });
       for (const gr of rigs[pi].gateRigs) { const g = p.gates[gr.index]; if (g && gr.mixer) gr.mixer.setTime(g.open * gr.duration); }
     });
     pool.sync(tracers, (x, z) => world.heightAt(x, z), lastDt, P.splashR);
-    if (view.camera === 'overview') {
-      // the whole world from high above its centre, north up: a screenshot pose
-      camera.position.set(world.size / 2, world.size * 1.05, world.size / 2 + world.size * 0.35);
-      camera.lookAt(world.size / 2, 0, world.size / 2);
-    } else followCamera(camera, controls, hull, y, view.camera, lastDt);
-    hud.textContent = `goal ${goalDist().toFixed(0)} m${arrivedAt >= 0 ? ` · ARRIVED at ${arrivedAt.toFixed(1)} s` : ''} · hits ${hits} · cam ${view.camera} · WASD / arrows drive · C camera · R regenerate`;
+    followCamera(camera, controls, hull, y, view.camera, lastDt, (x, z) => groundAt(world, x, z).y, { cx: world.size / 2, cz: world.size / 2, span: world.size });
+    hud.textContent = `goal ${goalDist().toFixed(0)} m${arrivedAt >= 0 ? ` · ARRIVED at ${arrivedAt.toFixed(1)} s` : ''} · hits ${hits} · shots ${hull.shots} · cam ${view.camera} · WASD drive · SPACE fire · 1 top 2 chase 3 orbit 4 overview · R regenerate`;
   }
 
   const regenerate = () => { plateParams.seed = (plateParams.seed + 1) % 1000000; gui.controllersRecursive().forEach((c) => c.updateDisplay()); build(); };
-  const CAMS = ['chase', 'top', 'orbit'];
-  const toggleCam = () => { view.camera = CAMS[(CAMS.indexOf(view.camera) + 1) % CAMS.length]; controls.enabled = view.camera === 'orbit'; camera.userData.placed = false; gui.controllersRecursive().forEach((c) => c.updateDisplay()); };
-  const keys = makeKeys({ c: toggleCam, r: regenerate });
+  const CAMS = ['chase', 'top', 'orbit', 'overview'];
+  const setCam = (m) => { view.camera = m; controls.enabled = m === 'orbit'; camera.userData.placed = false; gui.controllersRecursive().forEach((c) => c.updateDisplay()); };
+  const toggleCam = () => setCam(CAMS[(CAMS.indexOf(view.camera) + 1) % CAMS.length]);
+  const keys = makeKeys({ c: toggleCam, r: regenerate, ...Object.fromEntries(Object.entries(CAMERA_KEYS).map(([k, m]) => [k, () => setCam(m)])) });
 
   const gui = new GUI({ title: 'WORLD', container: root });
+  // THE THREE NUMBERS A PLAYER TOUCHES, at the top: how fast, how big a
+  // base, how big a world. Base size sets both plate dimensions (4:3, even);
+  // the world grows on its own if the bases would not fit.
+  const top = { baseSize: plateParams.w };
+  gui.add(P, 'speed', 2, 30, 1).name('tank speed (m/s)');
+  gui.add(top, 'baseSize', 12, 60, 2).name('base size (cells)').onFinishChange((v) => {
+    plateParams.w = v; plateParams.h = Math.max(12, Math.round(v * 0.75 / 2) * 2);
+    gui.controllersRecursive().forEach((c) => c.updateDisplay()); build();
+  });
+  gui.add(W, 'size', 320, 1600, 40).name('world size (m)').onFinishChange(build);
   const wf = {};
   for (const k of WORLD_KNOBS) {
+    if (k.key === 'size') continue;
     const f = wf[k.group] || (wf[k.group] = gui.addFolder(k.group));
     f.add(W, k.key, k.min, k.max, k.step).name(k.label).onFinishChange(build);
   }
@@ -164,7 +174,7 @@ export function initWorldTab(root) {
   const df = gui.addFolder('drive');
   for (const k of DRIVE_KNOBS) df.add(P, k.key, k.min, k.max, k.step).name(k.label);
   df.close();
-  gui.add(view, 'camera', ['chase', 'top', 'orbit', 'overview']).name('camera').onChange((v) => { controls.enabled = v === 'orbit'; camera.userData.placed = false; });
+  gui.add(view, 'camera', CAMS).name('camera').onChange((v) => { controls.enabled = v === 'orbit'; camera.userData.placed = false; });
   gui.add({ regenerate }, 'regenerate').name('regenerate (seed+1)');
 
   let last = 0;

@@ -75,6 +75,21 @@ no build step, Node invariant suites).
   radius on landing, long cooldown. The skill is reading the arc. Their PITCH
   node is held at `LOB_ELEV_DEG`.
 
+## Feel, round two (operator, 2026-09-06 late)
+- Keys: 1 top, 2 chase, 3 orbit, 4 overview (`CAMERA_KEYS` in drive-rig.js);
+  SPACE fires the hull's gun (`fireHull`, `kind: 'shot'`, stops on solids, no
+  damage). Top-level sliders: tank speed, base size (sets w and h at 4:3),
+  world size; the world GROWS if the bases would not fit (`makeWorld`).
+- SLOPES: the hull stands on `groundAt` (the rendered triangle's height and
+  normal, found through `world.qhash`), never on the smooth function — the
+  two differ by up to 3 m and the difference was the hull inside the hill.
+  `splitQuad` is the one rule for turning a quad into two triangles, shared
+  by the renderer and the lookup.
+- The kernel's relaxer must be given the mesh's OWN mean edge as
+  `SIDE_LENGTH` (and the boundary pinned): at its default 0.06 our quads
+  fold — 49 inverted, 200 concave — and every fold was a crease the hull
+  sank into. `test/world.mjs` asserts zero inverted and zero concave quads.
+
 ## Verify
 - `npm run serve` then `http://localhost:8150/#plate?seed=7&ascii=1`.
   `?seed= ?w= ?h= ?gates= ?arc= ?density= ?tier=` override the knobs;

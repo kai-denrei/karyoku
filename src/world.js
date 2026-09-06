@@ -10,12 +10,12 @@
 // and the hull samples it where it stands, so the two cannot disagree
 // beyond the mesh's own faceting, and a plate sits on ground that is
 // exactly zero because the mask says so, not because a vertex was edited.
-import { mulberry32 } from './rng.js?v=bf234634';
-import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=bf234634';
-import { generateMesh, relax } from './organic-grid.js?v=bf234634';
-import { valueNoise2D } from './noise.js?v=bf234634';
-import { generatePlate, makePlateParams, CELL_M, DIRS, yawOfSide, KIND } from './plate.js?v=bf234634';
-import { makeGates, makeSentries, blockedAt, losClear, buildingAt, gateCentre } from './drive.js?v=bf234634';
+import { mulberry32 } from './rng.js?v=b9570818';
+import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=b9570818';
+import { generateMesh, relax } from './organic-grid.js?v=b9570818';
+import { valueNoise2D } from './noise.js?v=b9570818';
+import { generatePlate, makePlateParams, CELL_M, DIRS, yawOfSide, KIND } from './plate.js?v=b9570818';
+import { makeGates, makeSentries, blockedAt, losClear, buildingAt, gateCentre } from './drive.js?v=b9570818';
 
 export const WORLD_TUNE = {
   size: 760,        // m, the world is a square
@@ -139,12 +139,17 @@ export function makeWorld(params, plateParams) {
   const tune = clampWorldParams(makeWorldParams(), params);
   const seed = Number(params.seed) || 0;
   const rng = mulberry32(seed ^ 0x9e3779b9);
-  const S = tune.size;
   const warnings = [];
 
-  // plates
+  // plates first: the world must be big enough to hold them with ground
+  // between, so a base that outgrows the world grows the world
   const pA = generatePlate(makePlateParams({ ...plateParams, seed }));
   const pB = generatePlate(makePlateParams({ ...plateParams, seed: seed + 1 }));
+  const widest = Math.max(pA.w, pB.w) * CELL_M, deepest = Math.max(pA.h, pB.h) * CELL_M;
+  const need = Math.max(widest * 2.6 + tune.plateMargin * 4, deepest * 1.8 + tune.plateMargin * 4);
+  const S = Math.max(tune.size, Math.ceil(need / 40) * 40);
+  if (S > tune.size) warnings.push(`world grown to ${S} m to fit the plates`);
+  tune.size = S;
   const plates = [placePlate(pA, S * 0.25, S * 0.5), placePlate(pB, S * 0.75, S * 0.5)];
   for (const p of plates) {
     p.gates = makeGates(p.plate).map((g) => ({ ...g, cx: g.cx + p.ox, cz: g.cz + p.oz }));
@@ -166,7 +171,14 @@ export function makeWorld(params, plateParams) {
   // terrain
   const heightAt = makeHeightFn(plates, tune, seed);
   const mesh = generateMesh({ seed, r: tune.r, k: 30 });
-  relax(mesh, { n_iters: tune.relaxIters });
+  // RELAX TOWARD THE MESH'S OWN SCALE. The kernel's default target side
+  // (0.06) is about three times these quads' edges; pulled toward squares
+  // that big they fight and FOLD — 49 inverted and 200 concave quads at 40
+  // iterations, every one a crease the hull sank into. Matched to the mean
+  // edge and with the boundary pinned there are none.
+  let sum = 0, n = 0;
+  for (const q of mesh.quads) for (let i = 0; i < 4; i++) { const a = mesh.vertices[q[i]], b = mesh.vertices[q[(i + 1) % 4]]; sum += Math.hypot(a[0] - b[0], a[1] - b[1]); n++; }
+  relax(mesh, { n_iters: tune.relaxIters, SIDE_LENGTH: sum / Math.max(1, n), pinned: mesh.boundary });
   mesh.vertices = mesh.vertices.map(([x, y]) => [x * S, y * S]);
   const world = {
     tune, seed, size: S, mesh, plates, heightAt, warnings,
@@ -176,6 +188,18 @@ export function makeWorld(params, plateParams) {
   };
   world.adj = quadAdjacency(mesh);
   world.heights = mesh.vertices.map(([x, z]) => heightAt(x, z));
+  // quads by 16 m bucket of their bounding box, for exact point lookup
+  world.qhash = new Map();
+  mesh.quads.forEach((q, qi) => {
+    const xs = q.map((i) => mesh.vertices[i][0]), zs = q.map((i) => mesh.vertices[i][1]);
+    for (let bx = Math.floor(Math.min(...xs) / 16); bx <= Math.floor(Math.max(...xs) / 16); bx++) {
+      for (let bz = Math.floor(Math.min(...zs) / 16); bz <= Math.floor(Math.max(...zs) / 16); bz++) {
+        const k = `${bx},${bz}`;
+        if (!world.qhash.has(k)) world.qhash.set(k, []);
+        world.qhash.get(k).push(qi);
+      }
+    }
+  });
 
   // road
   const [ax, az] = gateOutside(plates[0], plates[0].facing);
@@ -206,6 +230,53 @@ export function makeWorld(params, plateParams) {
   world.spawn = { x: ax, z: az, heading: yawOfSide[gA.side] };
   world.goal = { x: bx, z: bz };
   return world;
+}
+
+// A quad as two triangles that do not overlap. Twelve percent of the
+// relaxed quads are concave, and splitting one along the wrong diagonal
+// gives two triangles that cross — a fold in the ground the renderer draws
+// and the lookup reads differently. The diagonal that touches the reflex
+// corner is the one inside the quad; both triangles then have the same
+// sign, and both are emitted counter-clockwise seen from above.
+export function splitQuad(V, q) {
+  const area2 = (a, b, c) => (V[b][0] - V[a][0]) * (V[c][1] - V[a][1]) - (V[b][1] - V[a][1]) * (V[c][0] - V[a][0]);
+  const up = (t) => (area2(t[0], t[1], t[2]) < 0 ? t : [t[0], t[2], t[1]]);
+  let t1 = [q[0], q[1], q[2]], t2 = [q[0], q[2], q[3]];
+  if (Math.sign(area2(...t1)) !== Math.sign(area2(...t2))) { t1 = [q[1], q[2], q[3]]; t2 = [q[1], q[3], q[0]]; }
+  return [up(t1), up(t2)];
+}
+
+// Height and normal OF THE RENDERED SURFACE at a point: the triangle of the
+// quad under it, split the way world-tab.js splits it. The smooth function
+// and the faceted mesh differ by up to a metre on concave ground, which is
+// exactly a hull sinking into a slope, so anything that stands on the
+// ground asks this rather than heightAt. Inside a plate the ground is the
+// slab, flat at 0.
+export function groundAt(world, x, z) {
+  for (const p of world.plates) {
+    if (x >= p.ox && x < p.ox + p.wM && z >= p.oz && z < p.oz + p.hM) return { y: 0, normal: [0, 1, 0] };
+  }
+  const candidates = world.qhash.get(`${Math.floor(x / 16)},${Math.floor(z / 16)}`) || [];
+  const V = world.mesh.vertices, H = world.heights;
+  for (const qi of candidates) {
+    for (const [a, b, c] of splitQuad(V, world.mesh.quads[qi])) {
+      const [ax, az] = V[a], [bx, bz] = V[b], [cx, cz] = V[c];
+      const d = (bz - cz) * (ax - cx) + (cx - bx) * (az - cz);
+      if (Math.abs(d) < 1e-9) continue;
+      const l0 = ((bz - cz) * (x - cx) + (cx - bx) * (z - cz)) / d;
+      const l1 = ((cz - az) * (x - cx) + (ax - cx) * (z - cz)) / d;
+      const l2 = 1 - l0 - l1;
+      if (l0 < -1e-6 || l1 < -1e-6 || l2 < -1e-6) continue;
+      const y = l0 * H[a] + l1 * H[b] + l2 * H[c];
+      // plane normal, facing up
+      const ux = bx - ax, uy = H[b] - H[a], uz = bz - az, vx = cx - ax, vy = H[c] - H[a], vz = cz - az;
+      let nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+      if (ny < 0) { nx = -nx; ny = -ny; nz = -nz; }
+      const l = Math.hypot(nx, ny, nz) || 1;
+      return { y, normal: [nx / l, ny / l, nz / l] };
+    }
+  }
+  return { y: world.heightAt(x, z), normal: terrainNormal(world.heightAt, x, z) };
 }
 
 // The ground's unit normal from the height function, by central differences.

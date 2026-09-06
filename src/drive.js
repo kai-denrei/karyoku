@@ -11,8 +11,8 @@
 // THE ANTI-AIMBOT NUMBERS are yawRate and the arc: a sentry cannot point
 // outside its arc, and inside it turns at yawRate, so a hull that crosses
 // the arc fast, or stays in the blind sector, is never fired on.
-import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=bf234634';
-import { KIND, CELL_M, wrapDeg, dirOfYaw, DIRS, yawOfSide, rotSide } from './plate.js?v=bf234634';
+import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=b9570818';
+import { KIND, CELL_M, wrapDeg, dirOfYaw, DIRS, yawOfSide, rotSide } from './plate.js?v=b9570818';
 
 export const DRIVE_TUNE = {
   speed: 12,        // m/s forward
@@ -36,6 +36,12 @@ export const DRIVE_TUNE = {
   lobApex: 16,      // m, the arc's height over a full-range shot
   splashR: 5,       // m, the shell hurts inside this on landing
   lobCooldown: 2.6, // s
+  // THE HULL'S GUN. Space fires a shell straight along the heading from the
+  // muzzle; it stops on anything solid. No damage yet — the shot exists so
+  // the driver can aim, and so the impact work has something to land on.
+  shotSpeed: 70,    // m/s
+  shotRange: 90,    // m
+  shotCooldown: 0.6,
 };
 export const LOB_FAMILIES = new Set(['mortar', 'howitzer']);
 export const LOB_ELEV_DEG = 55;
@@ -58,6 +64,9 @@ export const DRIVE_KNOBS = [
   { key: 'lobApex', label: 'shell apex (m)', group: 'lobbers', min: 2, max: 60, step: 1 },
   { key: 'splashR', label: 'splash radius (m)', group: 'lobbers', min: 1, max: 15, step: 0.5 },
   { key: 'lobCooldown', label: 'lob cooldown (s)', group: 'lobbers', min: 0.5, max: 10, step: 0.1 },
+  { key: 'shotSpeed', label: 'shot speed (m/s)', group: 'gun', min: 10, max: 200, step: 5 },
+  { key: 'shotRange', label: 'shot range (m)', group: 'gun', min: 10, max: 300, step: 5 },
+  { key: 'shotCooldown', label: 'shot cooldown (s)', group: 'gun', min: 0.1, max: 3, step: 0.1 },
 ];
 export const makeDriveParams = (src = DRIVE_TUNE) => makeParams(DRIVE_KNOBS, src);
 export const clampDriveParams = (p, src) => clampParams(DRIVE_KNOBS, p, src);
@@ -72,7 +81,7 @@ const toCell = (m) => Math.floor(m / CELL_M);
 
 // --- hull ------------------------------------------------------------------
 export function makeHull(x, z, heading = 0) {
-  return { x, z, heading, speed: 0, vx: 0, vz: 0 };
+  return { x, z, heading, speed: 0, vx: 0, vz: 0, cool: 0, shots: 0 };
 }
 
 // Turn, then move along the heading. The move is accepted when the four
@@ -80,6 +89,7 @@ export function makeHull(x, z, heading = 0) {
 // else the z part alone, else it stops. Sliding is what lets a hull hug a
 // wall, which is what cover means.
 export function stepHull(hull, input, dt, blocked, tune = DRIVE_TUNE) {
+  if (hull.cool > 0) hull.cool = Math.max(0, hull.cool - dt);
   const turn = ((input.right ? 1 : 0) - (input.left ? 1 : 0)) * tune.turnRate * dt;
   hull.heading = wrapDeg(hull.heading + turn);
   const v = input.fwd ? tune.speed : input.rev ? -tune.reverse : 0;
@@ -94,6 +104,17 @@ export function stepHull(hull, input, dt, blocked, tune = DRIVE_TUNE) {
   if (mx !== 0 && freeAt(hull.x + mx, hull.z)) { hull.x += mx; hull.vx = mx / dt; return true; }
   if (mz !== 0 && freeAt(hull.x, hull.z + mz)) { hull.z += mz; hull.vz = mz / dt; return true; }
   return false;
+}
+
+// Fire the main gun: a shot from 4 m ahead of the hull centre along the
+// heading, or null while the gun is cooling.
+export function fireHull(hull, tune = DRIVE_TUNE) {
+  if (hull.cool > 0) return null;
+  hull.cool = tune.shotCooldown;
+  hull.shots++;
+  const [dx, dz] = dirOfYaw(hull.heading);
+  return { kind: 'shot', x: hull.x + dx * 4, z: hull.z + dz * 4, heading: hull.heading, left: tune.shotRange, from: -1, hit: false,
+    speed: tune.shotSpeed };
 }
 
 // --- occupancy ---------------------------------------------------------------
@@ -244,13 +265,17 @@ export function stepTracers(tracers, hull, dt, blockedRay, tune = DRIVE_TUNE) {
       continue;
     }
     const [dx, dz] = dirOfYaw(t.heading);
-    const step = Math.min(t.left, tune.tracerSpeed * dt);
+    const step = Math.min(t.left, (t.speed || tune.tracerSpeed) * dt);
     const nx = t.x + dx * step, nz = t.z + dz * step;
-    if (!t.hit && segDist(t.x, t.z, nx, nz, hull.x, hull.z) <= tune.hitR) { t.hit = true; hits++; }
+    if (t.kind !== 'shot' && !t.hit && segDist(t.x, t.z, nx, nz, hull.x, hull.z) <= tune.hitR) { t.hit = true; hits++; }
     t.x = nx; t.z = nz; t.left -= step;
-    if (t.left <= 0 || t.hit || blockedRay(nx, nz)) tracers.splice(i, 1);
+    if (t.left <= 0 || t.hit || blockedRay(nx, nz, t)) tracers.splice(i, 1);
   }
   return hits;
 }
 
 export const buildingAt = (plate, x, z) => cellKind(plate, toCell(x), toCell(z)) === KIND.BUILDING;
+// what a hull shot stops on: anything that is not ground, road or an open lane
+export const solidAt = (plate, gates, x, z) => blockedAt(plate, gates, x, z);
+// the predicate for stepTracers: shots stop on solids, sentry rounds on buildings only
+export const rayStop = (plate, gates) => (x, z, t) => (t && t.kind === 'shot') ? solidAt(plate, gates, x, z) : buildingAt(plate, x, z);
