@@ -4,15 +4,16 @@
 // hit. The rules are drive.js; this file wires the rig around them.
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { generatePlate, makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M } from './plate.js?v=5de7ca2f';
+import { generatePlate, makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M } from './plate.js?v=99bd57ab';
 import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, blockedAt, makeGates, stepGates,
-  spawnFor, makeSentries, stepSentries, losClear, stepTracers, rayStop, fireHull, damageAt } from './drive.js?v=5de7ca2f';
-import { buildPlateGroup, yawRotation } from './plate-scene.js?v=5de7ca2f';
-import { query, loadCatalog } from './plate-tab.js?v=5de7ca2f';
-import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS } from './drive-rig.js?v=5de7ca2f';
+  spawnFor, makeSentries, stepSentries, losClear, stepTracers, rayStop, fireHull, damageAt } from './drive.js?v=99bd57ab';
+import { PALETTE } from './looks.js?v=99bd57ab';
+import { buildPlateGroup, yawRotation } from './plate-scene.js?v=99bd57ab';
+import { query, loadCatalog } from './plate-tab.js?v=99bd57ab';
+import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS } from './drive-rig.js?v=99bd57ab';
 
 export function initDriveTab(root) {
-  const { renderer, scene, camera, hud, notice, resize } = makeViewer(root);
+  const { renderer, scene, camera, hud, notice, resize, render } = makeViewer(root);
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.enabled = false;
@@ -33,7 +34,7 @@ export function initDriveTab(root) {
     pool.clear();
     plate = generatePlate(params);
     window.__plate = plate;
-    rig = buildPlateGroup({ plate, catalog, wallState: null, animatedGates: true });
+    rig = buildPlateGroup({ plate, catalog, wallState: null, animatedGates: true, tint: PALETTE.hostile });
     scene.add(rig.group);
     gates = makeGates(plate);
     sentries = makeSentries(plate);
@@ -112,7 +113,7 @@ export function initDriveTab(root) {
       step(dt, keys.input());
       if (probe && simT - lastLog >= 1) { lastLog = simT; console.log(logLine()); }
       sync();
-      renderer.render(scene, camera);
+      render();
     });
   });
   return { resize };

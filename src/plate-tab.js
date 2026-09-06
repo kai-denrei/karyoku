@@ -4,11 +4,12 @@
 import * as THREE from '../vendor/three.module.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { generatePlate, PLATE_KNOBS, makePlateParams, clampPlateParams, CELL_M } from './plate.js?v=5de7ca2f';
-import { CATALOG_SPEC } from './catalog-spec.js?v=5de7ca2f';
-import { buildCatalog, BASE_KIT_URL, NASA_URL } from './catalog.js?v=5de7ca2f';
-import { bustToken } from './glbmodels.js?v=5de7ca2f';
-import { buildPlateGroup } from './plate-scene.js?v=5de7ca2f';
+import { generatePlate, PLATE_KNOBS, makePlateParams, clampPlateParams, CELL_M } from './plate.js?v=99bd57ab';
+import { CATALOG_SPEC } from './catalog-spec.js?v=99bd57ab';
+import { buildCatalog, BASE_KIT_URL, NASA_URL } from './catalog.js?v=99bd57ab';
+import { bustToken } from './glbmodels.js?v=99bd57ab';
+import { applySpaceScene, makeStars, makeComposer } from './looks.js?v=99bd57ab';
+import { buildPlateGroup } from './plate-scene.js?v=99bd57ab';
 
 // `#plate?seed=7` and `?seed=7#plate` both work: the hash's own query is
 // merged under the real search string.
@@ -38,14 +39,12 @@ export function initPlateTab(root) {
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   root.appendChild(renderer.domElement);
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0e1116);
   const camera = new THREE.PerspectiveCamera(50, 1, 0.5, 2000);
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
-  scene.add(new THREE.HemisphereLight(0xdfe8ff, 0x20242c, 0.9));
-  const sun = new THREE.DirectionalLight(0xffffff, 1.2);
-  sun.position.set(60, 120, -40);
-  scene.add(sun);
+  applySpaceScene(scene, 0.0006);
+  scene.add(makeStars());
+  const post = makeComposer(renderer, scene, camera);
 
   const overlay = document.createElement('pre');
   overlay.className = 'ascii-overlay';
@@ -95,6 +94,7 @@ export function initPlateTab(root) {
   function resize() {
     const w = root.clientWidth, h = root.clientHeight;
     renderer.setSize(w, h, false);
+    post.resize(w, h);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
   }
@@ -105,6 +105,6 @@ export function initPlateTab(root) {
     if (error) { notice.textContent = `base-kit manifest unavailable, placeholders only (${error})`; notice.hidden = false; }
     build();
   });
-  renderer.setAnimationLoop(() => { controls.update(); renderer.render(scene, camera); });
+  renderer.setAnimationLoop(() => { controls.update(); post.render(); });
   return { resize };
 }

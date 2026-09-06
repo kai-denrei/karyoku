@@ -107,6 +107,23 @@ no build step, Node invariant suites).
 - Probes: `#drive?seed=7&tick=4&fire=1&hold=1&aim=wall` shoots the wall
   beside the gate and logs `shots= damaged= breached=`.
 
+## The look (operator, 2026-09-06 night: Tron colours, Battlezone, space colony)
+- `src/looks.js` owns it: PALETTE, `applySpaceScene` (black, exp fog, dim
+  lights), `makeStars`, `makeComposer` (RenderPass + UnrealBloomPass +
+  OutputPass; every tab renders through `post.render()`), `terrainMeshes`
+  (dark facets + one LineSegments of every quad edge, orange on the road),
+  `floraMeshes` (crystal spires and lichen domes on the old tree records),
+  `neonBox` placeholders, `tintProto` (glbmodels' emissive tint; wash 0.14,
+  the hull 0.08 — higher and a wall is a solid cyan slab).
+- Plates are tinted by side: `PALETTE.home` cyan, `PALETTE.hostile` red.
+  NASA stand-ins take their section colour. `proto()` keys its cache on
+  url + fit + tint.
+- Stars sit UNDER the bloom threshold (dim, small): over it they bloom
+  into grey squares.
+- Cache: `npm run serve` is `scripts/serve.py`, which sends `no-cache` on
+  every response; the nav's build token is the visual confirmation. Pages
+  still caches 600 s.
+
 ## Verify
 - `npm run serve` then `http://localhost:8150/#plate?seed=7&ascii=1`.
   `?seed= ?w= ?h= ?gates= ?arc= ?density= ?tier=` override the knobs;

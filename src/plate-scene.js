@@ -5,10 +5,11 @@
 // as clones with their YAW pivot exposed, and everything else as a labelled
 // placeholder box of its footprint.
 import * as THREE from '../vendor/three.module.js';
-import { KIND, CELL_M, ringCoverage } from './plate.js?v=5de7ca2f';
-import { fileFor, fitFor, SECTION_COLOR, PLACEHOLDER_HEIGHT_M } from './catalog.js?v=5de7ca2f';
-import { LOB_FAMILIES, LOB_ELEV_DEG } from './drive.js?v=5de7ca2f';
-import { loadGlb, loadGlbWithClips, mergeByMaterial, fitModel } from './glbmodels.js?v=5de7ca2f';
+import { KIND, CELL_M, ringCoverage } from './plate.js?v=99bd57ab';
+import { fileFor, fitFor, SECTION_COLOR, PLACEHOLDER_HEIGHT_M } from './catalog.js?v=99bd57ab';
+import { LOB_FAMILIES, LOB_ELEV_DEG } from './drive.js?v=99bd57ab';
+import { PALETTE, neonBox, tintProto } from './looks.js?v=99bd57ab';
+import { loadGlb, loadGlbWithClips, mergeByMaterial, fitModel } from './glbmodels.js?v=99bd57ab';
 
 const labelCache = new Map();
 function labelTexture(text) {
@@ -30,13 +31,15 @@ function labelTexture(text) {
 // names the pivots that must keep moving. A load that fails resolves to
 // null and the piece stays a placeholder.
 const protos = new Map();
-export function proto(url, pivots = [], fit = null) {
-  const key = url + (fit ? JSON.stringify(fit) : '');
+export function proto(url, pivots = [], fit = null, tint = null) {
+  const key = url + (fit ? JSON.stringify(fit) : '') + (tint !== null ? '#' + tint : '');
   if (protos.has(key)) return protos.get(key);
   const p = loadGlb(url).then((scene) => {
     if (!scene) return null;
     const merged = mergeByMaterial(scene, pivots);
-    return fit ? fitModel(merged, fit) : merged;
+    const fitted = fit ? fitModel(merged, fit) : merged;
+    if (tint !== null) tintProto(fitted, tint);
+    return fitted;
   });
   protos.set(key, p);
   return p;
@@ -91,9 +94,7 @@ function instanced(root, pieces, transformOf) {
 function placeholderMesh(piece, entry) {
   const h = piece.kind === KIND.SENTRY ? 0.6 : (PLACEHOLDER_HEIGHT_M[entry.section] || 2);
   const inset = piece.kind === KIND.BUILDING ? 0.6 : 0.2;
-  const geo = new THREE.BoxGeometry(piece.pw * CELL_M - inset * 2, h, piece.ph * CELL_M - inset * 2);
-  const mat = new THREE.MeshStandardMaterial({ color: SECTION_COLOR[entry.section] || 0x888888, roughness: 0.85, metalness: 0.1 });
-  const m = new THREE.Mesh(geo, mat);
+  const m = neonBox(piece.pw * CELL_M - inset * 2, h, piece.ph * CELL_M - inset * 2, PALETTE.section[entry.section] || 0x888888);
   m.position.y = h / 2;
   const g = new THREE.Group();
   g.add(m);
@@ -140,7 +141,7 @@ function arcWedge(st) {
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
   geo.setIndex(idxs);
-  const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0xc0392b, transparent: true, opacity: 0.18, side: THREE.DoubleSide, depthWrite: false }));
+  const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0xc0392b, transparent: true, opacity: 0.09, side: THREE.DoubleSide, depthWrite: false }));
   m.position.set((st.x + 1) * CELL_M, 0, (st.z + 1) * CELL_M);
   return m;
 }
@@ -151,17 +152,18 @@ export const yawRotation = (yawDeg) => Math.PI - yawDeg * Math.PI / 180;
 // `wallState` forces every wall to one state (the plate tab's selector);
 // null draws each wall at its own `piece.state`, and `rebuildWalls()` redraws
 // them after a shot changed one.
-export function buildPlateGroup({ plate, catalog, wallState = 0, showArcs = true, showBlind = true, animatedGates = false }) {
+export function buildPlateGroup({ plate, catalog, wallState = 0, showArcs = true, showBlind = true, animatedGates = false, tint = PALETTE.home }) {
   const group = new THREE.Group();
   const sentryYaws = new Map();   // sentry index -> the node to turn
   const gateRigs = [];            // { index, obj, mixer, action, duration }
   const pending = [];
   const W = plate.w * CELL_M, H = plate.h * CELL_M;
 
-  const slab = new THREE.Mesh(new THREE.BoxGeometry(W, 0.4, H), new THREE.MeshStandardMaterial({ color: 0x3a3f47, roughness: 0.95 }));
+  const slab = new THREE.Mesh(new THREE.BoxGeometry(W, 0.4, H), new THREE.MeshStandardMaterial({ color: PALETTE.slab, roughness: 0.95 }));
   slab.position.set(W / 2, -0.2, H / 2);
   group.add(slab);
-  const grid = new THREE.GridHelper(Math.max(W, H), Math.max(plate.w, plate.h), 0x2a3140, 0x1c212b);
+  const grid = new THREE.GridHelper(Math.max(W, H), Math.max(plate.w, plate.h), PALETTE.grid, PALETTE.grid);
+  grid.material.transparent = true; grid.material.opacity = 0.45;
   grid.position.set(Math.max(W, H) / 2, 0.02, Math.max(W, H) / 2);
   group.add(grid);
 
@@ -181,7 +183,7 @@ export function buildPlateGroup({ plate, catalog, wallState = 0, showArcs = true
       byUrl.get(url).push(piece);
     }
     for (const [url, pieces] of byUrl) {
-      pending.push(proto(url).then((root) => {
+      pending.push(proto(url, [], null, tint).then((root) => {
         if (!root) { for (const piece of pieces) fallback(piece); return; }
         const g = instanced(root, pieces, pieceMatrix);
         wallObjs.push(g);
@@ -205,6 +207,7 @@ export function buildPlateGroup({ plate, catalog, wallState = 0, showArcs = true
       pending.push(animProto(url).then((res) => {
         if (!res) { fallback(piece); return; }
         const obj = res.root.clone();
+        tintProto(obj, tint);
         placePiece(obj, piece);
         group.add(obj);
         const clip = res.clips.find((c) => /open/i.test(c.name)) || res.clips[0];
@@ -224,14 +227,15 @@ export function buildPlateGroup({ plate, catalog, wallState = 0, showArcs = true
     byModel.get(mkey).pieces.push(piece);
   }
   for (const { url, fit, pieces } of byModel.values()) {
-    pending.push(proto(url, [], fit).then((root) => {
+    const sectionTint = PALETTE.section[catalog.get(pieces[0].id).section] || tint;
+    pending.push(proto(url, [], fit, sectionTint).then((root) => {
       if (!root) { for (const piece of pieces) fallback(piece); return; }
       group.add(instanced(root, pieces, pieceMatrix));
     }));
   }
   plate.sentries.forEach((st, index) => {
     if (showArcs) group.add(arcWedge(st));
-    pending.push(proto(sentryUrl(st.family, st.tier), ['YAW', 'PITCH', 'RECOIL'], { height: 4.5, maxSpan: 7 }).then((root) => {
+    pending.push(proto(sentryUrl(st.family, st.tier), ['YAW', 'PITCH', 'RECOIL'], { height: 4.5, maxSpan: 7 }, tint).then((root) => {
       if (!root) return;
       const inst = root.clone();
       const yaw = inst.getObjectByName('YAW') || inst;

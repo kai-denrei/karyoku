@@ -2,7 +2,8 @@
 // the hull model with a stand-in until it lands, the key state, the tracer
 // meshes, and the two cameras. Rendering only; the rules are drive.js.
 import * as THREE from '../vendor/three.module.js';
-import { loadGlb, mergeByMaterial } from './glbmodels.js?v=5de7ca2f';
+import { applySpaceScene, makeStars, makeComposer, PALETTE, tintProto } from './looks.js?v=99bd57ab';
+import { loadGlb, mergeByMaterial } from './glbmodels.js?v=99bd57ab';
 
 const HULL_URL = 'assets/models/mkcx2.glb';
 // The nodes that must keep moving through the merge, and the ones that
@@ -23,7 +24,7 @@ export function makeHullObject() {
   loadGlb(HULL_URL).then((gltfScene) => {
     if (!gltfScene) return;
     obj.remove(stub);
-    obj.add(mergeByMaterial(gltfScene, HULL_PIVOTS, HULL_DROP));
+    obj.add(tintProto(mergeByMaterial(gltfScene, HULL_PIVOTS, HULL_DROP), PALETTE.hull, 0.08));
     console.log('[drive] hull model loaded');
   });
   // Heading about +y, then the whole thing tilted so its up is the ground's
@@ -153,12 +154,10 @@ export function makeViewer(root) {
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   root.appendChild(renderer.domElement);
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0e1116);
   const camera = new THREE.PerspectiveCamera(50, 1, 0.5, 3000);
-  scene.add(new THREE.HemisphereLight(0xdfe8ff, 0x20242c, 0.9));
-  const sun = new THREE.DirectionalLight(0xffffff, 1.2);
-  sun.position.set(60, 120, -40);
-  scene.add(sun);
+  applySpaceScene(scene);
+  scene.add(makeStars());
+  const post = makeComposer(renderer, scene, camera);
   const hud = document.createElement('div');
   hud.className = 'hud';
   root.appendChild(hud);
@@ -169,10 +168,11 @@ export function makeViewer(root) {
   function resize() {
     const w = root.clientWidth, h = root.clientHeight;
     renderer.setSize(w, h, false);
+    post.resize(w, h);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
   }
   addEventListener('resize', resize);
   resize();
-  return { renderer, scene, camera, hud, notice, resize };
+  return { renderer, scene, camera, hud, notice, resize, render: () => post.render() };
 }

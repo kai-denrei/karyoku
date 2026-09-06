@@ -1,0 +1,192 @@
+// looks.js — THE SPACE-COLONY LOOK: Tron surfaces, Battlezone ground. Dark
+// filled facets so hills still hide things, glowing edges so the shapes
+// read, emissive tints on every model, a star field, and bloom to make the
+// glow bleed. Everything visual that is not a model lives here, so a tab
+// asks for the look rather than owning a palette.
+import * as THREE from '../vendor/three.module.js';
+import { EffectComposer } from '../vendor/EffectComposer.js';
+import { RenderPass } from '../vendor/RenderPass.js';
+import { UnrealBloomPass } from '../vendor/UnrealBloomPass.js';
+import { OutputPass } from '../vendor/OutputPass.js';
+import { tintModel } from './glbmodels.js?v=99bd57ab';
+
+export const PALETTE = {
+  bg: 0x02040a,
+  fog: 0x02040a,
+  ground: [0x07131c, 0x0c2433],   // low to high, the fill under the wire
+  wire: 0x1fb6cc,                 // terrain edges
+  road: 0xff7a1a,                 // road edges and fill tint
+  roadFill: 0x2a1408,
+  slab: 0x070d16,
+  grid: 0x0e4b5a,
+  home: 0x2ad2ff,                 // the player's plate
+  hostile: 0xff4d2e,              // the target plate
+  hull: 0x7df9ff,
+  crystal: 0xd05cff,
+  dome: 0x3cf2b0,
+  rock: 0x3a4a5c,
+  star: 0x9fb0c8,
+  section: {                      // placeholder edge colours, neon
+    ground: 0x2a3f52, road: 0xff7a1a, perimeter: 0x2ad2ff, defense: 0xff4d2e,
+    command: 0x7df9ff, personnel: 0x3cf2b0, logistics: 0xffb347, industry: 0xff8c42,
+    utility: 0xf5e663, air: 0xc77dff, field: 0xff6b6b, prop: 0x9fb3c8,
+  },
+};
+
+export function applySpaceScene(scene, fogDensity = 0.0012) {
+  scene.background = new THREE.Color(PALETTE.bg);
+  scene.fog = new THREE.FogExp2(PALETTE.fog, fogDensity);
+  scene.add(new THREE.HemisphereLight(0x2a3d5c, 0x05070c, 0.7));
+  const key = new THREE.DirectionalLight(0x9fb3ff, 0.35);
+  key.position.set(60, 120, -40);
+  scene.add(key);
+}
+
+export function makeStars(n = 1600, radius = 1800) {
+  const pos = new Float32Array(n * 3);
+  let seed = 12345;
+  const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+  for (let i = 0; i < n; i++) {
+    const u = rnd() * 2 - 1, phi = rnd() * Math.PI * 2;
+    const r = Math.sqrt(1 - u * u);
+    pos[i * 3] = r * Math.cos(phi) * radius; pos[i * 3 + 1] = Math.abs(u) * radius * 0.9 + 20; pos[i * 3 + 2] = r * Math.sin(phi) * radius;
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  // dim and small on purpose: a star over the bloom threshold blooms into a square
+  const pts = new THREE.Points(geo, new THREE.PointsMaterial({ color: PALETTE.star, size: 1.4, sizeAttenuation: false, fog: false, transparent: true, opacity: 0.55 }));
+  pts.frustumCulled = false;
+  return pts;
+}
+
+// Bloom over the whole frame. `resize(w, h)` keeps the passes in step.
+export function makeComposer(renderer, scene, camera, { strength = 0.85, radius = 0.35, threshold = 0.5 } = {}) {
+  const composer = new EffectComposer(renderer);
+  composer.addPass(new RenderPass(scene, camera));
+  const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), strength, radius, threshold);
+  composer.addPass(bloom);
+  composer.addPass(new OutputPass());
+  return {
+    composer, bloom,
+    render() { composer.render(); },
+    resize(w, h) { composer.setSize(w, h); bloom.setSize(w, h); },
+  };
+}
+
+// Emissive tint on a model prototype, at a wash that lets the glow strips
+// stay the brightest thing on it.
+export function tintProto(root, color, wash = 0.14) {
+  tintModel(root, color, { wash });
+  return root;
+}
+
+// A placeholder as a dark box with neon edges in its section colour.
+export function neonBox(w, h, d, color) {
+  const geo = new THREE.BoxGeometry(w, h, d);
+  const fill = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: 0x08101a, emissive: new THREE.Color(color).multiplyScalar(0.08), roughness: 0.9 }));
+  const edges = new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color }));
+  const g = new THREE.Group();
+  g.add(fill, edges);
+  return g;
+}
+
+// --- terrain: dark facets under a glowing wire --------------------------------
+export function terrainMeshes(world, splitQuad) {
+  const { mesh, heights } = world;
+  const pos = [], col = [];
+  const c = new THREE.Color(), lo = new THREE.Color(PALETTE.ground[0]), hi = new THREE.Color(PALETTE.ground[1]), roadC = new THREE.Color(PALETTE.roadFill);
+  const hMin = Math.min(...heights), hMax = Math.max(...heights);
+  const drop = (x, z) => world.plates.some((p) => x > p.ox - 2 && x < p.ox + p.wM + 2 && z > p.oz - 2 && z < p.oz + p.hM + 2) ? 0.8 : 0;
+  mesh.quads.forEach((q, qi) => {
+    const road = world.road.set.has(qi);
+    const hAvg = (heights[q[0]] + heights[q[1]] + heights[q[2]] + heights[q[3]]) / 4;
+    const t = hMax > hMin ? (hAvg - hMin) / (hMax - hMin) : 0.5;
+    if (road) c.copy(roadC); else c.copy(lo).lerp(hi, t);
+    for (const vi of splitQuad(mesh.vertices, q).flat()) {
+      const [x, z] = mesh.vertices[vi];
+      pos.push(x, heights[vi] - drop(x, z), z);
+      col.push(c.r, c.g, c.b);
+    }
+  });
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  geo.computeVertexNormals();
+  const fill = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, metalness: 0, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 }));
+  // the wire: every quad edge once, orange where it borders the road
+  const seen = new Map();
+  mesh.quads.forEach((q, qi) => {
+    for (let i = 0; i < 4; i++) {
+      const a = q[i], b = q[(i + 1) % 4];
+      const k = a < b ? a * 1e6 + b : b * 1e6 + a;
+      const e = seen.get(k) || { a, b, road: false };
+      if (world.road.set.has(qi)) e.road = true;
+      seen.set(k, e);
+    }
+  });
+  const wpos = [], wcol = [];
+  const wc = new THREE.Color(PALETTE.wire), rc = new THREE.Color(PALETTE.road);
+  for (const e of seen.values()) {
+    for (const vi of [e.a, e.b]) {
+      const [x, z] = mesh.vertices[vi];
+      wpos.push(x, heights[vi] - drop(x, z) + 0.05, z);
+      const cc = e.road ? rc : wc;
+      wcol.push(cc.r, cc.g, cc.b);
+    }
+  }
+  const wgeo = new THREE.BufferGeometry();
+  wgeo.setAttribute('position', new THREE.Float32BufferAttribute(wpos, 3));
+  wgeo.setAttribute('color', new THREE.Float32BufferAttribute(wcol, 3));
+  const wire = new THREE.LineSegments(wgeo, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.75 }));
+  return { fill, wire };
+}
+
+// --- flora: crystal spires and lichen domes where the trees were -------------
+export function floraMeshes(world) {
+  const g = new THREE.Group();
+  const m = new THREE.Matrix4(), q = new THREE.Quaternion(), s = new THREE.Vector3(), p = new THREE.Vector3();
+  const items = world.trees;
+  let seed = world.seed * 7919 + 1;
+  const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+  const spires = items.filter((t, i) => i % 3 !== 2), domes = items.filter((t, i) => i % 3 === 2);
+  if (spires.length) {
+    const geo = new THREE.ConeGeometry(1, 1, 5);
+    const mat = new THREE.MeshStandardMaterial({ color: 0x1a0a2a, emissive: new THREE.Color(PALETTE.crystal), emissiveIntensity: 0.9, roughness: 0.3, metalness: 0.2 });
+    const im = new THREE.InstancedMesh(geo, mat, spires.length * 2);
+    let n = 0;
+    for (const t of spires) {
+      const y = world.heightAt(t.x, t.z);
+      for (let k = 0; k < 2; k++) {
+        const h = t.h * (k ? 0.55 : 1.0), r = t.r * (k ? 0.9 : 1.3);
+        const tilt = (rnd() - 0.5) * 0.35, spin = rnd() * Math.PI * 2;
+        q.setFromEuler(new THREE.Euler(tilt, spin, tilt * 0.6));
+        s.set(r, h, r);
+        p.set(t.x + (k ? (rnd() - 0.5) * 3 : 0), y + h / 2 - 0.3, t.z + (k ? (rnd() - 0.5) * 3 : 0));
+        m.compose(p, q, s);
+        im.setMatrixAt(n++, m);
+      }
+    }
+    im.count = n;
+    im.instanceMatrix.needsUpdate = true;
+    g.add(im);
+  }
+  if (domes.length) {
+    const geo = new THREE.SphereGeometry(1, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2);
+    const mat = new THREE.MeshStandardMaterial({ color: 0x06201a, emissive: new THREE.Color(PALETTE.dome), emissiveIntensity: 0.55, roughness: 0.6 });
+    const im = new THREE.InstancedMesh(geo, mat, domes.length);
+    domes.forEach((t, i) => {
+      const r = t.h * 0.35;
+      m.makeScale(r, r * 0.55, r); m.setPosition(t.x, world.heightAt(t.x, t.z), t.z);
+      im.setMatrixAt(i, m);
+    });
+    im.instanceMatrix.needsUpdate = true;
+    g.add(im);
+  }
+  if (world.rocks.length) {
+    const im = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1, 0), new THREE.MeshStandardMaterial({ color: 0x0a121c, emissive: new THREE.Color(PALETTE.rock).multiplyScalar(0.35), roughness: 0.95, flatShading: true }), world.rocks.length);
+    world.rocks.forEach((r, i) => { m.makeScale(r.r, r.h, r.r * 0.8); m.setPosition(r.x, world.heightAt(r.x, r.z) + r.h * 0.35, r.z); im.setMatrixAt(i, m); });
+    im.instanceMatrix.needsUpdate = true;
+    g.add(im);
+  }
+  return g;
+}

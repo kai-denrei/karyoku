@@ -5,77 +5,18 @@
 import * as THREE from '../vendor/three.module.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { makePlateParams, clampPlateParams, PLATE_KNOBS } from './plate.js?v=5de7ca2f';
-import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, stepGates, stepSentries, stepTracers, fireHull, damageAt } from './drive.js?v=5de7ca2f';
-import { WORLD_KNOBS, makeWorldParams, clampWorldParams, makeWorld, worldBlocked, worldBuildingAt, worldLosFor, worldSentries, worldGates, terrainNormal, splitQuad, groundAt } from './world.js?v=5de7ca2f';
-import { buildPlateGroup, yawRotation } from './plate-scene.js?v=5de7ca2f';
-import { query, loadCatalog } from './plate-tab.js?v=5de7ca2f';
-import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS } from './drive-rig.js?v=5de7ca2f';
+import { makePlateParams, clampPlateParams, PLATE_KNOBS } from './plate.js?v=99bd57ab';
+import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, stepGates, stepSentries, stepTracers, fireHull, damageAt } from './drive.js?v=99bd57ab';
+import { WORLD_KNOBS, makeWorldParams, clampWorldParams, makeWorld, worldBlocked, worldBuildingAt, worldLosFor, worldSentries, worldGates, terrainNormal, splitQuad, groundAt } from './world.js?v=99bd57ab';
+import { PALETTE, terrainMeshes, floraMeshes } from './looks.js?v=99bd57ab';
+import { buildPlateGroup, yawRotation } from './plate-scene.js?v=99bd57ab';
+import { query, loadCatalog } from './plate-tab.js?v=99bd57ab';
+import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS } from './drive-rig.js?v=99bd57ab';
 
 const ARRIVE_M = 8;
 
-// Six vertices per quad so each quad carries its own colour: grass by
-// height, dirt on the road. Flat normals give the low-poly look.
-function terrainMesh(world) {
-  const { mesh, heights } = world;
-  const pos = [], col = [];
-  const c = new THREE.Color();
-  const lo = Math.min(...heights), hi = Math.max(...heights);
-  mesh.quads.forEach((q, qi) => {
-    const road = world.road.set.has(qi);
-    // splitQuad picks the diagonal inside a concave quad and orients both
-    // triangles to face up, whatever the kernel's winding did
-    const tri = splitQuad(mesh.vertices, q).flat();
-    const hAvg = (heights[q[0]] + heights[q[1]] + heights[q[2]] + heights[q[3]]) / 4;
-    const t = hi > lo ? (hAvg - lo) / (hi - lo) : 0.5;
-    if (road) c.setHSL(0.08, 0.35, 0.28);
-    else c.setHSL(0.30 - t * 0.12, 0.45, 0.22 + t * 0.2);
-    for (const vi of tri) {
-      const [x, z] = mesh.vertices[vi];
-      // under a plate the ground is exactly the slab's height, and two
-      // coplanar surfaces shimmer; the ground dips below the slab there
-      const underPlate = world.plates.some((p) => x > p.ox - 2 && x < p.ox + p.wM + 2 && z > p.oz - 2 && z < p.oz + p.hM + 2);
-      pos.push(x, heights[vi] - (underPlate ? 0.8 : 0), z);
-      col.push(c.r, c.g, c.b);
-    }
-  });
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-  geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
-  geo.computeVertexNormals();
-  return new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, metalness: 0 }));
-}
-
-function coverMeshes(world) {
-  const g = new THREE.Group();
-  const m = new THREE.Matrix4();
-  const trees = world.trees;
-  if (trees.length) {
-    const trunk = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.5, 0.7, 1, 6), new THREE.MeshStandardMaterial({ color: 0x5a3d22, roughness: 0.9 }), trees.length);
-    const canopy = new THREE.InstancedMesh(new THREE.ConeGeometry(1, 1, 7), new THREE.MeshStandardMaterial({ color: 0x2f7a3a, roughness: 0.85 }), trees.length);
-    trees.forEach((t, i) => {
-      const y = world.heightAt(t.x, t.z);
-      const th = t.h * 0.35;
-      m.makeScale(1, th, 1); m.setPosition(t.x, y + th / 2, t.z); trunk.setMatrixAt(i, m);
-      const ch = t.h * 0.75, cr = t.h * 0.42;
-      m.makeScale(cr, ch, cr); m.setPosition(t.x, y + th + ch / 2 - 0.5, t.z); canopy.setMatrixAt(i, m);
-    });
-    trunk.instanceMatrix.needsUpdate = true; canopy.instanceMatrix.needsUpdate = true;
-    g.add(trunk, canopy);
-  }
-  if (world.rocks.length) {
-    const rock = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1, 0), new THREE.MeshStandardMaterial({ color: 0x6b6f75, roughness: 0.95, flatShading: true }), world.rocks.length);
-    world.rocks.forEach((r, i) => {
-      m.makeScale(r.r, r.h, r.r * 0.8); m.setPosition(r.x, world.heightAt(r.x, r.z) + r.h * 0.35, r.z); rock.setMatrixAt(i, m);
-    });
-    rock.instanceMatrix.needsUpdate = true;
-    g.add(rock);
-  }
-  return g;
-}
-
 export function initWorldTab(root) {
-  const { renderer, scene, camera, hud, notice, resize } = makeViewer(root);
+  const { renderer, scene, camera, hud, notice, resize, render } = makeViewer(root);
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.enabled = false;
@@ -99,10 +40,11 @@ export function initWorldTab(root) {
     world = makeWorld({ ...W, seed: plateParams.seed }, plateParams);
     window.__world = world;
     group = new THREE.Group();
-    group.add(terrainMesh(world));
-    group.add(coverMeshes(world));
+    const { fill, wire } = terrainMeshes(world, splitQuad);
+    group.add(fill, wire);
+    group.add(floraMeshes(world));
     rigs = world.plates.map((p) => {
-      const rig = buildPlateGroup({ plate: p.plate, catalog, wallState: null, animatedGates: true, showBlind: false, showArcs: p.hostile });
+      const rig = buildPlateGroup({ plate: p.plate, catalog, wallState: null, animatedGates: true, showBlind: false, showArcs: p.hostile, tint: p.hostile ? PALETTE.hostile : PALETTE.home });
       rig.group.position.set(p.ox, 0, p.oz);
       group.add(rig.group);
       return rig;
@@ -204,7 +146,7 @@ export function initWorldTab(root) {
       step(dt, keys.input());
       if (probe && simT - lastLog >= 1) { lastLog = simT; console.log(logLine()); }
       sync();
-      renderer.render(scene, camera);
+      render();
     });
   });
   return { resize };
