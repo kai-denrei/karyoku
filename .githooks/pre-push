@@ -1,0 +1,7 @@
+#!/bin/sh
+# Block a push that would ship drifted/split cache-bust tokens, a tokened
+# vendor import, or an EMOJI. Enable once per clone with:
+#   git config core.hooksPath .githooks
+ROOT="$(git rev-parse --show-toplevel)"
+"$ROOT/scripts/check-tokens.sh" || exit 1
+exec "$ROOT/scripts/check-emoji.sh"
