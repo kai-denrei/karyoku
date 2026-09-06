@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node test/rng.mjs && node test/catalog.mjs && node test/plate.mjs",
+    "test": "node test/rng.mjs && node test/catalog.mjs && node test/plate.mjs && node test/drive.mjs",
     "serve": "python3 -m http.server 8150",
     "bust": "./scripts/bust.sh"
   }
