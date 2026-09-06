@@ -5,14 +5,16 @@
 // as clones with their YAW pivot exposed, and everything else as a labelled
 // placeholder box of its footprint.
 import * as THREE from '../vendor/three.module.js';
-import { KIND, CELL_M, ringCoverage, LANDMARK } from './plate.js?v=9a9954fb';
-import { fileFor, fitFor, SECTION_COLOR, PLACEHOLDER_HEIGHT_M } from './catalog.js?v=9a9954fb';
-import { LOB_FAMILIES, LOB_ELEV_DEG } from './drive.js?v=9a9954fb';
-import { PALETTE, neonBox, BZ, styleForLook, bakeEdges } from './looks.js?v=9a9954fb';
-import { prepFor, ladderTint, dressMetal } from './casts.js?v=9a9954fb';
-import { tintModel } from './glbmodels.js?v=9a9954fb';
-import { BODY_IDS } from './drive.js?v=9a9954fb';
-import { loadGlb, loadGlbWithClips, mergeByMaterial, fitModel } from './glbmodels.js?v=9a9954fb';
+import { KIND, CELL_M, ringCoverage, LANDMARK } from './plate.js?v=0d3dc4c2';
+import { fileFor, fitFor, SECTION_COLOR, PLACEHOLDER_HEIGHT_M } from './catalog.js?v=0d3dc4c2';
+import { LOB_FAMILIES, LOB_ELEV_DEG } from './drive.js?v=0d3dc4c2';
+import { PALETTE, neonBox, BZ, styleForLook, bakeEdges } from './looks.js?v=0d3dc4c2';
+import { prepFor, ladderTint, dressMetal } from './casts.js?v=0d3dc4c2';
+import { tintModel } from './glbmodels.js?v=0d3dc4c2';
+import { BODY_IDS } from './drive.js?v=0d3dc4c2';
+// pieces whose model carries a looping clip: the assembly kit's machines
+export const LOOP_IDS = new Set(['robotic_assembly_line', 'robotic_arm', 'conveyor_module']);
+import { loadGlb, loadGlbWithClips, mergeByMaterial, fitModel } from './glbmodels.js?v=0d3dc4c2';
 
 const labelCache = new Map();
 function labelTexture(text) {
@@ -200,6 +202,7 @@ export function buildPlateGroup({ plate, catalog, wallState = 0, showArcs = true
   const sentryYaws = new Map();   // sentry index -> the node to turn
   const gateRigs = [];            // { index, obj, mixer, action, duration }
   const dynamic = new Map();      // piece index -> its own object, for the bodies the drive moves
+  const loopRigs = [];            // { obj, mixer }: the assembly kit's Assembly_Cycle, looping
   const pending = [];
   const W = plate.w * CELL_M, H = plate.h * CELL_M;
 
@@ -221,19 +224,24 @@ export function buildPlateGroup({ plate, catalog, wallState = 0, showArcs = true
     if (piece.kind !== KIND.SENTRY) return new THREE.Group();
     const obj = placeholderMesh(piece, catalog.get(piece.id)); placePiece(obj, piece); group.add(obj); return obj;
   };
-  const staticObjs = [];
+  // The layer is REPLACED, never emptied: the new set is built first and
+  // swapped in when every model has resolved, so a shot that turns one wall
+  // segment D1 (whose model may still be downloading) no longer blanks the
+  // whole ring for a frame (operator: "all the walls flicker").
+  let staticObjs = [];
   let staticModels = 0;
+  let staticGen = 0;
   function drawStatic() {
-    for (const o of staticObjs) group.remove(o);
-    staticObjs.length = 0;
+    const gen = ++staticGen;
+    const next = [];
     const byKey = new Map();
     for (const piece of plate.pieces) {
-      if (piece.kind === KIND.GATE || BODY_IDS.has(piece.id)) continue;
+      if (piece.kind === KIND.GATE || BODY_IDS.has(piece.id) || LOOP_IDS.has(piece.id)) continue;
       const entry = catalog.get(piece.id);
       if (!entry) continue;
       const state = piece.kind === KIND.WALL && wallState !== null ? wallState : piece.state;
       const url = entry.placeholder ? null : fileFor(entry, state);
-      if (!url) { staticObjs.push(fallback(piece)); continue; }
+      if (!url) { if (piece.kind === KIND.SENTRY) { const obj = placeholderMesh(piece, entry); placePiece(obj, piece); next.push(obj); } continue; }
       const fit = fitOf(entry, state);
       const sectionTint = piece.kind === KIND.WALL ? tint : (PALETTE.section[entry.section] || tint);
       const key = url + (fit ? JSON.stringify(fit) : '') + '#' + sectionTint;
@@ -241,30 +249,33 @@ export function buildPlateGroup({ plate, catalog, wallState = 0, showArcs = true
       byKey.get(key).pieces.push(piece);
     }
     staticModels = byKey.size;
-    for (const { url, fit, tint: t, pieces } of byKey.values()) {
-      pending.push(proto(url, [], fit, t).then((root) => {
-        if (!root) { for (const piece of pieces) staticObjs.push(fallback(piece)); return; }
-        const g = instanced(root, pieces, pieceMatrix);
-        staticObjs.push(g);
-        group.add(g);
-        if (pieces[0].id === LANDMARK) {
-          // the Isolation Infirmary wears a cross on its roof, sized to the plot
-          const top = new THREE.Box3().setFromObject(root).max.y + 0.15;
-          for (const piece of pieces) {
-            const c = roofCross(Math.min(piece.pw, piece.ph) * CELL_M * 0.55);
-            placePiece(c, piece);
-            c.position.y = top;
-            staticObjs.push(c);
-            group.add(c);
-          }
+    const loads = [...byKey.values()].map(({ url, fit, tint: t, pieces }) => proto(url, [], fit, t).then((root) => {
+      if (!root) return;
+      next.push(instanced(root, pieces, pieceMatrix));
+      if (pieces[0].id === LANDMARK) {
+        // the Isolation Infirmary wears a cross on its roof, sized to the plot
+        const top = new THREE.Box3().setFromObject(root).max.y + 0.15;
+        for (const piece of pieces) {
+          const c = roofCross(Math.min(piece.pw, piece.ph) * CELL_M * 0.55);
+          placePiece(c, piece);
+          c.position.y = top;
+          next.push(c);
         }
-      }));
-    }
+      }
+    }));
+    const swap = Promise.all(loads).then(() => {
+      if (gen !== staticGen) return; // a newer rebuild superseded this one
+      for (const o of staticObjs) group.remove(o);
+      staticObjs = next;
+      for (const o of next) group.add(o);
+    });
+    pending.push(swap);
+    return swap;
   }
   drawStatic();
   const byModel = new Map();
   for (const piece of plate.pieces) {
-    if (piece.kind !== KIND.GATE && !BODY_IDS.has(piece.id)) continue;
+    if (piece.kind !== KIND.GATE && !BODY_IDS.has(piece.id) && !LOOP_IDS.has(piece.id)) continue;
     const entry = catalog.get(piece.id);
     if (!entry) continue;
     const state = piece.state;
@@ -272,6 +283,24 @@ export function buildPlateGroup({ plate, catalog, wallState = 0, showArcs = true
     if (!url) { fallback(piece); continue; }
     const fit = fitOf(entry, state);
     const mkey = fit ? url + JSON.stringify(fit) : url;
+    if (LOOP_IDS.has(piece.id)) {
+      // an animated machine: its own clone, its clip looping
+      pending.push(animProto(url).then((res) => {
+        if (!res) { fallback(piece); return; }
+        const obj = res.root.clone();
+        if (!BZ) tintModel(obj, PALETTE.section[entry.section] || tint, { wash: 0.10 });
+        placePiece(obj, piece);
+        group.add(obj);
+        const clip = res.clips[0];
+        if (clip) {
+          const mixer = new THREE.AnimationMixer(obj);
+          const action = mixer.clipAction(clip);
+          action.play();
+          loopRigs.push({ obj, mixer });
+        }
+      }));
+      continue;
+    }
     if (BODY_IDS.has(piece.id)) {
       // a body is one object of its own, never an instance: the drive moves it
       const pi = plate.pieces.indexOf(piece);
@@ -341,5 +370,5 @@ export function buildPlateGroup({ plate, catalog, wallState = 0, showArcs = true
     }
   }
   console.log('[plate] models', byModel.size + staticModels, 'pieces', plate.pieces.length, 'sentries', plate.sentries.length, 'warnings', plate.warnings.length);
-  return { group, sentryYaws, gateRigs, dynamic, ready: Promise.all(pending), rebuildWalls: drawStatic, rebuild: drawStatic };
+  return { group, sentryYaws, gateRigs, dynamic, loopRigs, ready: Promise.all(pending), rebuildWalls: drawStatic, rebuild: drawStatic };
 }

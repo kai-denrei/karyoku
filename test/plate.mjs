@@ -128,6 +128,7 @@ for (const seed of SEEDS) {
   checkPacking(p, `seed ${seed}`);
   const inf = p.pieces.filter((pc) => pc.id === LANDMARK);
   check(`seed ${seed}: exactly one infirmary, a landmark`, inf.length === 1 && inf[0].landmark === true, `got ${inf.length}`);
+  check(`seed ${seed}: the assembly line stands`, p.pieces.filter((pc) => pc.id === 'robotic_assembly_line').length === 1);
   // per block: where a yard holds two or more containers, at least two touch in a row
   let yards = 0, rowed = 0;
   for (const b of p.blocks) {

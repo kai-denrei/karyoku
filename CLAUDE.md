@@ -215,6 +215,33 @@ no build step, Node invariant suites).
   place (it has four damage states already). Same applies to any dense
   model that lands here.
 
+## Assembly line, crew, ballistics (operator, 2026-09-07)
+- `assets/assembly/` is the workshop's assembly-line kit: six ids in four
+  states (24 GLBs, 27 MB); the six joined `base-assets.md` under "Assembly"
+  (117 rows). `LOOP_IDS` (line, arm, conveyor) carry an `Assembly_Cycle`
+  clip and are drawn as looping clones (`rig.loopRigs`), never instanced.
+  The line is the SECOND LANDMARK (`LANDMARKS`): 5 x 8 cells with a one-cell
+  lane into the largest block left — with a two-cell lane it never fit.
+- THE STATIC LAYER SWAPS, never empties: `drawStatic` builds the next set
+  and replaces the old one when every model resolved. Emptying first made
+  every wall vanish for a frame while a damaged state's model downloaded
+  (operator: "all the walls flicker").
+- THE CREW: orange suits (`SUIT`), bloom group `crew` at weight 0 so they
+  never glow. They walk between `keyAreas` (building fronts, gates, the
+  infirmary), run 15% of trips, and FLEE an enemy hull inside `fleeM` —
+  straight away by `fleePoint`, else to a key area on the far side, never
+  past the threat; cornered, they stay. `stepSquash`: a hull moving over
+  `squashSpeed` within hullR + 0.6 m kills a walker and `makeSplat` lays a
+  red blot. A crew fears the hull only on the hostile plate; the hull
+  squashes anyone anywhere. The chase camera backs off only over clear
+  ground (a hull just outside a gate had the camera inside the gate).
+- BALLISTICS: a hull shot leaves at `shotSpeed` and `hull.elev` degrees
+  (SHIFT+W / SHIFT+S, `elevRate`, stops `elevMin..elevMax`), falls under
+  `gravity`, lands on `groundY` or stops on a solid it does not clear
+  (`solidHeightAt`, `SOLID_HEIGHT`); `shotRangeFor` is the HUD's range read.
+  `shotRange` is a safety cap only. The barrel pitches (`Barrel_Pivot` is a
+  hull pivot now). `?elev=N` sets a probe's muzzle.
+
 ## Verify
 - `npm run serve` then `http://localhost:8150/#plate?seed=7&ascii=1`.
   `?seed= ?w= ?h= ?gates= ?arc= ?density= ?tier=` override the knobs;

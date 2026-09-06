@@ -1,14 +1,15 @@
 // crew-scene.js — the astronauts on screen. The compact astronaut GLB is
 // skinned (51 skins, three Mixamo clips), so a walker cannot be a clone of
 // a shared prototype without SkeletonUtils: each one is PARSED fresh from
-// the one downloaded buffer, which costs a parse per walker and nothing
-// else. Suits are coloured per walker on the body materials.
+// the one downloaded buffer. Orange suits, NOT glowing: the crew sits in a
+// bloom group of weight zero. Walk, run and idle clips blend by state. A
+// squashed walker leaves a red splash on the floor — the Amiga moment.
 import * as THREE from '../vendor/three.module.js';
 import { GLTFLoader } from '../vendor/GLTFLoader.js';
 import { MeshoptDecoder } from '../vendor/meshopt_decoder.module.js';
-import { fitModel, bustToken } from './glbmodels.js?v=9a9954fb';
-import { SUITS } from './crew.js?v=9a9954fb';
-import { styleForLook, BZ } from './looks.js?v=9a9954fb';
+import { fitModel, bustToken } from './glbmodels.js?v=0d3dc4c2';
+import { SUIT } from './crew.js?v=0d3dc4c2';
+import { BZ } from './looks.js?v=0d3dc4c2';
 
 const ASTRO_URL = 'assets/models/astronaut-compact.glb';
 const PERSON_M = 1.8;
@@ -23,67 +24,74 @@ function parseFresh() {
   return buffer().then((buf) => new Promise((resolve, reject) => loader.parse(buf.slice(0), '', resolve, reject)));
 }
 
-// One walker: { obj, mixer, walk, idle, setSuit }. Resolves null if the
-// model cannot load, and the caller draws nothing for it.
-export async function makeAstronaut(suitIndex = 0) {
+// One walker: { obj, setPose, tick }. Resolves null if the model cannot load.
+export async function makeAstronaut() {
   let gltf;
   try { gltf = await parseFresh(); } catch (e) { console.warn('[crew] astronaut failed to load', e); return null; }
   const scene = gltf.scene;
-  const colour = new THREE.Color(SUITS[suitIndex % SUITS.length]);
+  const colour = new THREE.Color(SUIT);
   scene.traverse((o) => {
     if (!o.isMesh || !o.material) return;
     for (const m of Array.isArray(o.material) ? o.material : [o.material]) {
-      if (SUIT_MATS.test(m.name || '')) { m.color.copy(colour); if (m.emissive) m.emissive.copy(colour).multiplyScalar(0.12); }
+      if (SUIT_MATS.test(m.name || '')) {
+        // battlezone: a flat unlit orange, no emissive; colony: orange with the
+        // suit's own shading — and in neither look does the crew bloom
+        if (BZ) { o.material = new THREE.MeshBasicMaterial({ color: colour }); }
+        else { m.color.copy(colour); if (m.emissive) m.emissive.setHex(0x000000); }
+      }
     }
   });
-  // authored in centimetres; a person is PERSON_M tall here
   const obj = fitModel(scene, { height: PERSON_M, maxSpan: PERSON_M * 2 });
-  // battlezone: a dense wireframe blooms into a blob at full brightness, so
-  // the suit keeps its hue at half strength
-  // ...and a dense wireframe blooms into a disc whatever its colour, so in
-  // battlezone a figure is FAINT green wire, translucent, suits told apart by
-  // brightness rather than hue
-  if (BZ) {
-    styleForLook(obj);
-    const level = 0.25 + 0.12 * (suitIndex % 4);
-    obj.traverse((o) => {
-      if (!o.isSkinnedMesh) return;
-      o.material = o.material.clone();
-      o.material.color.setRGB(0.18 * level, 0.8 * level, 0.37 * level);
-      o.material.transparent = true; o.material.opacity = 0.35; o.material.depthWrite = false;
-    });
-  }
   const mixer = new THREE.AnimationMixer(scene);
   const clipOf = (re) => gltf.animations.find((c) => re.test(c.name));
-  const walkClip = clipOf(/walk/i), idleClip = clipOf(/idle/i);
-  const walk = walkClip ? mixer.clipAction(walkClip) : null;
-  const idle = idleClip ? mixer.clipAction(idleClip) : null;
-  if (idle) { idle.play(); }
-  if (walk) { walk.play(); walk.setEffectiveWeight(0); }
-  let moving = false;
+  const acts = {
+    walk: clipOf(/walk/i) ? mixer.clipAction(clipOf(/walk/i)) : null,
+    run: clipOf(/run/i) ? mixer.clipAction(clipOf(/run/i)) : null,
+    idle: clipOf(/idle/i) ? mixer.clipAction(clipOf(/idle/i)) : null,
+  };
+  for (const [k, a] of Object.entries(acts)) if (a) { a.play(); a.setEffectiveWeight(k === 'idle' ? 1 : 0); }
+  let mode = 'idle';
   return {
-    obj, mixer,
+    obj,
     // the model's authored forward is +z; heading 0 is north (-z)
-    setPose(x, y, z, headingDeg, isMoving) {
+    setPose(x, y, z, headingDeg, moving, running) {
       obj.position.set(x, y, z);
       obj.rotation.y = Math.PI - headingDeg * Math.PI / 180;
-      if (isMoving !== moving && walk && idle) {
-        moving = isMoving;
-        walk.setEffectiveWeight(moving ? 1 : 0);
-        idle.setEffectiveWeight(moving ? 0 : 1);
+      const want = !moving ? 'idle' : running && acts.run ? 'run' : 'walk';
+      if (want !== mode) {
+        mode = want;
+        for (const [k, a] of Object.entries(acts)) if (a) a.setEffectiveWeight(k === mode ? 1 : 0);
       }
     },
     tick(dt) { mixer.update(dt); },
   };
 }
 
+// A red splash on the floor: a flat blot at the spot, kept for the rest of
+// the run. Red in both looks — that is the homage.
+export function makeSplat(x, y, z) {
+  const g = new THREE.Group();
+  const mat = new THREE.MeshBasicMaterial({ color: 0xd8102a, transparent: true, opacity: 0.85, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 });
+  const blobs = [[0, 0, 1.4], [0.9, 0.4, 0.7], [-0.7, 0.6, 0.6], [0.3, -0.9, 0.5], [-0.5, -0.5, 0.45]];
+  for (const [bx, bz, r] of blobs) {
+    const m = new THREE.Mesh(new THREE.CircleGeometry(r, 14), mat);
+    m.rotation.x = -Math.PI / 2;
+    m.position.set(bx, 0.04, bz);
+    g.add(m);
+  }
+  g.position.set(x, y, z);
+  return g;
+}
+
 // A plate's crew as objects: builds them lazily, in order, so a slow parse
-// never stalls the frame. `sync(crew, groundY)` moves whoever is ready.
+// never stalls the frame. `sync(dt, groundY)` moves whoever is ready and
+// lays a splash for whoever died since last frame.
 export function makeCrewScene(group, crew) {
-  const rigs = new Array(crew.length).fill(null);
+  const rigs = new Array(crew.walkers.length).fill(null);
+  const splatted = new Set();
   (async () => {
-    for (let i = 0; i < crew.length; i++) {
-      const rig = await makeAstronaut(crew[i].suit);
+    for (let i = 0; i < crew.walkers.length; i++) {
+      const rig = await makeAstronaut();
       if (!rig) return;
       rigs[i] = rig;
       group.add(rig.obj);
@@ -91,11 +99,17 @@ export function makeCrewScene(group, crew) {
     console.log(`[crew] ${rigs.filter(Boolean).length} astronauts on the plate`);
   })();
   return {
+    group,
     sync(dt, groundY = () => 0) {
-      crew.forEach((w, i) => {
+      crew.walkers.forEach((w, i) => {
         const rig = rigs[i];
+        if (!w.alive) {
+          if (rig && rig.obj.parent) group.remove(rig.obj);
+          if (!splatted.has(w)) { splatted.add(w); group.add(makeSplat(w.x, groundY(w.x, w.z), w.z)); }
+          return;
+        }
         if (!rig) return;
-        rig.setPose(w.x, groundY(w.x, w.z), w.z, w.heading, w.moving);
+        rig.setPose(w.x, groundY(w.x, w.z), w.z, w.heading, w.moving, w.running);
         rig.tick(dt);
       });
     },

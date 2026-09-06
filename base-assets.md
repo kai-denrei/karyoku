@@ -1,6 +1,6 @@
 # Futuristic military base — modular asset catalog
 
-**111 planned asset types**, organized around base functions and typed connections. This is an art and procedural-design specification, not a completed model pack. The existing sentry collection supplies the weapons for the emplacement assets.
+**117 planned asset types**, organized around base functions and typed connections. This is an art and procedural-design specification, not a completed model pack. The existing sentry collection supplies the weapons for the emplacement assets.
 
 All footprints below are **reserved plots in 4 m cells**, written X × Z. A 4 × 3 barracks reserves 16 × 12 m; its building mesh is smaller so doors, paths and service access fit. Small props occupy sockets within a plot rather than consuming a full empty 4 m square.
 
@@ -181,3 +181,14 @@ All footprints below are **reserved plots in 4 m cells**, written X × Z. A 4 ×
 | --- | --- | --- | --- |
 | `research_xenobiology` | Xenobiology laboratory | 4 × 3 | Sealed lab wing with a specimen airlock; personnel-zone adjacency. |
 | `research_specimen_crate` | Specimen crate | 1 × 1 | Sealed specimen container; research and logistics sockets. |
+
+## Assembly
+
+| ID | Individual asset | Plot | Function and placement logic |
+| --- | --- | --- | --- |
+| `robotic_assembly_line` | Robotic assembly line | 5 × 8 | 24 m conveyor with eight articulated arms; the industry block's anchor. |
+| `robotic_arm` | Robotic arm | 2 × 2 | Articulated arm on a transform hierarchy; beside a line or a pallet. |
+| `conveyor_module` | Conveyor module | 1 × 1 | 4 m conveyor section with moving treads; chains along a line. |
+| `control_platform` | Control platform | 2 × 3 | Telemetry monitors and an operator stool; faces the line. |
+| `gantry_module` | Gantry module | 2 × 1 | 8 m service portal with an overhead truss; spans a conveyor. |
+| `assembly_pallet` | Assembly pallet | 1 × 1 | Palletized rover chassis; a prop for yards and lines. |

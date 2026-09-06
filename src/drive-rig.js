@@ -2,18 +2,21 @@
 // the hull model with a stand-in until it lands, the key state, the tracer
 // meshes, and the two cameras. Rendering only; the rules are drive.js.
 import * as THREE from '../vendor/three.module.js';
-import { applySpaceScene, makeStars, makeComposer, PALETTE } from './looks.js?v=9a9954fb';
-import { castHull } from './casts.js?v=9a9954fb';
-import { styleForLook, BZ } from './looks.js?v=9a9954fb';
-import { loadGlb, mergeByMaterial } from './glbmodels.js?v=9a9954fb';
+import { applySpaceScene, makeStars, makeComposer, PALETTE } from './looks.js?v=0d3dc4c2';
+import { castHull } from './casts.js?v=0d3dc4c2';
+import { styleForLook, BZ } from './looks.js?v=0d3dc4c2';
+import { loadGlb, mergeByMaterial } from './glbmodels.js?v=0d3dc4c2';
 
 const HULL_URL = 'assets/models/mkcx2.glb';
 // The nodes that must keep moving through the merge, and the ones that
 // must not be drawn at all (a collision proxy and two floating glow strips)
 // — both lists are the reference project's, learned on the same file.
-const HULL_PIVOTS = ['Turret_Pivot', 'Secondary_L_Pivot', 'Secondary_R_Pivot'];
+// ...plus the barrel, which now PITCHES with the muzzle elevation
+const HULL_PIVOTS = ['Turret_Pivot', 'Barrel_Pivot', 'Secondary_L_Pivot', 'Secondary_R_Pivot'];
 const HULL_DROP = ['Hull_Collision', 'Barrel_Glow_1', 'Barrel_Glow_2'];
 export const KEYMAP = { w: 'fwd', ArrowUp: 'fwd', s: 'rev', ArrowDown: 'rev', a: 'left', ArrowLeft: 'left', d: 'right', ArrowRight: 'right' };
+// SHIFT+W / SHIFT+S: the muzzle. A shifted W arrives as 'W'.
+const SHIFTMAP = { W: 'elevUp', S: 'elevDown' };
 
 // A group that holds a box until the GLB replaces it; the swap is invisible
 // to whatever moves the group. The hull's authored forward is +z (south),
@@ -35,6 +38,9 @@ export function makeHullObject() {
   const up = new THREE.Vector3(0, 1, 0), n = new THREE.Vector3(), qTilt = new THREE.Quaternion(), qYaw = new THREE.Quaternion();
   obj.userData.setPose = (hull, y = 0, normal = null) => {
     obj.position.set(hull.x, y, hull.z);
+    // the barrel: elevation is a NEGATIVE rotation about x on a +z-forward node
+    const barrel = obj.getObjectByName('Barrel_Pivot');
+    if (barrel) barrel.rotation.x = -(hull.elev || 0) * Math.PI / 180;
     qYaw.setFromAxisAngle(up, Math.PI - hull.heading * Math.PI / 180);
     if (normal) { n.set(normal[0], normal[1], normal[2]).normalize(); qTilt.setFromUnitVectors(up, n); obj.quaternion.copy(qTilt).multiply(qYaw); }
     else obj.quaternion.copy(qYaw);
@@ -47,12 +53,18 @@ export function makeKeys(on = {}) {
   const keys = {};
   addEventListener('keydown', (e) => {
     if (e.target && /input|textarea|select/i.test(e.target.tagName)) return;
-    if (KEYMAP[e.key] !== undefined || e.key === ' ') { keys[e.key] = true; e.preventDefault(); }
+    if (KEYMAP[e.key] !== undefined || SHIFTMAP[e.key] !== undefined || e.key === ' ') { keys[e.key] = true; e.preventDefault(); }
+    // a shift released mid-press leaves the lower-case key down: clear its twin
+    if (SHIFTMAP[e.key]) keys[e.key.toLowerCase()] = false;
+    if (KEYMAP[e.key] !== undefined && e.key.length === 1) keys[e.key.toUpperCase()] = false;
     if (on[e.key]) on[e.key]();
   });
-  addEventListener('keyup', (e) => { if (KEYMAP[e.key] !== undefined || e.key === ' ') keys[e.key] = false; });
+  addEventListener('keyup', (e) => {
+    if (KEYMAP[e.key] !== undefined || SHIFTMAP[e.key] !== undefined || e.key === ' ') keys[e.key] = false;
+    if (e.key.length === 1) { keys[e.key.toLowerCase()] = false; keys[e.key.toUpperCase()] = false; }
+  });
   return {
-    input() { const inp = {}; for (const [k, name] of Object.entries(KEYMAP)) if (keys[k]) inp[name] = true; if (keys[' ']) inp.fire = true; return inp; },
+    input() { const inp = {}; for (const [k, name] of Object.entries(KEYMAP)) if (keys[k]) inp[name] = true; for (const [k, name] of Object.entries(SHIFTMAP)) if (keys[k]) inp[name] = true; if (keys[' ']) inp.fire = true; return inp; },
   };
 }
 
@@ -105,8 +117,14 @@ export function makeTracerPool(scene) {
           continue;
         }
         if (!m) { m = new THREE.Mesh(geo, t.kind === 'shot' ? shotMat : mat); meshes.set(t, m); scene.add(m); }
-        m.position.set(t.x, yAt(t.x, t.z) + (t.kind === 'shot' ? 1.6 : 3.0), t.z);
-        m.rotation.y = Math.PI - t.heading * Math.PI / 180;
+        if (t.kind === 'shot') {
+          m.position.set(t.x, t.y, t.z);
+          m.rotation.y = Math.PI - t.heading * Math.PI / 180;
+          m.rotation.x = -Math.atan2(t.vy, Math.hypot(t.vx, t.vz));
+        } else {
+          m.position.set(t.x, yAt(t.x, t.z) + 3.0, t.z);
+          m.rotation.y = Math.PI - t.heading * Math.PI / 180;
+        }
       }
       for (let i = splashes.length - 1; i >= 0; i--) {
         const sp = splashes[i];
@@ -129,14 +147,18 @@ export const CAMERA_KEYS = { 1: 'top', 2: 'chase', 3: 'orbit', 4: 'overview' };
 const chaseWant = new THREE.Vector3(), chaseLook = new THREE.Vector3();
 // `groundY(x, z)` keeps the chase camera out of a hill behind the hull;
 // `overview` is { cx, cz, span } for the 4 key.
-export function followCamera(camera, controls, hull, y, mode, dt = 0.016, groundY = null, overview = null) {
+export function followCamera(camera, controls, hull, y, mode, dt = 0.016, groundY = null, overview = null, blocked = null) {
   if (mode === 'overview' && overview) {
     camera.position.set(overview.cx, overview.span * 1.05, overview.cz + overview.span * 0.35);
     camera.lookAt(overview.cx, 0, overview.cz);
   } else if (mode === 'chase') {
     const h = hull.heading * Math.PI / 180;
     const fx = Math.sin(h), fz = -Math.cos(h);
-    chaseWant.set(hull.x - fx * 24, y + 11, hull.z - fz * 24);
+    // back off 24 m, or as far as the ground behind is clear: a hull just
+    // outside a gate had its camera inside the gate model
+    let back = 24;
+    if (blocked) while (back > 8 && blocked(hull.x - fx * back, hull.z - fz * back)) back -= 2;
+    chaseWant.set(hull.x - fx * back, y + 11 * (back / 24) + 3, hull.z - fz * back);
     if (groundY) chaseWant.y = Math.max(chaseWant.y, groundY(chaseWant.x, chaseWant.z) + 6);
     if (!camera.userData.placed) { camera.position.copy(chaseWant); camera.userData.placed = true; }
     else camera.position.lerp(chaseWant, Math.min(1, dt * 4));
@@ -177,5 +199,5 @@ export function makeViewer(root) {
   }
   addEventListener('resize', resize);
   resize();
-  return { renderer, scene, camera, hud, notice, resize, render: () => post.render(), setGroups: (fn) => post.setGroups(fn) };
+  return { renderer, scene, camera, hud, notice, resize, render: () => post.render(), setGroups: (fn) => post.setGroups(fn), post };
 }

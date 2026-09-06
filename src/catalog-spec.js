@@ -2,7 +2,7 @@
 // base-assets.md. Do not edit by hand; edit the markdown and re-run.
 // Plots are in 4 m cells, X by Z. Pure: no DOM, no three.js.
 
-export const SECTIONS = ['ground', 'road', 'perimeter', 'defense', 'command', 'personnel', 'logistics', 'industry', 'utility', 'air', 'field', 'prop', 'research'];
+export const SECTIONS = ['ground', 'road', 'perimeter', 'defense', 'command', 'personnel', 'logistics', 'industry', 'utility', 'air', 'field', 'prop', 'research', 'assembly'];
 
 export const CATALOG_SPEC = [
   { id: 'foundation_flat', name: 'Universal foundation', section: 'ground', plot: [1, 1], ports: ['none'], note: 'Modular armored slab; foundation for larger plots.' },
@@ -116,6 +116,12 @@ export const CATALOG_SPEC = [
   { id: 'prop_banner', name: 'Faction standard and mast', section: 'prop', plot: [1, 1], ports: ['none'], note: 'Faction identity with destructible mast and cloth sections.' },
   { id: 'research_xenobiology', name: 'Xenobiology laboratory', section: 'research', plot: [4, 3], ports: ['road'], note: 'Sealed lab wing with a specimen airlock; personnel-zone adjacency.' },
   { id: 'research_specimen_crate', name: 'Specimen crate', section: 'research', plot: [1, 1], ports: ['road'], note: 'Sealed specimen container; research and logistics sockets.' },
+  { id: 'robotic_assembly_line', name: 'Robotic assembly line', section: 'assembly', plot: [5, 8], ports: ['road'], note: '24 m conveyor with eight articulated arms; the industry block\'s anchor.' },
+  { id: 'robotic_arm', name: 'Robotic arm', section: 'assembly', plot: [2, 2], ports: ['road'], note: 'Articulated arm on a transform hierarchy; beside a line or a pallet.' },
+  { id: 'conveyor_module', name: 'Conveyor module', section: 'assembly', plot: [1, 1], ports: ['road'], note: '4 m conveyor section with moving treads; chains along a line.' },
+  { id: 'control_platform', name: 'Control platform', section: 'assembly', plot: [2, 3], ports: ['road'], note: 'Telemetry monitors and an operator stool; faces the line.' },
+  { id: 'gantry_module', name: 'Gantry module', section: 'assembly', plot: [2, 1], ports: ['road'], note: '8 m service portal with an overhead truss; spans a conveyor.' },
+  { id: 'assembly_pallet', name: 'Assembly pallet', section: 'assembly', plot: [1, 1], ports: ['road'], note: 'Palletized rover chassis; a prop for yards and lines.' },
 ];
 
 const byId = new Map(CATALOG_SPEC.map((r) => [r.id, r]));

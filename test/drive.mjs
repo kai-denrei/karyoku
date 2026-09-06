@@ -1,6 +1,6 @@
 import { generatePlate, makePlateParams, PLATE_TUNE, KIND, CELL_M, blindCells } from '../src/plate.js';
 import { DRIVE_TUNE, driveKnobProblems, makeHull, stepHull, blockedAt, makeGates, stepGates, spawnFor,
-  makeSentries, stepSentries, losClear, stepTracers, buildingAt, bearingTo, lobHeight, LOB_FAMILIES, fireHull, rayStop, damageAt, autopilotInput, makeBodies, stepBodies, bodyAt, BODY_IDS, hitsPerState } from '../src/drive.js';
+  makeSentries, stepSentries, losClear, stepTracers, buildingAt, bearingTo, lobHeight, LOB_FAMILIES, fireHull, rayStop, damageAt, autopilotInput, makeBodies, stepBodies, bodyAt, BODY_IDS, hitsPerState, shotRangeFor, solidHeightAt } from '../src/drive.js';
 import { check, near, done } from './check.mjs';
 
 check('knob table is sound', driveKnobProblems().length === 0, driveKnobProblems().join('; '));
@@ -174,25 +174,48 @@ for (let seed = 1; seed <= 50; seed++) {
   check('a hull that drives out of the splash is missed', hits2 === 0 && shells2.length === 0);
   check('LOB_FAMILIES names the two lobbers', LOB_FAMILIES.has('mortar') && LOB_FAMILIES.has('howitzer') && !LOB_FAMILIES.has('needle'));
 }
-// --- the hull's gun -------------------------------------------------------------
+// --- the hull's gun: ballistic ----------------------------------------------------
 {
   const wallFace = plate.h * CELL_M;
   const h = makeHull(20, wallFace + 30, 0); // 30 m south of the S wall, facing it
+  check('the muzzle starts at the default elevation', h.elev === DRIVE_TUNE.elevDefault);
+  stepHull(h, { elevUp: true }, 0.4, noBlock);
+  check('SHIFT+W raises the muzzle at elevRate', near(h.elev, DRIVE_TUNE.elevDefault + 0.4 * DRIVE_TUNE.elevRate));
+  stepHull(h, { elevDown: true }, 10, noBlock);
+  check('the muzzle stops at its low stop', h.elev === DRIVE_TUNE.elevMin);
+  stepHull(h, { elevUp: true }, 10, noBlock);
+  check('...and its high stop', h.elev === DRIVE_TUNE.elevMax);
+  h.elev = DRIVE_TUNE.elevDefault;
   const shot = fireHull(h);
-  check('the gun fires a shot ahead of the hull', shot && shot.kind === 'shot' && near(shot.z, h.z - 4) && near(shot.x, h.x));
+  check('the gun fires a shell ahead of and above the hull', shot && shot.kind === 'shot' && near(shot.z, h.z - 4) && near(shot.x, h.x) && near(shot.y, DRIVE_TUNE.muzzleY) && shot.vy > 0);
   check('the gun then cools', fireHull(h) === null && near(h.cool, DRIVE_TUNE.shotCooldown));
   stepHull(h, {}, 1, noBlock);
   check('cooling counts down through stepHull', h.cool === 0 && fireHull(h) !== null);
-  const shots = [shot];
-  let hits = 0, steps = 0;
+  // flat ground: the shell lands where shotRangeFor says
+  const far = makeHull(500, 500, 0);
+  const s1 = fireHull(far);
+  const flight = [s1];
+  const predicted = shotRangeFor(far);
+  let steps = 0, landedAt = null;
+  while (flight.length && steps < 2000) { stepTracers(flight, far, DT, (x, z, t) => { if (t.landed) landedAt = [x, z]; return false; }); steps++; }
+  check('a shell arcs and lands', s1.landed && landedAt !== null);
+  check('it lands where the aiming read predicts', landedAt && Math.abs(Math.hypot(landedAt[0] - (far.x), landedAt[1] - (far.z - 4)) - predicted) < 2.5, `landed ${landedAt && Math.hypot(landedAt[0] - far.x, landedAt[1] - far.z + 4).toFixed(1)} predicted ${predicted.toFixed(1)}`);
+  // a higher muzzle throws farther (up to 45 degrees)
+  const lo = makeHull(500, 500, 0); lo.elev = 5;
+  const hi = makeHull(500, 500, 0); hi.elev = 30;
+  check('a raised muzzle throws farther', shotRangeFor(hi) > shotRangeFor(lo) + 10, `${shotRangeFor(lo).toFixed(1)} -> ${shotRangeFor(hi).toFixed(1)}`);
+  // a shell over a wall flies on; the same shell at wall height stops
   const stop = rayStop(plate, gates);
-  while (shots.length && steps < 600) { hits += stepTracers(shots, h, DT, stop); steps++; }
-  check('a shot never counts as a hit on its own hull', hits === 0);
-  check('a shot stops at the wall', shot.z >= wallFace - CELL_M && shot.z <= wallFace + 1, `z=${shot.z} wall ${wallFace}`);
-  const open = [fireHull(makeHull(500, 500, 90))];
+  check('a shell 5 m up clears a 3.2 m wall', !stop(20, wallFace - 1, { kind: 'shot', y: 5 }));
+  check('a shell at 1 m does not', stop(20, wallFace - 1, { kind: 'shot', y: 1 }));
+  check('solid heights: wall under building', solidHeightAt(plate, 20, wallFace - 1) === 3.2);
+  // fired at the wall from 30 m at a low muzzle: it hits the wall face
+  const lowH = makeHull(20, wallFace + 30, 0); lowH.elev = 0;
+  const s2 = fireHull(lowH);
+  const f2 = [s2];
   steps = 0;
-  while (open.length && steps < 600) { stepTracers(open, h, DT, stop); steps++; }
-  check('a shot over open ground flies its range', Math.abs(steps * DT * DRIVE_TUNE.shotSpeed - DRIVE_TUNE.shotRange) < 2, `flew ${steps * DT * DRIVE_TUNE.shotSpeed}`);
+  while (f2.length && steps < 600) { stepTracers(f2, lowH, DT, stop); steps++; }
+  check('a flat shell stops at the wall', s2.z >= wallFace - CELL_M && s2.z <= wallFace + 1, `z=${s2.z.toFixed(1)} wall ${wallFace}`);
 }
 // --- destructible walls -------------------------------------------------------
 {
@@ -243,7 +266,8 @@ for (let seed = 1; seed <= 50; seed++) {
   for (let i = 0; i < 60; i++) { stepHull(h2, { fwd: true }, DT, wallBlocked); stepBodies(pinned, h2, wallBlocked); }
   check('a container against a wall stops the hull', Math.abs(pinned[0].z - 500) < 0.6 && h2.z > 500 + 1.8 + 1.5, `body z ${pinned[0].z.toFixed(2)} hull z ${h2.z.toFixed(2)}`);
   // shots stop on a body and do it no harm
-  const shot = fireHull(makeHull(500, 530, 0));
+  const flatGun = makeHull(500, 530, 0); flatGun.elev = 0;
+  const shot = fireHull(flatGun);
   const shots = [shot];
   let steps = 0;
   while (shots.length && steps < 400) { stepTracers(shots, h, DT, rayStop(p3, g3, lone)); steps++; }

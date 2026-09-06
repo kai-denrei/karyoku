@@ -1,0 +1,1872 @@
+{
+  "version": 1,
+  "units": "meters",
+  "up": "+Y",
+  "forward": "+Z",
+  "assets": [
+    {
+      "id": "robotic_assembly_line_d0",
+      "name": "A6 / Robotic assembly line",
+      "state": "Intact",
+      "file": "robotic_assembly_line_d0.glb",
+      "plot_m": [
+        20,
+        32
+      ],
+      "description": "24 m conveyor, eight articulated arms on opposing sides, four tool types, three service gantries, chassis fixtures, parts feeders, and a triple-monitor station with a 1.6 m-wide access ramp. Eight-second choreographed operating loop.",
+      "sockets": [
+        {
+          "id": "CONVEYOR_OUT",
+          "kind": "conveyor",
+          "position_m": [
+            0,
+            1.18,
+            -12
+          ],
+          "normal": [
+            0,
+            0,
+            -1
+          ],
+          "available": true,
+          "width_m": 2.05
+        },
+        {
+          "id": "CONVEYOR_IN",
+          "kind": "conveyor",
+          "position_m": [
+            0,
+            1.18,
+            12
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": true,
+          "width_m": 2.05
+        },
+        {
+          "id": "HUMAN_ACCESS",
+          "kind": "walk",
+          "position_m": [
+            6,
+            0,
+            0.5
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": true,
+          "width_m": 1.6
+        },
+        {
+          "id": "POWER",
+          "kind": "power",
+          "position_m": [
+            -9,
+            0,
+            0
+          ],
+          "normal": [
+            -1,
+            0,
+            0
+          ],
+          "available": true,
+          "width_m": null
+        }
+      ],
+      "colliders": [
+        {
+          "id": "conveyor",
+          "center_m": [
+            0,
+            0.65,
+            0
+          ],
+          "size_m": [
+            3.3,
+            1.3,
+            24
+          ],
+          "condition": "always"
+        },
+        {
+          "id": "robot_sweep_-1",
+          "center_m": [
+            -2.5,
+            1.8,
+            0
+          ],
+          "size_m": [
+            3.5,
+            3.6,
+            22
+          ],
+          "condition": "always"
+        },
+        {
+          "id": "robot_sweep_1",
+          "center_m": [
+            2.5,
+            1.8,
+            0
+          ],
+          "size_m": [
+            3.5,
+            3.6,
+            22
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [
+        {
+          "kind": "walk",
+          "center_m": [
+            6,
+            1.4,
+            5.5
+          ],
+          "size_m": [
+            1.6,
+            2.4,
+            9
+          ],
+          "condition": "ramp_and_approach"
+        }
+      ],
+      "animations": [
+        "Assembly_Cycle"
+      ],
+      "family": "robotic_assembly_line",
+      "damage_level": 0,
+      "zone": "industry",
+      "functional": true,
+      "collision_quality": "blockout",
+      "arm_count": 8,
+      "tasks": [
+        "gripper",
+        "welder",
+        "driver",
+        "scanner"
+      ],
+      "conveyor_length_m": 24,
+      "ramp": {
+        "rise_m": 0.8,
+        "run_m": 4,
+        "clear_width_m": 1.6
+      },
+      "bytes": 7164356,
+      "triangles": 97064
+    },
+    {
+      "id": "robotic_assembly_line_d1",
+      "name": "A6 / Robotic assembly line",
+      "state": "Damaged",
+      "file": "robotic_assembly_line_d1.glb",
+      "plot_m": [
+        20,
+        32
+      ],
+      "description": "24 m conveyor, eight articulated arms on opposing sides, four tool types, three service gantries, chassis fixtures, parts feeders, and a triple-monitor station with a 1.6 m-wide access ramp. Eight-second choreographed operating loop.",
+      "sockets": [
+        {
+          "id": "CONVEYOR_OUT",
+          "kind": "conveyor",
+          "position_m": [
+            0,
+            1.18,
+            -12
+          ],
+          "normal": [
+            0,
+            0,
+            -1
+          ],
+          "available": true,
+          "width_m": 2.05
+        },
+        {
+          "id": "CONVEYOR_IN",
+          "kind": "conveyor",
+          "position_m": [
+            0,
+            1.18,
+            12
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": true,
+          "width_m": 2.05
+        },
+        {
+          "id": "HUMAN_ACCESS",
+          "kind": "walk",
+          "position_m": [
+            6,
+            0,
+            0.5
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": true,
+          "width_m": 1.6
+        },
+        {
+          "id": "POWER",
+          "kind": "power",
+          "position_m": [
+            -9,
+            0,
+            0
+          ],
+          "normal": [
+            -1,
+            0,
+            0
+          ],
+          "available": true,
+          "width_m": null
+        }
+      ],
+      "colliders": [
+        {
+          "id": "conveyor",
+          "center_m": [
+            0,
+            0.65,
+            0
+          ],
+          "size_m": [
+            3.3,
+            1.3,
+            24
+          ],
+          "condition": "always"
+        },
+        {
+          "id": "robot_sweep_-1",
+          "center_m": [
+            -2.5,
+            1.8,
+            0
+          ],
+          "size_m": [
+            3.5,
+            3.6,
+            22
+          ],
+          "condition": "always"
+        },
+        {
+          "id": "robot_sweep_1",
+          "center_m": [
+            2.5,
+            1.8,
+            0
+          ],
+          "size_m": [
+            3.5,
+            3.6,
+            22
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [
+        {
+          "kind": "walk",
+          "center_m": [
+            6,
+            1.4,
+            5.5
+          ],
+          "size_m": [
+            1.6,
+            2.4,
+            9
+          ],
+          "condition": "ramp_and_approach"
+        }
+      ],
+      "animations": [
+        "Assembly_Cycle"
+      ],
+      "family": "robotic_assembly_line",
+      "damage_level": 1,
+      "zone": "industry",
+      "functional": true,
+      "collision_quality": "blockout",
+      "arm_count": 8,
+      "tasks": [
+        "gripper",
+        "welder",
+        "driver",
+        "scanner"
+      ],
+      "conveyor_length_m": 24,
+      "ramp": {
+        "rise_m": 0.8,
+        "run_m": 4,
+        "clear_width_m": 1.6
+      },
+      "bytes": 7265368,
+      "triangles": 98468
+    },
+    {
+      "id": "robotic_assembly_line_d2",
+      "name": "A6 / Robotic assembly line",
+      "state": "Critical",
+      "file": "robotic_assembly_line_d2.glb",
+      "plot_m": [
+        20,
+        32
+      ],
+      "description": "24 m conveyor, eight articulated arms on opposing sides, four tool types, three service gantries, chassis fixtures, parts feeders, and a triple-monitor station with a 1.6 m-wide access ramp. Disabled machinery with structural losses; no operating animation.",
+      "sockets": [
+        {
+          "id": "CONVEYOR_OUT",
+          "kind": "conveyor",
+          "position_m": [
+            0,
+            1.18,
+            -12
+          ],
+          "normal": [
+            0,
+            0,
+            -1
+          ],
+          "available": false,
+          "width_m": 2.05
+        },
+        {
+          "id": "CONVEYOR_IN",
+          "kind": "conveyor",
+          "position_m": [
+            0,
+            1.18,
+            12
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": false,
+          "width_m": 2.05
+        },
+        {
+          "id": "HUMAN_ACCESS",
+          "kind": "walk",
+          "position_m": [
+            6,
+            0,
+            0.5
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": true,
+          "width_m": 1.6
+        },
+        {
+          "id": "POWER",
+          "kind": "power",
+          "position_m": [
+            -9,
+            0,
+            0
+          ],
+          "normal": [
+            -1,
+            0,
+            0
+          ],
+          "available": false,
+          "width_m": null
+        }
+      ],
+      "colliders": [
+        {
+          "id": "conveyor",
+          "center_m": [
+            0,
+            0.65,
+            0
+          ],
+          "size_m": [
+            3.3,
+            1.3,
+            24
+          ],
+          "condition": "always"
+        },
+        {
+          "id": "robot_sweep_-1",
+          "center_m": [
+            -2.5,
+            1.8,
+            0
+          ],
+          "size_m": [
+            3.5,
+            3.6,
+            22
+          ],
+          "condition": "always"
+        },
+        {
+          "id": "robot_sweep_1",
+          "center_m": [
+            2.5,
+            1.8,
+            0
+          ],
+          "size_m": [
+            3.5,
+            3.6,
+            22
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [
+        {
+          "kind": "walk",
+          "center_m": [
+            6,
+            1.4,
+            5.5
+          ],
+          "size_m": [
+            1.6,
+            2.4,
+            9
+          ],
+          "condition": "ramp_and_approach"
+        }
+      ],
+      "animations": [],
+      "family": "robotic_assembly_line",
+      "damage_level": 2,
+      "zone": "industry",
+      "functional": false,
+      "collision_quality": "blockout",
+      "arm_count": 8,
+      "tasks": [
+        "gripper",
+        "welder",
+        "driver",
+        "scanner"
+      ],
+      "conveyor_length_m": 24,
+      "ramp": {
+        "rise_m": 0.8,
+        "run_m": 4,
+        "clear_width_m": 1.6
+      },
+      "bytes": 4997156,
+      "triangles": 75216
+    },
+    {
+      "id": "robotic_assembly_line_d3",
+      "name": "A6 / Robotic assembly line",
+      "state": "Destroyed",
+      "file": "robotic_assembly_line_d3.glb",
+      "plot_m": [
+        20,
+        32
+      ],
+      "description": "24 m conveyor, eight articulated arms on opposing sides, four tool types, three service gantries, chassis fixtures, parts feeders, and a triple-monitor station with a 1.6 m-wide access ramp. Disabled machinery with structural losses; no operating animation.",
+      "sockets": [
+        {
+          "id": "CONVEYOR_OUT",
+          "kind": "conveyor",
+          "position_m": [
+            0,
+            1.18,
+            -12
+          ],
+          "normal": [
+            0,
+            0,
+            -1
+          ],
+          "available": false,
+          "width_m": 2.05
+        },
+        {
+          "id": "CONVEYOR_IN",
+          "kind": "conveyor",
+          "position_m": [
+            0,
+            1.18,
+            12
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": false,
+          "width_m": 2.05
+        },
+        {
+          "id": "HUMAN_ACCESS",
+          "kind": "walk",
+          "position_m": [
+            6,
+            0,
+            0.5
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": false,
+          "width_m": 1.6
+        },
+        {
+          "id": "POWER",
+          "kind": "power",
+          "position_m": [
+            -9,
+            0,
+            0
+          ],
+          "normal": [
+            -1,
+            0,
+            0
+          ],
+          "available": false,
+          "width_m": null
+        }
+      ],
+      "colliders": [
+        {
+          "id": "conveyor",
+          "center_m": [
+            0,
+            0.65,
+            0
+          ],
+          "size_m": [
+            3.3,
+            1.3,
+            24
+          ],
+          "condition": "always"
+        },
+        {
+          "id": "robot_sweep_-1",
+          "center_m": [
+            -2.5,
+            1.8,
+            0
+          ],
+          "size_m": [
+            3.5,
+            3.6,
+            22
+          ],
+          "condition": "always"
+        },
+        {
+          "id": "robot_sweep_1",
+          "center_m": [
+            2.5,
+            1.8,
+            0
+          ],
+          "size_m": [
+            3.5,
+            3.6,
+            22
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [
+        {
+          "kind": "walk",
+          "center_m": [
+            6,
+            1.4,
+            5.5
+          ],
+          "size_m": [
+            1.6,
+            2.4,
+            9
+          ],
+          "condition": "ramp_and_approach"
+        }
+      ],
+      "animations": [],
+      "family": "robotic_assembly_line",
+      "damage_level": 3,
+      "zone": "industry",
+      "functional": false,
+      "collision_quality": "blockout",
+      "arm_count": 8,
+      "tasks": [
+        "gripper",
+        "welder",
+        "driver",
+        "scanner"
+      ],
+      "conveyor_length_m": 24,
+      "ramp": {
+        "rise_m": 0.8,
+        "run_m": 4,
+        "clear_width_m": 1.6
+      },
+      "bytes": 2146184,
+      "triangles": 33192
+    },
+    {
+      "id": "robotic_arm_d0",
+      "name": "Articulated service arm",
+      "state": "Intact",
+      "file": "robotic_arm_d0.glb",
+      "plot_m": [
+        8,
+        8
+      ],
+      "description": "Waist, shoulder, elbow, wrist and two gripper fingers in a transform hierarchy. Includes an eight-second articulated loop in D0/D1.",
+      "sockets": [
+        {
+          "id": "MOUNT",
+          "kind": "support",
+          "position_m": [
+            0,
+            0,
+            0
+          ],
+          "normal": [
+            0,
+            -1,
+            0
+          ],
+          "available": true,
+          "width_m": 1.45
+        }
+      ],
+      "colliders": [
+        {
+          "id": "sweep",
+          "center_m": [
+            1.2,
+            1.6,
+            0
+          ],
+          "size_m": [
+            4,
+            3.2,
+            2
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [],
+      "animations": [
+        "Assembly_Cycle"
+      ],
+      "family": "robotic_arm",
+      "damage_level": 0,
+      "zone": "industry",
+      "functional": true,
+      "collision_quality": "blockout",
+      "bytes": 255168,
+      "triangles": 3280
+    },
+    {
+      "id": "robotic_arm_d1",
+      "name": "Articulated service arm",
+      "state": "Damaged",
+      "file": "robotic_arm_d1.glb",
+      "plot_m": [
+        8,
+        8
+      ],
+      "description": "Waist, shoulder, elbow, wrist and two gripper fingers in a transform hierarchy. Includes an eight-second articulated loop in D0/D1.",
+      "sockets": [
+        {
+          "id": "MOUNT",
+          "kind": "support",
+          "position_m": [
+            0,
+            0,
+            0
+          ],
+          "normal": [
+            0,
+            -1,
+            0
+          ],
+          "available": true,
+          "width_m": 1.45
+        }
+      ],
+      "colliders": [
+        {
+          "id": "sweep",
+          "center_m": [
+            1.2,
+            1.6,
+            0
+          ],
+          "size_m": [
+            4,
+            3.2,
+            2
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [],
+      "animations": [
+        "Assembly_Cycle"
+      ],
+      "family": "robotic_arm",
+      "damage_level": 1,
+      "zone": "industry",
+      "functional": true,
+      "collision_quality": "blockout",
+      "bytes": 301960,
+      "triangles": 3928
+    },
+    {
+      "id": "robotic_arm_d2",
+      "name": "Articulated service arm",
+      "state": "Critical",
+      "file": "robotic_arm_d2.glb",
+      "plot_m": [
+        8,
+        8
+      ],
+      "description": "Waist, shoulder, elbow, wrist and two gripper fingers in a transform hierarchy. Includes an eight-second articulated loop in D0/D1.",
+      "sockets": [
+        {
+          "id": "MOUNT",
+          "kind": "support",
+          "position_m": [
+            0,
+            0,
+            0
+          ],
+          "normal": [
+            0,
+            -1,
+            0
+          ],
+          "available": true,
+          "width_m": 1.45
+        }
+      ],
+      "colliders": [
+        {
+          "id": "sweep",
+          "center_m": [
+            1.2,
+            1.6,
+            0
+          ],
+          "size_m": [
+            4,
+            3.2,
+            2
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [],
+      "animations": [],
+      "family": "robotic_arm",
+      "damage_level": 2,
+      "zone": "industry",
+      "functional": false,
+      "collision_quality": "blockout",
+      "bytes": 200800,
+      "triangles": 2828
+    },
+    {
+      "id": "robotic_arm_d3",
+      "name": "Articulated service arm",
+      "state": "Destroyed",
+      "file": "robotic_arm_d3.glb",
+      "plot_m": [
+        8,
+        8
+      ],
+      "description": "Waist, shoulder, elbow, wrist and two gripper fingers in a transform hierarchy. Includes an eight-second articulated loop in D0/D1.",
+      "sockets": [
+        {
+          "id": "MOUNT",
+          "kind": "support",
+          "position_m": [
+            0,
+            0,
+            0
+          ],
+          "normal": [
+            0,
+            -1,
+            0
+          ],
+          "available": false,
+          "width_m": 1.45
+        }
+      ],
+      "colliders": [
+        {
+          "id": "sweep",
+          "center_m": [
+            1.2,
+            1.6,
+            0
+          ],
+          "size_m": [
+            4,
+            3.2,
+            2
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [],
+      "animations": [],
+      "family": "robotic_arm",
+      "damage_level": 3,
+      "zone": "industry",
+      "functional": false,
+      "collision_quality": "blockout",
+      "bytes": 162832,
+      "triangles": 2264
+    },
+    {
+      "id": "conveyor_module_d0",
+      "name": "Conveyor belt / 4 m",
+      "state": "Intact",
+      "file": "conveyor_module_d0.glb",
+      "plot_m": [
+        4,
+        4
+      ],
+      "description": "4 m conveyor section with moving treads on a closed return path, rotating drums, side rails and a drive motor. Six sections form the complete line.",
+      "sockets": [
+        {
+          "id": "OUT",
+          "kind": "conveyor",
+          "position_m": [
+            0,
+            1.18,
+            -2
+          ],
+          "normal": [
+            0,
+            0,
+            -1
+          ],
+          "available": true,
+          "width_m": 2.05
+        },
+        {
+          "id": "IN",
+          "kind": "conveyor",
+          "position_m": [
+            0,
+            1.18,
+            2
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": true,
+          "width_m": 2.05
+        }
+      ],
+      "colliders": [
+        {
+          "id": "belt",
+          "center_m": [
+            0.2,
+            0.65,
+            0
+          ],
+          "size_m": [
+            3.3,
+            1.3,
+            4
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [],
+      "animations": [
+        "Assembly_Cycle"
+      ],
+      "family": "conveyor_module",
+      "damage_level": 0,
+      "zone": "industry",
+      "functional": true,
+      "collision_quality": "blockout",
+      "bytes": 646784,
+      "triangles": 5948
+    },
+    {
+      "id": "conveyor_module_d1",
+      "name": "Conveyor belt / 4 m",
+      "state": "Damaged",
+      "file": "conveyor_module_d1.glb",
+      "plot_m": [
+        4,
+        4
+      ],
+      "description": "4 m conveyor section with moving treads on a closed return path, rotating drums, side rails and a drive motor. Six sections form the complete line.",
+      "sockets": [
+        {
+          "id": "OUT",
+          "kind": "conveyor",
+          "position_m": [
+            0,
+            1.18,
+            -2
+          ],
+          "normal": [
+            0,
+            0,
+            -1
+          ],
+          "available": true,
+          "width_m": 2.05
+        },
+        {
+          "id": "IN",
+          "kind": "conveyor",
+          "position_m": [
+            0,
+            1.18,
+            2
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": true,
+          "width_m": 2.05
+        }
+      ],
+      "colliders": [
+        {
+          "id": "belt",
+          "center_m": [
+            0.2,
+            0.65,
+            0
+          ],
+          "size_m": [
+            3.3,
+            1.3,
+            4
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [],
+      "animations": [
+        "Assembly_Cycle"
+      ],
+      "family": "conveyor_module",
+      "damage_level": 1,
+      "zone": "industry",
+      "functional": true,
+      "collision_quality": "blockout",
+      "bytes": 685908,
+      "triangles": 6488
+    },
+    {
+      "id": "conveyor_module_d2",
+      "name": "Conveyor belt / 4 m",
+      "state": "Critical",
+      "file": "conveyor_module_d2.glb",
+      "plot_m": [
+        4,
+        4
+      ],
+      "description": "4 m conveyor section with moving treads on a closed return path, rotating drums, side rails and a drive motor. Six sections form the complete line.",
+      "sockets": [
+        {
+          "id": "OUT",
+          "kind": "conveyor",
+          "position_m": [
+            0,
+            1.18,
+            -2
+          ],
+          "normal": [
+            0,
+            0,
+            -1
+          ],
+          "available": false,
+          "width_m": 2.05
+        },
+        {
+          "id": "IN",
+          "kind": "conveyor",
+          "position_m": [
+            0,
+            1.18,
+            2
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": false,
+          "width_m": 2.05
+        }
+      ],
+      "colliders": [
+        {
+          "id": "belt",
+          "center_m": [
+            0.2,
+            0.65,
+            0
+          ],
+          "size_m": [
+            3.3,
+            1.3,
+            4
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [],
+      "animations": [],
+      "family": "conveyor_module",
+      "damage_level": 2,
+      "zone": "industry",
+      "functional": false,
+      "collision_quality": "blockout",
+      "bytes": 403168,
+      "triangles": 5624
+    },
+    {
+      "id": "conveyor_module_d3",
+      "name": "Conveyor belt / 4 m",
+      "state": "Destroyed",
+      "file": "conveyor_module_d3.glb",
+      "plot_m": [
+        4,
+        4
+      ],
+      "description": "4 m conveyor section with moving treads on a closed return path, rotating drums, side rails and a drive motor. Six sections form the complete line.",
+      "sockets": [
+        {
+          "id": "OUT",
+          "kind": "conveyor",
+          "position_m": [
+            0,
+            1.18,
+            -2
+          ],
+          "normal": [
+            0,
+            0,
+            -1
+          ],
+          "available": false,
+          "width_m": 2.05
+        },
+        {
+          "id": "IN",
+          "kind": "conveyor",
+          "position_m": [
+            0,
+            1.18,
+            2
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": false,
+          "width_m": 2.05
+        }
+      ],
+      "colliders": [
+        {
+          "id": "belt",
+          "center_m": [
+            0.2,
+            0.65,
+            0
+          ],
+          "size_m": [
+            3.3,
+            1.3,
+            4
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [],
+      "animations": [],
+      "family": "conveyor_module",
+      "damage_level": 3,
+      "zone": "industry",
+      "functional": false,
+      "collision_quality": "blockout",
+      "bytes": 165228,
+      "triangles": 2268
+    },
+    {
+      "id": "control_platform_d0",
+      "name": "Triple-monitor control and ramp",
+      "state": "Intact",
+      "file": "control_platform_d0.glb",
+      "plot_m": [
+        8,
+        12
+      ],
+      "description": "Three telemetry monitors, keyboard, emergency stops, operator stool, raised platform, handrails and continuous access ramp. Ramp collision requires an engine mesh or slope collider.",
+      "sockets": [
+        {
+          "id": "ACCESS",
+          "kind": "walk",
+          "position_m": [
+            0,
+            0,
+            5.5
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": true,
+          "width_m": 1.6
+        }
+      ],
+      "colliders": [
+        {
+          "id": "platform",
+          "center_m": [
+            0,
+            0.4,
+            0
+          ],
+          "size_m": [
+            4,
+            0.8,
+            3
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [],
+      "animations": [],
+      "family": "control_platform",
+      "damage_level": 0,
+      "zone": "industry",
+      "functional": true,
+      "collision_quality": "blockout",
+      "ramp": {
+        "rise_m": 0.8,
+        "run_m": 4,
+        "clear_width_m": 1.6
+      },
+      "bytes": 775172,
+      "triangles": 12060
+    },
+    {
+      "id": "control_platform_d1",
+      "name": "Triple-monitor control and ramp",
+      "state": "Damaged",
+      "file": "control_platform_d1.glb",
+      "plot_m": [
+        8,
+        12
+      ],
+      "description": "Three telemetry monitors, keyboard, emergency stops, operator stool, raised platform, handrails and continuous access ramp. Ramp collision requires an engine mesh or slope collider.",
+      "sockets": [
+        {
+          "id": "ACCESS",
+          "kind": "walk",
+          "position_m": [
+            0,
+            0,
+            5.5
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": true,
+          "width_m": 1.6
+        }
+      ],
+      "colliders": [
+        {
+          "id": "platform",
+          "center_m": [
+            0,
+            0.4,
+            0
+          ],
+          "size_m": [
+            4,
+            0.8,
+            3
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [],
+      "animations": [],
+      "family": "control_platform",
+      "damage_level": 1,
+      "zone": "industry",
+      "functional": true,
+      "collision_quality": "blockout",
+      "ramp": {
+        "rise_m": 0.8,
+        "run_m": 4,
+        "clear_width_m": 1.6
+      },
+      "bytes": 813628,
+      "triangles": 12600
+    },
+    {
+      "id": "control_platform_d2",
+      "name": "Triple-monitor control and ramp",
+      "state": "Critical",
+      "file": "control_platform_d2.glb",
+      "plot_m": [
+        8,
+        12
+      ],
+      "description": "Three telemetry monitors, keyboard, emergency stops, operator stool, raised platform, handrails and continuous access ramp. Ramp collision requires an engine mesh or slope collider.",
+      "sockets": [
+        {
+          "id": "ACCESS",
+          "kind": "walk",
+          "position_m": [
+            0,
+            0,
+            5.5
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": true,
+          "width_m": 1.6
+        }
+      ],
+      "colliders": [
+        {
+          "id": "platform",
+          "center_m": [
+            0,
+            0.4,
+            0
+          ],
+          "size_m": [
+            4,
+            0.8,
+            3
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [],
+      "animations": [],
+      "family": "control_platform",
+      "damage_level": 2,
+      "zone": "industry",
+      "functional": false,
+      "collision_quality": "blockout",
+      "ramp": {
+        "rise_m": 0.8,
+        "run_m": 4,
+        "clear_width_m": 1.6
+      },
+      "bytes": 676888,
+      "triangles": 10648
+    },
+    {
+      "id": "control_platform_d3",
+      "name": "Triple-monitor control and ramp",
+      "state": "Destroyed",
+      "file": "control_platform_d3.glb",
+      "plot_m": [
+        8,
+        12
+      ],
+      "description": "Three telemetry monitors, keyboard, emergency stops, operator stool, raised platform, handrails and continuous access ramp. Ramp collision requires an engine mesh or slope collider.",
+      "sockets": [
+        {
+          "id": "ACCESS",
+          "kind": "walk",
+          "position_m": [
+            0,
+            0,
+            5.5
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "available": false,
+          "width_m": 1.6
+        }
+      ],
+      "colliders": [
+        {
+          "id": "platform",
+          "center_m": [
+            0,
+            0.4,
+            0
+          ],
+          "size_m": [
+            4,
+            0.8,
+            3
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [],
+      "animations": [],
+      "family": "control_platform",
+      "damage_level": 3,
+      "zone": "industry",
+      "functional": false,
+      "collision_quality": "blockout",
+      "ramp": {
+        "rise_m": 0.8,
+        "run_m": 4,
+        "clear_width_m": 1.6
+      },
+      "bytes": 441996,
+      "triangles": 6336
+    },
+    {
+      "id": "gantry_module_d0",
+      "name": "Overhead service gantry",
+      "state": "Intact",
+      "file": "gantry_module_d0.glb",
+      "plot_m": [
+        8,
+        4
+      ],
+      "description": "8 m service portal with braced overhead truss, cable tray, task light and suspended carriage.",
+      "sockets": [
+        {
+          "id": "SUPPORT",
+          "kind": "support",
+          "position_m": [
+            0,
+            0,
+            0
+          ],
+          "normal": [
+            0,
+            -1,
+            0
+          ],
+          "available": true,
+          "width_m": 8
+        }
+      ],
+      "colliders": [
+        {
+          "id": "column-3.7",
+          "center_m": [
+            -3.7,
+            2.4,
+            0
+          ],
+          "size_m": [
+            0.6,
+            4.8,
+            0.95
+          ],
+          "condition": "always"
+        },
+        {
+          "id": "column3.7",
+          "center_m": [
+            3.7,
+            2.4,
+            0
+          ],
+          "size_m": [
+            0.6,
+            4.8,
+            0.95
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [],
+      "animations": [],
+      "family": "gantry_module",
+      "damage_level": 0,
+      "zone": "industry",
+      "functional": true,
+      "collision_quality": "blockout",
+      "bytes": 281196,
+      "triangles": 4036
+    },
+    {
+      "id": "gantry_module_d1",
+      "name": "Overhead service gantry",
+      "state": "Damaged",
+      "file": "gantry_module_d1.glb",
+      "plot_m": [
+        8,
+        4
+      ],
+      "description": "8 m service portal with braced overhead truss, cable tray, task light and suspended carriage.",
+      "sockets": [
+        {
+          "id": "SUPPORT",
+          "kind": "support",
+          "position_m": [
+            0,
+            0,
+            0
+          ],
+          "normal": [
+            0,
+            -1,
+            0
+          ],
+          "available": true,
+          "width_m": 8
+        }
+      ],
+      "colliders": [
+        {
+          "id": "column-3.7",
+          "center_m": [
+            -3.7,
+            2.4,
+            0
+          ],
+          "size_m": [
+            0.6,
+            4.8,
+            0.95
+          ],
+          "condition": "always"
+        },
+        {
+          "id": "column3.7",
+          "center_m": [
+            3.7,
+            2.4,
+            0
+          ],
+          "size_m": [
+            0.6,
+            4.8,
+            0.95
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [],
+      "animations": [],
+      "family": "gantry_module",
+      "damage_level": 1,
+      "zone": "industry",
+      "functional": true,
+      "collision_quality": "blockout",
+      "bytes": 320292,
+      "triangles": 4576
+    },
+    {
+      "id": "gantry_module_d2",
+      "name": "Overhead service gantry",
+      "state": "Critical",
+      "file": "gantry_module_d2.glb",
+      "plot_m": [
+        8,
+        4
+      ],
+      "description": "8 m service portal with braced overhead truss, cable tray, task light and suspended carriage.",
+      "sockets": [
+        {
+          "id": "SUPPORT",
+          "kind": "support",
+          "position_m": [
+            0,
+            0,
+            0
+          ],
+          "normal": [
+            0,
+            -1,
+            0
+          ],
+          "available": false,
+          "width_m": 8
+        }
+      ],
+      "colliders": [
+        {
+          "id": "column-3.7",
+          "center_m": [
+            -3.7,
+            2.4,
+            0
+          ],
+          "size_m": [
+            0.6,
+            4.8,
+            0.95
+          ],
+          "condition": "always"
+        },
+        {
+          "id": "column3.7",
+          "center_m": [
+            3.7,
+            2.4,
+            0
+          ],
+          "size_m": [
+            0.6,
+            4.8,
+            0.95
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [],
+      "animations": [],
+      "family": "gantry_module",
+      "damage_level": 2,
+      "zone": "industry",
+      "functional": false,
+      "collision_quality": "blockout",
+      "bytes": 165852,
+      "triangles": 2276
+    },
+    {
+      "id": "gantry_module_d3",
+      "name": "Overhead service gantry",
+      "state": "Destroyed",
+      "file": "gantry_module_d3.glb",
+      "plot_m": [
+        8,
+        4
+      ],
+      "description": "8 m service portal with braced overhead truss, cable tray, task light and suspended carriage.",
+      "sockets": [
+        {
+          "id": "SUPPORT",
+          "kind": "support",
+          "position_m": [
+            0,
+            0,
+            0
+          ],
+          "normal": [
+            0,
+            -1,
+            0
+          ],
+          "available": false,
+          "width_m": 8
+        }
+      ],
+      "colliders": [
+        {
+          "id": "column-3.7",
+          "center_m": [
+            -3.7,
+            2.4,
+            0
+          ],
+          "size_m": [
+            0.6,
+            4.8,
+            0.95
+          ],
+          "condition": "always"
+        },
+        {
+          "id": "column3.7",
+          "center_m": [
+            3.7,
+            2.4,
+            0
+          ],
+          "size_m": [
+            0.6,
+            4.8,
+            0.95
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [],
+      "animations": [],
+      "family": "gantry_module",
+      "damage_level": 3,
+      "zone": "industry",
+      "functional": false,
+      "collision_quality": "blockout",
+      "bytes": 133780,
+      "triangles": 1836
+    },
+    {
+      "id": "assembly_pallet_d0",
+      "name": "Rover chassis fixture",
+      "state": "Intact",
+      "file": "assembly_pallet_d0.glb",
+      "plot_m": [
+        4,
+        4
+      ],
+      "description": "Palletized rover chassis with mounting fixtures and a central core housing for the four work stations.",
+      "sockets": [
+        {
+          "id": "CARGO",
+          "kind": "cargo",
+          "position_m": [
+            0,
+            0,
+            0
+          ],
+          "normal": [
+            0,
+            -1,
+            0
+          ],
+          "available": true,
+          "width_m": 1.7
+        }
+      ],
+      "colliders": [
+        {
+          "id": "fixture",
+          "center_m": [
+            0,
+            0.35,
+            0
+          ],
+          "size_m": [
+            1.7,
+            0.7,
+            1.55
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [],
+      "animations": [],
+      "family": "assembly_pallet",
+      "damage_level": 0,
+      "zone": "industry",
+      "functional": true,
+      "collision_quality": "blockout",
+      "bytes": 87812,
+      "triangles": 1216
+    },
+    {
+      "id": "assembly_pallet_d1",
+      "name": "Rover chassis fixture",
+      "state": "Damaged",
+      "file": "assembly_pallet_d1.glb",
+      "plot_m": [
+        4,
+        4
+      ],
+      "description": "Palletized rover chassis with mounting fixtures and a central core housing for the four work stations.",
+      "sockets": [
+        {
+          "id": "CARGO",
+          "kind": "cargo",
+          "position_m": [
+            0,
+            0,
+            0
+          ],
+          "normal": [
+            0,
+            -1,
+            0
+          ],
+          "available": true,
+          "width_m": 1.7
+        }
+      ],
+      "colliders": [
+        {
+          "id": "fixture",
+          "center_m": [
+            0,
+            0.35,
+            0
+          ],
+          "size_m": [
+            1.7,
+            0.7,
+            1.55
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [],
+      "animations": [],
+      "family": "assembly_pallet",
+      "damage_level": 1,
+      "zone": "industry",
+      "functional": true,
+      "collision_quality": "blockout",
+      "bytes": 126716,
+      "triangles": 1756
+    },
+    {
+      "id": "assembly_pallet_d2",
+      "name": "Rover chassis fixture",
+      "state": "Critical",
+      "file": "assembly_pallet_d2.glb",
+      "plot_m": [
+        4,
+        4
+      ],
+      "description": "Palletized rover chassis with mounting fixtures and a central core housing for the four work stations.",
+      "sockets": [
+        {
+          "id": "CARGO",
+          "kind": "cargo",
+          "position_m": [
+            0,
+            0,
+            0
+          ],
+          "normal": [
+            0,
+            -1,
+            0
+          ],
+          "available": false,
+          "width_m": 1.7
+        }
+      ],
+      "colliders": [
+        {
+          "id": "fixture",
+          "center_m": [
+            0,
+            0.35,
+            0
+          ],
+          "size_m": [
+            1.7,
+            0.7,
+            1.55
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [],
+      "animations": [],
+      "family": "assembly_pallet",
+      "damage_level": 2,
+      "zone": "industry",
+      "functional": false,
+      "collision_quality": "blockout",
+      "bytes": 94236,
+      "triangles": 1316
+    },
+    {
+      "id": "assembly_pallet_d3",
+      "name": "Rover chassis fixture",
+      "state": "Destroyed",
+      "file": "assembly_pallet_d3.glb",
+      "plot_m": [
+        4,
+        4
+      ],
+      "description": "Palletized rover chassis with mounting fixtures and a central core housing for the four work stations.",
+      "sockets": [
+        {
+          "id": "CARGO",
+          "kind": "cargo",
+          "position_m": [
+            0,
+            0,
+            0
+          ],
+          "normal": [
+            0,
+            -1,
+            0
+          ],
+          "available": false,
+          "width_m": 1.7
+        }
+      ],
+      "colliders": [
+        {
+          "id": "fixture",
+          "center_m": [
+            0,
+            0.35,
+            0
+          ],
+          "size_m": [
+            1.7,
+            0.7,
+            1.55
+          ],
+          "condition": "always"
+        }
+      ],
+      "clearance": [],
+      "animations": [],
+      "family": "assembly_pallet",
+      "damage_level": 3,
+      "zone": "industry",
+      "functional": false,
+      "collision_quality": "blockout",
+      "bytes": 95152,
+      "triangles": 1296
+    }
+  ]
+}

@@ -1,10 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { CATALOG_SPEC, SECTIONS, specById } from '../src/catalog-spec.js';
 import { MODELLED } from '../src/plate.js';
-import { buildCatalog, splitId, PLACEHOLDER_HEIGHT_M, fileFor, fitFor, modelledIds, NASA_URL, HOUSE_URL, OUTPOST_URL } from '../src/catalog.js';
+import { buildCatalog, splitId, PLACEHOLDER_HEIGHT_M, fileFor, fitFor, modelledIds, NASA_URL, HOUSE_URL, OUTPOST_URL, ASSEMBLY_URL } from '../src/catalog.js';
 import { check, done } from './check.mjs';
 
-check('111 asset types', CATALOG_SPEC.length === 111, `got ${CATALOG_SPEC.length}`);
+check('117 asset types', CATALOG_SPEC.length === 117, `got ${CATALOG_SPEC.length}`);
 check('unique ids', new Set(CATALOG_SPEC.map((r) => r.id)).size === CATALOG_SPEC.length);
 check('every plot is two positive integers',
   CATALOG_SPEC.every((r) => r.plot.length === 2 && r.plot.every((n) => Number.isInteger(n) && n > 0)));
@@ -18,7 +18,7 @@ check('unknown id is undefined', specById('nope') === undefined);
 const manifest = JSON.parse(readFileSync(new URL('../assets/base-kit/manifest.json', import.meta.url), 'utf8'));
 const cat = buildCatalog(CATALOG_SPEC, manifest);
 
-check('catalog has every spec row', cat.size === 111);
+check('catalog has every spec row', cat.size === 117);
 check('splitId parses a state suffix', splitId('wall_standard_d2').base === 'wall_standard' && splitId('wall_standard_d2').state === 2);
 check('splitId without suffix is state 0', splitId('road_t').state === 0 && splitId('road_t').base === 'road_t');
 const wall = cat.get('wall_standard');
@@ -57,7 +57,11 @@ check('outpost manifest has 48 assets', outpost.assets.length === 48);
 check('outpost ids all exist in the spec', outpost.assets.every((a) => specById(splitId(a.id).base)), outpost.assets.filter((a) => !specById(splitId(a.id).base)).map((a) => a.id).join(' '));
 check('outpost plots match the spec', outpost.assets.every((a) => { const r = specById(splitId(a.id).base); return r && a.plot_m[0] === r.plot[0] * 4 && a.plot_m[1] === r.plot[1] * 4; }));
 check('every outpost file is on disk', outpost.assets.every((a) => { try { readFileSync(new URL('../assets/outpost/' + a.file, import.meta.url)); return true; } catch { return false; } }));
-const cat4 = buildCatalog(CATALOG_SPEC, manifest, [{ manifest: nasa, base: NASA_URL }, { manifest: outpost, base: OUTPOST_URL }, { manifest: house, base: HOUSE_URL }]);
+const assembly = JSON.parse(readFileSync(new URL('../assets/assembly/manifest.json', import.meta.url), 'utf8'));
+check('assembly manifest: 24 assets, all known, plots match', assembly.assets.length === 24 && assembly.assets.every((a) => { const r = specById(splitId(a.id).base); return r && a.plot_m[0] === r.plot[0] * 4 && a.plot_m[1] === r.plot[1] * 4; }));
+check('every assembly file is on disk', assembly.assets.every((a) => { try { readFileSync(new URL('../assets/assembly/' + a.file, import.meta.url)); return true; } catch { return false; } }));
+const cat4 = buildCatalog(CATALOG_SPEC, manifest, [{ manifest: nasa, base: NASA_URL }, { manifest: outpost, base: OUTPOST_URL }, { manifest: assembly, base: ASSEMBLY_URL }, { manifest: house, base: HOUSE_URL }]);
+check('the assembly line is placeable with four states', [0, 1, 2, 3].every((n) => cat4.get('robotic_assembly_line').states[n]));
 check('the barracks has four states from the outpost', [0, 1, 2, 3].every((n) => cat4.get('personnel_barracks').states[n] && cat4.get('personnel_barracks').states[n].base === OUTPOST_URL));
 check('the outpost beats the NASA launcher for comms', fileFor(cat4.get('command_comms')) === OUTPOST_URL + 'command_comms_d0.glb');
 check('the house container still beats the outpost container', fileFor(cat4.get('logistics_container')) === HOUSE_URL + 'container.glb');

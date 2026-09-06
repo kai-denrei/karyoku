@@ -13,9 +13,9 @@
 // `rotation.y = -rot * PI/2`. Yaw is compass degrees, 0 = N, 90 = E.
 // Plate width and depth are EVEN, because roads are 2 x 2 pieces laid on
 // even coordinates and a gate's road port has to land on one.
-import { mulberry32 } from './rng.js?v=9a9954fb';
-import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=9a9954fb';
-import { specById } from './catalog-spec.js?v=9a9954fb';
+import { mulberry32 } from './rng.js?v=0d3dc4c2';
+import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=0d3dc4c2';
+import { specById } from './catalog-spec.js?v=0d3dc4c2';
 
 export const CELL_M = 4;
 
@@ -430,6 +430,8 @@ export const MODELLED = new Set([
   // the research-outpost kit
   'command_operations', 'personnel_barracks', 'personnel_infirmary', 'research_xenobiology', 'utility_reactor',
   'command_comms', 'air_launchpad', 'industry_garage', 'logistics_container', 'research_specimen_crate', 'road_straight', 'utility_conduit',
+  // the assembly-line kit
+  'robotic_assembly_line', 'robotic_arm', 'conveyor_module', 'control_platform', 'gantry_module', 'assembly_pallet',
   // house casts and NASA stand-ins
   'command_hq', 'command_uplink', 'personnel_recreation', 'personnel_shelter', 'logistics_crane', 'air_drone_pad', 'defense_radar', 'field_signal',
   // the base kit
@@ -441,8 +443,8 @@ export const SOCKET_ID = 'defense_sentry_socket';
 export const ZONES = {
   command:   { buildings: ['command_hq', 'command_operations', 'command_uplink', 'command_comms'],
                props: ['field_signal', 'utility_conduit'] },
-  logistics: { buildings: ['logistics_crane', 'logistics_container'],
-               props: ['research_specimen_crate'] },
+  logistics: { buildings: ['logistics_crane', 'logistics_container', 'gantry_module'],
+               props: ['assembly_pallet', 'research_specimen_crate'] },
   defense:   { buildings: ['defense_radar', 'command_comms'],
                props: ['field_signal'] },
   utility:   { buildings: ['utility_reactor', 'logistics_container'],
@@ -451,13 +453,17 @@ export const ZONES = {
                props: ['field_signal'] },
   personnel: { buildings: ['personnel_barracks', 'research_xenobiology', 'personnel_recreation', 'personnel_shelter'],
                props: ['research_specimen_crate', 'utility_conduit'] },
-  industry:  { buildings: ['industry_garage', 'research_xenobiology', 'logistics_crane', 'logistics_container'],
-               props: ['research_specimen_crate', 'utility_conduit'] },
+  industry:  { buildings: ['robotic_assembly_line', 'industry_garage', 'control_platform', 'research_xenobiology', 'robotic_arm', 'gantry_module', 'logistics_crane', 'logistics_container'],
+               props: ['assembly_pallet', 'conveyor_module', 'research_specimen_crate', 'utility_conduit'] },
 };
 // THE LANDMARK: the Isolation Infirmary takes a prime block of its own before
 // any zone packs — the largest block that is not the command block — and
 // stands once per plate, with a cross on its roof (plate-scene.js).
 export const LANDMARK = 'personnel_infirmary';
+// ...then the assembly line, the industry kit's showpiece: 5 x 8 cells, and
+// with a two-cell lane it never fits an ordinary block, so it takes the
+// largest block left with a one-cell lane
+export const LANDMARKS = [{ id: 'personnel_infirmary', gap: null, landmark: true }, { id: 'robotic_assembly_line', gap: 1, landmark: false }];
 // Buildings a block may hold more than once. Everything else is one per block.
 const REPEATABLE = new Set(['personnel_barracks', 'logistics_container', 'command_comms', 'personnel_shelter']);
 // Containers pack in ROWS, touching, and need no road of their own: the
@@ -629,7 +635,7 @@ function findSpot(s, rng, block, def) {
     for (const [x, z] of [...beside, ...order]) {
       if (x < block.x0 || z < block.z0 || x + pw - 1 > block.x1 || z + ph - 1 > block.z1) continue;
       if (!rectFree(s, block, x, z, pw, ph)) continue;
-      if (!laneClear(s, block, x, z, pw, ph, gap)) continue;
+      if (!laneClear(s, block, x, z, pw, ph, def.gapOverride ?? gap)) continue;
       const sides = roadSides(s, x, z, pw, ph);
       if (sides.size === 0 && !NO_ROAD.has(def.id)) continue;
       const rot = rots.find((r) => sides.has(rotSide('S', r)));
@@ -673,19 +679,24 @@ function packBlock(s, rng, block) {
   }
 }
 
-// The landmark first: the infirmary into the largest non-command block.
+// The landmarks first, in order, each into the largest non-command block
+// that still has room for it.
 function stepLandmark(s, rng) {
-  if (!s.allowed.has(LANDMARK)) return;
-  const def = specById(LANDMARK);
-  const blocks = s.blocks.filter((b) => b.zone !== 'command').sort((a, b) => b.cells.length - a.cells.length);
-  for (const block of blocks.length ? blocks : s.blocks) {
-    const spot = findSpot(s, rng, block, def);
-    if (!spot) continue;
-    place(s, LANDMARK, spot.x, spot.z, spot.pw, spot.ph, spot.rot, KIND.BUILDING, { zone: block.zone, landmark: true });
-    return;
+  for (const lm of LANDMARKS) {
+    if (!s.allowed.has(lm.id)) continue;
+    const def = { ...specById(lm.id), gapOverride: lm.gap };
+    const blocks = s.blocks.filter((b) => b.zone !== 'command').sort((a, b) => b.cells.length - a.cells.length);
+    let done = false;
+    for (const block of blocks.length ? blocks : s.blocks) {
+      const spot = findSpot(s, rng, block, def);
+      if (!spot) continue;
+      place(s, lm.id, spot.x, spot.z, spot.pw, spot.ph, spot.rot, KIND.BUILDING, { zone: block.zone, landmark: lm.landmark });
+      done = true;
+      break;
+    }
+    // a small plate has no room for a landmark, and that is not a fault
+    if (!done && (s.w - 2 * s.inset) * (s.h - 2 * s.inset) >= 700) s.warnings.push(`no room for the ${lm.id}`);
   }
-  // a small plate has no room for a landmark, and that is not a fault
-  if ((s.w - 2 * s.inset) * (s.h - 2 * s.inset) >= 400) s.warnings.push('no room for the infirmary');
 }
 
 function stepPacking(s, rng) {
