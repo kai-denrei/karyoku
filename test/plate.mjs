@@ -5,7 +5,7 @@ import { check, near, done } from './check.mjs';
 check('knob table is sound', plateKnobProblems().length === 0, plateKnobProblems().join('; '));
 check('rotSide: N rotated once is E', rotSide('N', 1) === 'E');
 check('rotSide: W rotated once wraps to N', rotSide('W', 1) === 'N');
-check('dirOfYaw(0) is +z', near(dirOfYaw(0)[0], 0) && near(dirOfYaw(0)[1], 1));
+check('dirOfYaw(0) is -z (north)', near(dirOfYaw(0)[0], 0) && near(dirOfYaw(0)[1], -1));
 check('dirOfYaw(90) is +x', near(dirOfYaw(90)[0], 1) && near(dirOfYaw(90)[1], 0));
 
 const SEEDS = Array.from({ length: 50 }, (_, i) => i + 1);
@@ -91,9 +91,9 @@ function checkPacking(p, label, minBuildings = 3) {
 }
 for (const seed of SEEDS) checkPacking(generatePlate(makePlateParams({ ...PLATE_TUNE, seed })), `seed ${seed}`);
 for (const [w, h] of SIZES) checkPacking(generatePlate(makePlateParams({ ...PLATE_TUNE, seed: 3, w, h, gates: 3 })), `${w}x${h}`, 2);
-check('sentryBears: dead ahead is covered', sentryBears({ x: 0, z: 0, yawDeg: 0, arcDeg: 90 }, 1, 6));
-check('sentryBears: behind is not', !sentryBears({ x: 0, z: 0, yawDeg: 0, arcDeg: 90 }, 1, -6));
-check('sentryBears: wrap across 360', sentryBears({ x: 0, z: 0, yawDeg: 350, arcDeg: 40 }, 1.5, 6));
+check('sentryBears: dead ahead is covered', sentryBears({ x: 0, z: 0, yawDeg: 0, arcDeg: 90 }, 1, -4));
+check('sentryBears: behind is not', !sentryBears({ x: 0, z: 0, yawDeg: 0, arcDeg: 90 }, 1, 6));
+check('sentryBears: wrap across 360', sentryBears({ x: 0, z: 0, yawDeg: 350, arcDeg: 40 }, 1.5, -4));
 function checkSentries(p, label) {
   const sockets = sentrySockets(p);
   check(`${label}: one sentry per socket`, p.sentries.length === sockets.length, `${p.sentries.length} vs ${sockets.length}`);

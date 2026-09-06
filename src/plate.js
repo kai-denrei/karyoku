@@ -4,15 +4,18 @@
 // Node-tested in test/plate.mjs. plate-tab.js draws what this returns and
 // never decides where anything goes.
 //
-// CONVENTIONS, ONCE, HERE. One cell is 4 m. N is +z and E is +x, because
-// that is what the base kit's own sockets say (WALL_N sits at +Z). `rot` is
-// quarter turns CLOCKWISE seen from above, N -> E -> S -> W, which in
-// three.js is `rotation.y = rot * PI/2`. Yaw is compass degrees, 0 = N.
+// CONVENTIONS, ONCE, HERE. One cell is 4 m. N is -z and E is +x — the
+// three.js habit, and the one under which a camera looking straight down
+// with north up puts east on the RIGHT, so the 3D view and the ASCII map
+// agree. (The base kit names its +Z socket "N"; that is a socket label,
+// and the corner and gate rotations below absorb it.) `rot` is quarter
+// turns CLOCKWISE seen from above, N -> E -> S -> W, which in three.js is
+// `rotation.y = -rot * PI/2`. Yaw is compass degrees, 0 = N, 90 = E.
 // Plate width and depth are EVEN, because roads are 2 x 2 pieces laid on
 // even coordinates and a gate's road port has to land on one.
-import { mulberry32 } from './rng.js?v=cbb65c38';
-import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=cbb65c38';
-import { specById } from './catalog-spec.js?v=cbb65c38';
+import { mulberry32 } from './rng.js?v=42b5b52b';
+import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=42b5b52b';
+import { specById } from './catalog-spec.js?v=42b5b52b';
 
 export const CELL_M = 4;
 
@@ -45,10 +48,10 @@ export const plateKnobProblems = () => knobProblems(PLATE_KNOBS, PLATE_TUNE);
 
 // --- directions ------------------------------------------------------------
 export const SIDES = ['N', 'E', 'S', 'W'];
-export const DIRS = { N: [0, 1], E: [1, 0], S: [0, -1], W: [-1, 0] };
+export const DIRS = { N: [0, -1], E: [1, 0], S: [0, 1], W: [-1, 0] };
 export const rotSide = (side, rot) => SIDES[(SIDES.indexOf(side) + rot) & 3];
 export const yawOfSide = { N: 0, E: 90, S: 180, W: 270 };
-export const dirOfYaw = (deg) => [Math.sin(deg * Math.PI / 180), Math.cos(deg * Math.PI / 180)];
+export const dirOfYaw = (deg) => [Math.sin(deg * Math.PI / 180), -Math.cos(deg * Math.PI / 180)];
 export const wrapDeg = (a) => ((a + 180) % 360 + 360) % 360 - 180;
 
 // --- state -----------------------------------------------------------------
@@ -86,7 +89,7 @@ function place(s, id, x, z, pw, ph, rot, kind, extra = {}) {
 
 function asciiOf(s) {
   const rows = [];
-  for (let z = s.h - 1; z >= 0; z--) {
+  for (let z = 0; z < s.h; z++) {
     let r = '';
     for (let x = 0; x < s.w; x++) r += ASCII_OF_KIND[s.cells[idx(s, x, z)]];
     rows.push(r);
@@ -125,8 +128,8 @@ function chooseGates(s, rng) {
 function gateRect(s, g) {
   // origin, dims, rot, outward offset in cells
   switch (g.side) {
-    case 'N': return { x: g.at - 1, z: s.h - 2, pw: 3, ph: 2, rot: 0, offset: [0, 0.5] };
-    case 'S': return { x: g.at - 1, z: 0, pw: 3, ph: 2, rot: 2, offset: [0, -0.5] };
+    case 'N': return { x: g.at - 1, z: 0, pw: 3, ph: 2, rot: 0, offset: [0, -0.5] };
+    case 'S': return { x: g.at - 1, z: s.h - 2, pw: 3, ph: 2, rot: 2, offset: [0, 0.5] };
     case 'E': return { x: s.w - 2, z: g.at - 1, pw: 2, ph: 3, rot: 1, offset: [0.5, 0] };
     default: return { x: 0, z: g.at - 1, pw: 2, ph: 3, rot: 3, offset: [-0.5, 0] };
   }
@@ -140,11 +143,12 @@ function stepRing(s, rng) {
     const r = gateRect(s, g);
     for (let dz = 0; dz < r.ph; dz++) for (let dx = 0; dx < r.pw; dx++) gateCells.add(idx(s, r.x + dx, r.z + dz));
   }
-  // corners: SW is the kit's authored pose (ports E and N); clockwise from there
+  // corners: the kit's authored pose has legs toward +x and +z, which here
+  // is E and S — the NW corner. Clockwise from there: NE, SE, SW.
   place(s, 'wall_corner', 0, 0, 1, 1, 0, KIND.WALL);
-  place(s, 'wall_corner', 0, h - 1, 1, 1, 1, KIND.WALL);
+  place(s, 'wall_corner', w - 1, 0, 1, 1, 1, KIND.WALL);
   place(s, 'wall_corner', w - 1, h - 1, 1, 1, 2, KIND.WALL);
-  place(s, 'wall_corner', w - 1, 0, 1, 1, 3, KIND.WALL);
+  place(s, 'wall_corner', 0, h - 1, 1, 1, 3, KIND.WALL);
   for (let x = 1; x < w - 1; x++) {
     if (!gateCells.has(idx(s, x, 0))) place(s, 'wall_standard', x, 0, 1, 1, 0, KIND.WALL);
     if (!gateCells.has(idx(s, x, h - 1))) place(s, 'wall_standard', x, h - 1, 1, 1, 0, KIND.WALL);
@@ -158,8 +162,8 @@ function stepRing(s, rng) {
     const pieceIndex = place(s, 'gate_vehicle', r.x, r.z, r.pw, r.ph, r.rot, KIND.GATE, { offset: r.offset });
     // the road port: the 2 x 2 road block just inside the gate, on even coordinates
     const even = g.at & ~1;
-    const port = (g.side === 'N') ? { bx: even / 2, bz: (h - 4) / 2 }
-      : (g.side === 'S') ? { bx: even / 2, bz: 1 }
+    const port = (g.side === 'N') ? { bx: even / 2, bz: 1 }
+      : (g.side === 'S') ? { bx: even / 2, bz: (h - 4) / 2 }
       : (g.side === 'E') ? { bx: (w - 4) / 2, bz: even / 2 }
       : { bx: 1, bz: even / 2 };
     s.gates.push({ side: g.side, at: g.at, x: r.x, z: r.z, rot: r.rot, pieceIndex, port });
@@ -240,8 +244,8 @@ function stepRoads(s) {
   for (const g of s.gates) {
     const { bx, bz } = g.port;
     let ok;
-    if (g.side === 'N') ok = layRun(s, laid, bx, bz, 0, -1, (x, z) => z === bzS);
-    else if (g.side === 'S') ok = layRun(s, laid, bx, bz, 0, 1, (x, z) => z === bzS);
+    if (g.side === 'N') ok = layRun(s, laid, bx, bz, 0, 1, (x, z) => z === bzS);
+    else if (g.side === 'S') ok = layRun(s, laid, bx, bz, 0, -1, (x, z) => z === bzS);
     else if (g.side === 'E') ok = layRun(s, laid, bx, bz, -1, 0, (x, z) => x === bxS);
     else ok = layRun(s, laid, bx, bz, 1, 0, (x, z) => x === bxS);
     if (!ok) s.warnings.push(`gate ${g.side}@${g.at}: corridor blocked before the spine`);
@@ -282,8 +286,8 @@ function extendEnds(s, ends) {
     const [dx, dz] = DIRS[open];
     const rot = (open === 'N' || open === 'S') ? 0 : 1;
     // the two cells of the block's open edge
-    const edge = open === 'N' ? [[2 * b.bx, 2 * b.bz + 1], [2 * b.bx + 1, 2 * b.bz + 1]]
-      : open === 'S' ? [[2 * b.bx, 2 * b.bz], [2 * b.bx + 1, 2 * b.bz]]
+    const edge = open === 'N' ? [[2 * b.bx, 2 * b.bz], [2 * b.bx + 1, 2 * b.bz]]
+      : open === 'S' ? [[2 * b.bx, 2 * b.bz + 1], [2 * b.bx + 1, 2 * b.bz + 1]]
       : open === 'E' ? [[2 * b.bx + 1, 2 * b.bz], [2 * b.bx + 1, 2 * b.bz + 1]]
       : [[2 * b.bx, 2 * b.bz], [2 * b.bx, 2 * b.bz + 1]];
     for (const [ex, ez] of edge) {
@@ -321,14 +325,14 @@ export function roadsConnected(s) {
 export function sentrySockets(s) {
   const { w, h } = s;
   const out = [
-    { x: 1, z: 1, yawDeg: 225, where: 'corner' },
-    { x: 1, z: h - 3, yawDeg: 315, where: 'corner' },
-    { x: w - 3, z: h - 3, yawDeg: 45, where: 'corner' },
-    { x: w - 3, z: 1, yawDeg: 135, where: 'corner' },
+    { x: 1, z: 1, yawDeg: 315, where: 'corner' },          // NW
+    { x: w - 3, z: 1, yawDeg: 45, where: 'corner' },       // NE
+    { x: w - 3, z: h - 3, yawDeg: 135, where: 'corner' },  // SE
+    { x: 1, z: h - 3, yawDeg: 225, where: 'corner' },      // SW
   ];
   for (const g of s.gates) {
-    if (g.side === 'N') out.push({ x: g.at - 3, z: h - 3, yawDeg: 0, where: 'flank' }, { x: g.at + 2, z: h - 3, yawDeg: 0, where: 'flank' });
-    else if (g.side === 'S') out.push({ x: g.at - 3, z: 1, yawDeg: 180, where: 'flank' }, { x: g.at + 2, z: 1, yawDeg: 180, where: 'flank' });
+    if (g.side === 'N') out.push({ x: g.at - 3, z: 1, yawDeg: 0, where: 'flank' }, { x: g.at + 2, z: 1, yawDeg: 0, where: 'flank' });
+    else if (g.side === 'S') out.push({ x: g.at - 3, z: h - 3, yawDeg: 180, where: 'flank' }, { x: g.at + 2, z: h - 3, yawDeg: 180, where: 'flank' });
     else if (g.side === 'E') out.push({ x: w - 3, z: g.at - 3, yawDeg: 90, where: 'flank' }, { x: w - 3, z: g.at + 2, yawDeg: 90, where: 'flank' });
     else out.push({ x: 1, z: g.at - 3, yawDeg: 270, where: 'flank' }, { x: 1, z: g.at + 2, yawDeg: 270, where: 'flank' });
   }
@@ -411,7 +415,7 @@ function markGateAdjacency(s, blocks) {
   for (const g of s.gates) {
     const corridor = new Set();
     const { bx, bz } = g.port;
-    const [dx, dz] = g.side === 'N' ? [0, -1] : g.side === 'S' ? [0, 1] : g.side === 'E' ? [-1, 0] : [1, 0];
+    const [dx, dz] = g.side === 'N' ? [0, 1] : g.side === 'S' ? [0, -1] : g.side === 'E' ? [-1, 0] : [1, 0];
     for (let x = bx, z = bz; s.roads.blocks.has(roadBlockKey(x, z)); x += dx, z += dz) {
       for (let cz = 0; cz < 2; cz++) for (let cx = 0; cx < 2; cx++) corridor.add(idx(s, 2 * x + cx, 2 * z + cz));
       const b = s.roads.blocks.get(roadBlockKey(x, z));
@@ -475,8 +479,8 @@ function rectFree(s, block, x, z, pw, ph) {
 function roadSides(s, x, z, pw, ph) {
   const out = new Set();
   for (let dx = 0; dx < pw; dx++) {
-    if (inside(s, x + dx, z + ph) && s.cells[idx(s, x + dx, z + ph)] === KIND.ROAD) out.add('N');
-    if (inside(s, x + dx, z - 1) && s.cells[idx(s, x + dx, z - 1)] === KIND.ROAD) out.add('S');
+    if (inside(s, x + dx, z - 1) && s.cells[idx(s, x + dx, z - 1)] === KIND.ROAD) out.add('N');
+    if (inside(s, x + dx, z + ph) && s.cells[idx(s, x + dx, z + ph)] === KIND.ROAD) out.add('S');
   }
   for (let dz = 0; dz < ph; dz++) {
     if (inside(s, x + pw, z + dz) && s.cells[idx(s, x + pw, z + dz)] === KIND.ROAD) out.add('E');
@@ -569,7 +573,7 @@ function stepSentries(s, rng) {
 // centre is one cell in from its origin on both axes.
 export function sentryBears(st, cx, cz) {
   const dx = cx - (st.x + 1), dz = cz - (st.z + 1);
-  const bearing = Math.atan2(dx, dz) * 180 / Math.PI;
+  const bearing = Math.atan2(dx, -dz) * 180 / Math.PI;
   return Math.abs(wrapDeg(bearing - st.yawDeg)) <= st.arcDeg / 2;
 }
 

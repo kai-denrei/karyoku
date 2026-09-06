@@ -22,3 +22,4 @@ main { position: absolute; top: 36px; left: 0; right: 0; bottom: 0; }
   background: rgba(10, 13, 18, 0.88); border: 1px solid var(--line); }
 .notice[hidden] { display: none; }
 .lil-gui { --width: 280px; }
+.tab > .lil-gui { position: absolute; top: 8px; right: 8px; z-index: 5; }
