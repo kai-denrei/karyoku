@@ -10,8 +10,8 @@ export const GUARD_TUNE = {
   orbitRate: 10,    // deg/s around that circle
   range: 140,       // m: an enemy hull inside this is engaged
   leadT: 1.4,       // s: the mark is laid where the hull will be after this
-  markT: 1.6,       // s the pointer holds before the shell drops
-  cooldown: 4.5,    // s between shells
+  markT: 1.4,       // s the pointer holds before the shell drops
+  cooldown: 2.2,    // s between shells (operator: it should shoot faster)
   shellSpeed: 42,   // m/s along the ground
   apex: 3,          // m of arc above the straight fall
 };

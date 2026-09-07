@@ -5,23 +5,23 @@
 import * as THREE from '../vendor/three.module.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { noteStep } from './fps.js?v=dc8a0b52';
-import { bodyDims } from './catalog.js?v=dc8a0b52';
-import { generatePlate, makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M, dirOfYaw, reservedAt } from './plate.js?v=dc8a0b52';
+import { noteStep } from './fps.js?v=e2c79438';
+import { bodyDims } from './catalog.js?v=e2c79438';
+import { generatePlate, makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M, dirOfYaw, reservedAt } from './plate.js?v=e2c79438';
 import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, blockedAt, makeGates, stepGates,
-  spawnFor, makeSentries, stepSentries, losClear, stepTracers, rayStop, fireHull, damageAt, makeBodies, stepBodies, bodyAt, shotRangeFor, damageSentryAt, stepCrush, ammoDotsLit, bodyHit, damageBody, powered } from './drive.js?v=dc8a0b52';
-import { PALETTE, LOOK, LOOKS } from './looks.js?v=dc8a0b52';
-import { withParam } from './url.js?v=dc8a0b52';
-import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=dc8a0b52';
-import { query, loadCatalog } from './plate-tab.js?v=dc8a0b52';
-import { modelledIds } from './catalog.js?v=dc8a0b52';
-import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS, makeMobileShell, mobileShell, makeGuardObject, makeFlagStand, makeCarriedFlag } from './drive-rig.js?v=dc8a0b52';
-import { makeSfx } from './sfx.js?v=dc8a0b52';
-import { makeCrew, stepCrew, stepSquash, shotHits, splashHits, hullCovers, crewFreeAt, CREW_TUNE } from './crew.js?v=dc8a0b52';
-import { makeCrewScene } from './crew-scene.js?v=dc8a0b52';
-import { makeGuard, stepGuard, GUARD_TUNE } from './guard.js?v=dc8a0b52';
-import { makeCtf, stepCtf, poleState, SLOTS, CTF_TUNE } from './ctf.js?v=dc8a0b52';
-import { mulberry32 } from './rng.js?v=dc8a0b52';
+  spawnFor, makeSentries, stepSentries, losClear, stepTracers, rayStop, fireHull, damageAt, makeBodies, stepBodies, bodyAt, shotRangeFor, damageSentryAt, stepCrush, stepRam, ammoDotsLit, bodyHit, damageBody, powered } from './drive.js?v=e2c79438';
+import { PALETTE, LOOK, LOOKS } from './looks.js?v=e2c79438';
+import { withParam } from './url.js?v=e2c79438';
+import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=e2c79438';
+import { query, loadCatalog } from './plate-tab.js?v=e2c79438';
+import { modelledIds } from './catalog.js?v=e2c79438';
+import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS, makeMobileShell, mobileShell, makeGuardObject, makeFlagStand, makeCarriedFlag } from './drive-rig.js?v=e2c79438';
+import { makeSfx } from './sfx.js?v=e2c79438';
+import { makeCrew, stepCrew, stepSquash, shotHits, splashHits, hullCovers, crewFreeAt, CREW_TUNE } from './crew.js?v=e2c79438';
+import { makeCrewScene } from './crew-scene.js?v=e2c79438';
+import { makeGuard, stepGuard, GUARD_TUNE } from './guard.js?v=e2c79438';
+import { makeCtf, stepCtf, poleState, SLOTS, CTF_TUNE } from './ctf.js?v=e2c79438';
+import { mulberry32 } from './rng.js?v=e2c79438';
 
 export function initDriveTab(root) {
   const { renderer, scene, camera, hud, notice, resize, render, setGroups, post, radar } = makeViewer(root);
@@ -106,6 +106,8 @@ export function initDriveTab(root) {
 
   function step(dt, input) {
     for (const pc of stepCrush(plate, hull, P)) { crushed++; sfx.crush([(pc.x + pc.pw / 2) * CELL_M, 0.6, (pc.z + pc.ph / 2) * CELL_M], 0); rig.rebuild(); }
+    // a ram on the comms tower: a state off it, rubble at the third
+    for (const pc of stepRam(plate, hull, dt, P)) { const cx = (pc.x + pc.pw / 2) * CELL_M, cz = (pc.z + pc.ph / 2) * CELL_M; sfx.impact('shell', [cx, 2.5, cz], [0, 1, 0], 0, pc.state >= 3 ? 4.5 : 3.0, 'impact_rubble'); if (pc.state >= 3) breached++; rig.rebuild(); }
     stepHull(hull, input, dt, (x, z) => blockedAt(plate, gates, x, z), P);
     if (hull.bump) sfx.wallHit(hull.bump);
     sfx.elevating(Boolean(hull.elevating));

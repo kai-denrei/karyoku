@@ -1,6 +1,6 @@
 import { generatePlate, makePlateParams, PLATE_TUNE, KIND, CELL_M, blindCells } from '../src/plate.js';
 import { DRIVE_TUNE, driveKnobProblems, makeHull, stepHull, blockedAt, makeGates, stepGates, spawnFor,
-  makeSentries, stepSentries, losClear, stepTracers, buildingAt, bearingTo, lobHeight, LOB_FAMILIES, fireHull, rayStop, damageAt, autopilotInput, makeBodies, stepBodies, bodyAt, BODY_IDS, hitsPerState, shotRangeFor, solidHeightAt, sentryAt, damageSentryAt, SOLID_HEIGHT, stepCrush, FLAT_IDS, CRUSH_IDS, ammoDotsLit, damageBody, bodyHit, powered, BODY_HITS, indexBodies, nearBodies } from '../src/drive.js';
+  makeSentries, stepSentries, losClear, stepTracers, buildingAt, bearingTo, lobHeight, LOB_FAMILIES, fireHull, rayStop, damageAt, autopilotInput, makeBodies, stepBodies, bodyAt, BODY_IDS, hitsPerState, shotRangeFor, solidHeightAt, sentryAt, damageSentryAt, SOLID_HEIGHT, stepCrush, stepRam, RAM_IDS, FLAT_IDS, CRUSH_IDS, ammoDotsLit, damageBody, bodyHit, powered, BODY_HITS, indexBodies, nearBodies } from '../src/drive.js';
 import { check, near, done } from './check.mjs';
 
 check('knob table is sound', driveKnobProblems().length === 0, driveKnobProblems().join('; '));
@@ -428,5 +428,28 @@ for (let seed = 1; seed <= 50; seed++) {
   for (let z = 0; z < p.h * CELL_M; z += 3) for (let x = 0; x < p.w * CELL_M; x += 3) { asked++; const scan = bs.some((b) => !b.dead && Math.abs(b.x - x) <= 3 && Math.abs(b.z - z) <= 3 && bodyHit([b], x, z) === b); if (Boolean(bodyAt(bs, x, z)) !== scan) agree = false; }
   check('index and scan agree on every 3 m of a 70-cell plate', agree, `${asked} points`);
   check('a near query never lists a body two buckets away', bs.every((b) => nearBodies(bs, b.x + 30, b.z + 30).indexOf(b) < 0));
+}
+// THE RAM: the comms tower goes down a state per full-speed hit, rubble at the third
+{
+  let found = null;
+  for (let seed = 1; seed <= 40 && !found; seed++) { const p = generatePlate(makePlateParams({ ...PLATE_TUNE, seed })); const pc = p.pieces.find((x) => RAM_IDS.has(x.id)); if (pc) found = { p, pc }; }
+  check('a plate with a comms tower exists in 1..40', Boolean(found));
+  if (found) {
+    const { p, pc } = found;
+    const cx = (pc.x + pc.pw / 2) * CELL_M, cz = (pc.z + pc.ph / 2) * CELL_M;
+    const slow = makeHull(cx, cz + pc.ph * CELL_M / 2 + 2.2, 0); slow.speed = 6; // nose against the face, as a real ram stops
+    check('a slow hit does nothing', stepRam(p, slow, 1 / 60).length === 0 && pc.state === 0);
+    const fast = makeHull(cx, cz + pc.ph * CELL_M / 2 + 2.2, 0); fast.speed = 12;
+    const r1 = stepRam(p, fast, 1 / 60);
+    check('a full-speed hit takes a state and half the speed', r1.length === 1 && pc.state === 1 && near(fast.speed, 6));
+    fast.speed = 12;
+    check('the same touch does not count twice', stepRam(p, fast, 1 / 60).length === 0 && pc.state === 1);
+    fast.speed = 0; for (let i = 0; i < 60; i++) stepRam(p, fast, 1 / 60); // backed off: the touch cooldown passes
+    fast.speed = 12; stepRam(p, fast, 1 / 60);
+    fast.speed = 0; for (let i = 0; i < 60; i++) stepRam(p, fast, 1 / 60);
+    fast.speed = 12; const r3 = stepRam(p, fast, 1 / 60);
+    check('the third full-speed hit is rubble, and the hull drives through', r3.length === 1 && pc.state === 3 && !blockedAt(p, makeGates(p), cx, cz));
+    check('rubble takes no more', (fast.speed = 12, stepRam(p, fast, 1 / 60).length === 0));
+  }
 }
 done();

@@ -11,8 +11,8 @@
 // THE ANTI-AIMBOT NUMBERS are yawRate and the arc: a sentry cannot point
 // outside its arc, and inside it turns at yawRate, so a hull that crosses
 // the arc fast, or stays in the blind sector, is never fired on.
-import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=dc8a0b52';
-import { KIND, CELL_M, wrapDeg, dirOfYaw, DIRS, yawOfSide, rotSide } from './plate.js?v=dc8a0b52';
+import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=e2c79438';
+import { KIND, CELL_M, wrapDeg, dirOfYaw, DIRS, yawOfSide, rotSide } from './plate.js?v=e2c79438';
 
 export const DRIVE_TUNE = {
   speed: 12,        // m/s forward
@@ -27,6 +27,7 @@ export const DRIVE_TUNE = {
   cooldown: 0.9,    // s between rounds
   sentryHits: 3,    // hull rounds that break a sentry
   crushSpeed: 3,    // m/s: at this speed the hull flattens a CRUSH_IDS piece it drives into
+  ramSpeed: 10,     // m/s: at this speed a hit on a RAM_IDS building counts as a round
   fireCells: 9,     // engagement range, cells
   tracerSpeed: 40,  // m/s
   hitR: 2.4,        // m, a tracer this close to the hull centre is a hit
@@ -68,6 +69,7 @@ export const DRIVE_KNOBS = [
   { key: 'cooldown', label: 'cooldown (s)', group: 'sentries', min: 0.1, max: 5, step: 0.1 },
   { key: 'sentryHits', label: 'rounds to break one', group: 'sentries', min: 1, max: 9, step: 1 },
   { key: 'crushSpeed', label: 'crush speed (m/s)', group: 'hull', min: 0.5, max: 12, step: 0.5 },
+  { key: 'ramSpeed', label: 'ram speed (m/s)', group: 'hull', min: 1, max: 12, step: 0.5 },
   { key: 'fireCells', label: 'range (cells)', group: 'sentries', min: 2, max: 20, step: 1 },
   { key: 'tracerSpeed', label: 'tracer speed (m/s)', group: 'sentries', min: 5, max: 120, step: 5 },
   { key: 'hitR', label: 'hit radius (m)', group: 'sentries', min: 0.5, max: 6, step: 0.1 },
@@ -408,6 +410,34 @@ export function stepCrush(plate, hull, tune = DRIVE_TUNE) {
 // THE POWER: every sentry hangs off the station in the compound; at D3
 // they all go down. A plate without a compound is powered by fiat.
 export const powered = (plate) => !plate.power || (plate.pieces[plate.power.pieceIndex] || { state: 0 }).state < 3;
+
+// THE RAM. A building in RAM_IDS (the comms tower: tall, thin, modelled
+// in four states) takes a round each time the hull hits it at ramSpeed,
+// once per touch (0.8 s), down the same D0..D3 ladder shells use; at D3 it
+// is rubble and driveable. The hull loses half its speed on the hit.
+export const RAM_IDS = new Set(['command_comms']);
+export function stepRam(plate, hull, dt, tune = DRIVE_TUNE) {
+  const out = [];
+  for (const pc of plate.pieces) if ((pc.ramCool || 0) > 0) pc.ramCool -= dt;
+  if (Math.abs(hull.speed || 0) < tune.ramSpeed) return out;
+  const [fx, fz] = dirOfYaw(hull.heading);
+  const s = Math.sign(hull.speed || 1), r = tune.hullR + 0.5;
+  const rx = -fz, rz = fx;
+  for (const [ax, az] of [[0, 0], [rx * 1.4, rz * 1.4], [-rx * 1.4, -rz * 1.4]]) {
+    const px = hull.x + fx * r * s + ax, pz = hull.z + fz * r * s + az;
+    const cx = toCell(px), cz = toCell(pz);
+    if (cellKind(plate, cx, cz) !== KIND.BUILDING) continue;
+    const pc = pieceAt(plate, cx, cz);
+    if (!pc || pc.state >= 3 || !RAM_IDS.has(pc.id) || (pc.ramCool || 0) > 0 || out.includes(pc)) continue;
+    pc.ramCool = 0.8;
+    pc.hp = (pc.hp || 0) + 1;
+    hull.speed *= 0.5;
+    if (pc.hp < hitsPerState(pc)) continue;
+    pc.hp = 0; pc.state++;
+    out.push(pc);
+  }
+  return out;
+}
 
 // --- gates -------------------------------------------------------------------
 export function gateCentre(plate, g) {

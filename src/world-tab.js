@@ -5,26 +5,26 @@
 import * as THREE from '../vendor/three.module.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { noteStep } from './fps.js?v=dc8a0b52';
-import { bodyDims } from './catalog.js?v=dc8a0b52';
-import { makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M, reservedAt } from './plate.js?v=dc8a0b52';
-import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, stepGates, stepSentries, stepTracers, fireHull, damageAt, autopilotInput, makeBodies, stepBodies, bodyAt, shotRangeFor, solidHeightAt, SOLID_HEIGHT, damageSentryAt, stepCrush, ammoDotsLit, bodyHit, damageBody, powered } from './drive.js?v=dc8a0b52';
-import { WORLD_KNOBS, makeWorldParams, clampWorldParams, makeWorld, worldBlocked, worldBuildingAt, worldLosFor, worldSentries, worldGates, terrainNormal, splitQuad, groundAt, outpostGround } from './world.js?v=dc8a0b52';
-import { PALETTE, terrainMeshes, floraMeshes, LOOK, LOOKS } from './looks.js?v=dc8a0b52';
-import { withParam } from './url.js?v=dc8a0b52';
-import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=dc8a0b52';
-import { query, loadCatalog } from './plate-tab.js?v=dc8a0b52';
-import { modelledIds } from './catalog.js?v=dc8a0b52';
-import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS, makeMobileShell, mobileShell, makeGuardObject, makeFlagStand, makeCarriedFlag } from './drive-rig.js?v=dc8a0b52';
-import { makeSfx } from './sfx.js?v=dc8a0b52';
-import { makeCrew, stepCrew, stepSquash, shotHits, splashHits, hullCovers, crewFreeAt, keyAreas, CREW_TUNE } from './crew.js?v=dc8a0b52';
-import { makeCrewScene } from './crew-scene.js?v=dc8a0b52';
-import { makeGuard, stepGuard, GUARD_TUNE } from './guard.js?v=dc8a0b52';
-import { makeCtf, stepCtf, poleState, SLOTS, CTF_TUNE } from './ctf.js?v=dc8a0b52';
-import { makeRescue, stepBoarding, stepUnloading, makeRescued, stepEntered, RESCUE_TUNE } from './rescue.js?v=dc8a0b52';
-import { proto } from './plate-scene.js?v=dc8a0b52';
-import { fileFor } from './catalog.js?v=dc8a0b52';
-import { mulberry32 } from './rng.js?v=dc8a0b52';
+import { noteStep } from './fps.js?v=e2c79438';
+import { bodyDims } from './catalog.js?v=e2c79438';
+import { makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M, reservedAt } from './plate.js?v=e2c79438';
+import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, stepGates, stepSentries, stepTracers, fireHull, damageAt, autopilotInput, makeBodies, stepBodies, bodyAt, shotRangeFor, solidHeightAt, SOLID_HEIGHT, damageSentryAt, stepCrush, stepRam, ammoDotsLit, bodyHit, damageBody, powered } from './drive.js?v=e2c79438';
+import { WORLD_KNOBS, makeWorldParams, clampWorldParams, makeWorld, worldBlocked, worldBuildingAt, worldLosFor, worldSentries, worldGates, terrainNormal, splitQuad, groundAt, outpostGround } from './world.js?v=e2c79438';
+import { PALETTE, terrainMeshes, floraMeshes, LOOK, LOOKS } from './looks.js?v=e2c79438';
+import { withParam } from './url.js?v=e2c79438';
+import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=e2c79438';
+import { query, loadCatalog } from './plate-tab.js?v=e2c79438';
+import { modelledIds } from './catalog.js?v=e2c79438';
+import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS, makeMobileShell, mobileShell, makeGuardObject, makeFlagStand, makeCarriedFlag } from './drive-rig.js?v=e2c79438';
+import { makeSfx } from './sfx.js?v=e2c79438';
+import { makeCrew, stepCrew, stepSquash, shotHits, splashHits, hullCovers, crewFreeAt, keyAreas, CREW_TUNE } from './crew.js?v=e2c79438';
+import { makeCrewScene } from './crew-scene.js?v=e2c79438';
+import { makeGuard, stepGuard, GUARD_TUNE } from './guard.js?v=e2c79438';
+import { makeCtf, stepCtf, poleState, SLOTS, CTF_TUNE } from './ctf.js?v=e2c79438';
+import { makeRescue, stepBoarding, stepUnloading, makeRescued, stepEntered, RESCUE_TUNE } from './rescue.js?v=e2c79438';
+import { proto } from './plate-scene.js?v=e2c79438';
+import { fileFor } from './catalog.js?v=e2c79438';
+import { mulberry32 } from './rng.js?v=e2c79438';
 
 const ARRIVE_M = 8;
 
@@ -171,6 +171,12 @@ export function initWorldTab(root) {
     }
     world.plates.forEach((p, pi) => {
       const local = { x: hull.x - p.ox, z: hull.z - p.oz, heading: hull.heading, speed: hull.speed };
+      for (const pc of stepRam(p.plate, local, dt, P)) {
+        hull.speed = local.speed;
+        const cx = (pc.x + pc.pw / 2) * CELL_M + p.ox, cz = (pc.z + pc.ph / 2) * CELL_M + p.oz;
+        sfx.impact('shell', [cx, groundAt(world, cx, cz).y + 2.5, cz], [0, 1, 0], 0, pc.state >= 3 ? 4.5 : 3.0, 'impact_rubble');
+        rigs[pi].rebuild();
+      }
       for (const pc of stepCrush(p.plate, local, P)) {
         hull.speed = local.speed; crushed++;
         const cx = (pc.x + pc.pw / 2) * CELL_M + p.ox, cz = (pc.z + pc.ph / 2) * CELL_M + p.oz;
