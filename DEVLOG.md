@@ -4,6 +4,23 @@ Newest first. Each entry: what landed, then how it works, for programmers.
 Decisions and dead ends in more detail live in `.deban/` (local, not
 published).
 
+## 6c76dd8 — rams, a faster drone, and the Terraformer 3000
+
+The comms tower is destructible by RAM now: a hit at 10 m/s counts as a
+round, once per touch, down the same four-state ladder the shells use,
+and the hull keeps half its speed; three full-speed hits leave rubble
+you drive through. The drone drops a shell every 2.2 s instead of 4.5,
+its pointer held 1.4 s.
+
+The workshop's new Terraformer 3000 is in, as a landmark for big plates
+only: 12 by 14 cells, 36 m tall, 165,404 triangles with its
+Terraforming_Cycle looping, intact and collapsed states vendored (15 MB;
+the damaged pair would have been 21 MB more). A plate whose interior
+short side is under 40 cells skips it silently, so the default plate is
+unchanged and the old 6k-triangle cast stays the command nexus. In
+battlezone its edges are drawn at 55 degrees and dim, the way the old
+corrugated container was tamed; at 28 degrees 165k triangles are a haze.
+
 ## 2852f6e — the blank screen, twice
 
 The operator saw a blank canvas at build 3e6a547f. From here the public
