@@ -4,6 +4,32 @@ Newest first. Each entry: what landed, then how it works, for programmers.
 Decisions and dead ends in more detail live in `.deban/` (local, not
 published).
 
+## e598aee — a 70-cell plate at speed, and doors that open
+
+The operator's default plate ran at fifty frames a second and a 70-cell
+plate at twenty-one. The perf probe grew a `step=` reading, the
+simulation's cost per frame, and it said where the frames went: 1.7 ms
+at the default size, 10 ms on average at 70 cells with spikes of sixty.
+Not the GPU. Every walker's step asked whether a body stood under five
+points, and every trip pick asked a few hundred times more along the
+path, and each ask scanned all 283 bodies on the plate. Bodies live in
+8 m buckets now, rebuilt each frame by the same step that moves them,
+and a point asks nine buckets; a walker only considers areas within
+70 m. The simulation is 1.2 ms a frame at 70 cells, 4 ms at worst, and
+0.8 at the default. The bloom source is half resolution in every look
+(the blur does not miss the pixels). What is left at scale is the GPU:
+429 wall segments of 5.9k triangles and, in battlezone, four million
+line segments; a box LOD per far tile is the next lever if it is needed.
+
+DOORS. Across fifty seeds, half of all buildings had something on their
+doorstep: yard stock packed with no gap, a prop, a wall the building
+had turned its back to. Every non-yard building and landmark now
+reserves the cell before its door and the two beside it, the packer and
+the prop roll respect reserved ground, a building whose door finds no
+road turns toward open ground before settling for anything, and a shoved
+crate cannot stop on a doorstep. Zero of 294 doors are blocked now, and
+the suite holds it.
+
 ## 279c170 — the jumble, named
 
 The operator sent a second spiky jumble: big flat triangular facets, a
