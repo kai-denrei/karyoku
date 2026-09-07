@@ -339,6 +339,17 @@ no build step, Node invariant suites).
   pack the row first (`bz * 1000 + bx`): the crew's junction areas were
   decoded transposed until now; `roadNodeCentre` is the one decoder.
 - The drone: `markT` 0.9, `cooldown` 1.6, `shellSpeed` 110.
+- ONE MODEL, TWO HULLS: `loadGlb` caches the parsed scene per URL and
+  `mergeByMaterial` CONSUMES the tree it is given; the second
+  `makeHullObject` built from the cached scene was hollow (operator,
+  2026-09-08: "cannot see nor control our own tank"). Each hull now
+  merges a deep copy with cloned materials. The probe line carries
+  `hullVis=visible:children`; a hull with 0 children is this bug again.
+- THE APRONS: the flat margin is FLAT for `plateMargin` metres and only
+  then ramps over another `plateMargin` (`smoothstep(margin, 2 * margin,
+  d)`); before, it ramped from the plate's edge and the spawn 12 m out sat
+  on a slope. Nothing stands within `SPAWN_CLEAR_M` 30 m of either gate's
+  outside point (a trunk 13 m ahead stopped the hull dead).
 - THE RAM: `RAM_IDS` (the comms tower) take a round per hit at
   `ramSpeed` 10 m/s, once per touch (0.8 s, `pc.ramCool`), down the same
   D0..D3 ladder as shells (`stepRam(plate, hull, dt, tune)`, called

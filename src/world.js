@@ -10,14 +10,15 @@
 // and the hull samples it where it stands, so the two cannot disagree
 // beyond the mesh's own faceting, and a plate sits on ground that is
 // exactly zero because the mask says so, not because a vertex was edited.
-import { mulberry32 } from './rng.js?v=7e146775';
-import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=7e146775';
-import { generateMesh, relax } from './organic-grid.js?v=7e146775';
-import { valueNoise2D } from './noise.js?v=7e146775';
-import { generatePlate, makePlateParams, CELL_M, DIRS, yawOfSide, KIND, shuffled } from './plate.js?v=7e146775';
-import { makeGates, makeSentries, blockedAt, losClear, buildingAt, gateCentre } from './drive.js?v=7e146775';
+import { mulberry32 } from './rng.js?v=6c60467a';
+import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=6c60467a';
+import { generateMesh, relax } from './organic-grid.js?v=6c60467a';
+import { valueNoise2D } from './noise.js?v=6c60467a';
+import { generatePlate, makePlateParams, CELL_M, DIRS, yawOfSide, KIND, shuffled } from './plate.js?v=6c60467a';
+import { makeGates, makeSentries, blockedAt, losClear, buildingAt, gateCentre } from './drive.js?v=6c60467a';
 
 export const ROAD_CLEAR_M = 7;
+export const SPAWN_CLEAR_M = 30; // m of cover-free ground around each gate's outside point
 export const WORLD_TUNE = {
   size: 1200,       // m, the world is a square: room for two 100-cell plates with ground between (it grows if not)
   r: 0.04,          // poisson radius in [0,1]; ~11 m quads after subdivision
@@ -61,7 +62,7 @@ const rectDist = (x, z, x0, z0, x1, z1) => Math.hypot(Math.max(x0 - x, 0, x - x1
 export function makeHeightFn(plates, tune, seed) {
   return (x, z) => {
     let mask = 1;
-    for (const p of plates) mask = Math.min(mask, smoothstep(0, tune.plateMargin, rectDist(x, z, p.ox, p.oz, p.ox + p.wM, p.oz + p.hM)));
+    for (const p of plates) mask = Math.min(mask, smoothstep(tune.plateMargin, tune.plateMargin * 2, rectDist(x, z, p.ox, p.oz, p.ox + p.wM, p.oz + p.hM)));
     if (mask <= 0) return 0;
     const n1 = valueNoise2D(x / tune.freq1, z / tune.freq1, seed) - 0.5;
     const n2 = valueNoise2D(x / tune.freq2, z / tune.freq2, seed + 7) - 0.5;
@@ -251,7 +252,7 @@ export function makeWorld(params, plateParams, allowed = undefined) {
       const [cx, cz] = world.centroids[qi];
       if (cx < R + 20 || cz < R + 20 || cx > S - R - 20 || cz > S - R - 20) continue;
       let mask = 1;
-      for (const p of plates) mask = Math.min(mask, smoothstep(0, tune.plateMargin, rectDist(cx, cz, p.ox, p.oz, p.ox + p.wM, p.oz + p.hM)));
+      for (const p of plates) mask = Math.min(mask, smoothstep(tune.plateMargin, tune.plateMargin * 2, rectDist(cx, cz, p.ox, p.oz, p.ox + p.wM, p.oz + p.hM)));
       if (mask < 0.999) continue;
       if (distToRoad(cx, cz) < R + 16) continue;
       if (world.outposts.some((o) => Math.hypot(o.x - cx, o.z - cz) < 90)) continue;
@@ -275,18 +276,24 @@ export function makeWorld(params, plateParams, allowed = undefined) {
     }
     if (world.outposts.length < want) warnings.push(`only ${world.outposts.length} of ${want} outposts found room`);
   }
+  // THE APRONS: nothing stands within SPAWN_CLEAR_M of either gate's outside
+  // point; the straight run out of a gate is not on the road line (the road
+  // turns at once) and a trunk thirteen metres ahead stopped the hull dead
+  const aprons = [[ax, az], [bx, bz]];
   mesh.quads.forEach((q, qi) => {
     if (world.road.set.has(qi)) return;
     const [cx, cz] = world.centroids[qi];
     if (world.outposts.some((o) => Math.hypot(o.x - cx, o.z - cz) < o.r + 8)) return; // a camp keeps its clearing
+    if (aprons.some(([px, pz]) => Math.hypot(px - cx, pz - cz) < SPAWN_CLEAR_M + 6)) return;
     let mask = 1;
-    for (const p of plates) mask = Math.min(mask, smoothstep(0, tune.plateMargin, rectDist(cx, cz, p.ox, p.oz, p.ox + p.wM, p.oz + p.hM)));
+    for (const p of plates) mask = Math.min(mask, smoothstep(tune.plateMargin, tune.plateMargin * 2, rectDist(cx, cz, p.ox, p.oz, p.ox + p.wM, p.oz + p.hM)));
     if (mask < 0.5) return;
     const h = heightAt(cx, cz);
     const hillFactor = Math.max(0.2, 1 - Math.max(0, h) / (tune.amp + 1e-6));
     const jitter = () => (rng() - 0.5) * 5;
     const x = cx + jitter(), z = cz + jitter();
     if (distToRoad(x, z) < ROAD_CLEAR_M) return; // the PLACED position, not the centroid
+    if (aprons.some(([px, pz]) => Math.hypot(px - x, pz - z) < SPAWN_CLEAR_M)) return;
     if (rng() < tune.treeRate * hillFactor) { const t = { kind: 'tree', x, z, r: tune.trunkR, h: 7 + rng() * 5, q: qi }; world.trees.push(t); put(t); }
     else if (rng() < tune.rockRate) { const rk = { kind: 'rock', x, z, r: tune.rockR, h: 1.5 + rng() * 2, q: qi }; world.rocks.push(rk); put(rk); }
   });

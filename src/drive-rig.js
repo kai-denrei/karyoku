@@ -2,15 +2,15 @@
 // the hull model with a stand-in until it lands, the key state, the tracer
 // meshes, and the two cameras. Rendering only; the rules are drive.js.
 import * as THREE from '../vendor/three.module.js';
-import { applySpaceScene, makeStars, makeComposer, PALETTE } from './looks.js?v=7e146775';
-import { tickFps } from './fps.js?v=7e146775';
-import { radarProject, radarBearing, sweepAngle, radarPhosphor, radarColor, RADAR_RANGE_M } from './radar.js?v=7e146775';
-import { castHull } from './casts.js?v=7e146775';
-import { styleForLook, BZ } from './looks.js?v=7e146775';
-import { STICK, stickVector, knobOffset } from './stick.js?v=7e146775';
-import { query } from './url.js?v=7e146775';
-import { loadGlb, mergeByMaterial, makeShellRack } from './glbmodels.js?v=7e146775';
-import { animProto } from './plate-scene.js?v=7e146775';
+import { applySpaceScene, makeStars, makeComposer, PALETTE } from './looks.js?v=6c60467a';
+import { tickFps } from './fps.js?v=6c60467a';
+import { radarProject, radarBearing, sweepAngle, radarPhosphor, radarColor, RADAR_RANGE_M } from './radar.js?v=6c60467a';
+import { castHull } from './casts.js?v=6c60467a';
+import { styleForLook, BZ } from './looks.js?v=6c60467a';
+import { STICK, stickVector, knobOffset } from './stick.js?v=6c60467a';
+import { query } from './url.js?v=6c60467a';
+import { loadGlb, mergeByMaterial, makeShellRack } from './glbmodels.js?v=6c60467a';
+import { animProto } from './plate-scene.js?v=6c60467a';
 
 const HULL_URL = 'assets/models/mkcx2.glb';
 // The nodes that must keep moving through the merge, and the ones that
@@ -77,7 +77,13 @@ export function makeHullObject(colour = PALETTE.hull) {
   loadGlb(HULL_URL).then((gltfScene) => {
     if (!gltfScene) return;
     obj.remove(stub);
-    const merged = mergeByMaterial(gltfScene, HULL_PIVOTS, HULL_DROP);
+    // TWO HULLS share one cached model: the merge consumes the tree it is
+    // given (the second hull built from it was hollow, and the operator
+    // could not see his own tank). Each hull merges its own deep copy, with
+    // its own materials so one tint cannot repaint the other.
+    const copy = gltfScene.clone(true);
+    copy.traverse((o) => { if (o.isMesh && o.material) o.material = Array.isArray(o.material) ? o.material.map((m) => m.clone()) : o.material.clone(); });
+    const merged = mergeByMaterial(copy, HULL_PIVOTS, HULL_DROP);
     obj.add(BZ ? styleForLook(merged) : castHull(merged, colour));
     buildRack(merged, obj);
     buildHoverSplit(merged, obj);

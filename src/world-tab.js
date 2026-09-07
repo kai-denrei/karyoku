@@ -5,27 +5,27 @@
 import * as THREE from '../vendor/three.module.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { noteStep } from './fps.js?v=7e146775';
-import { bodyDims } from './catalog.js?v=7e146775';
-import { makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M, reservedAt } from './plate.js?v=7e146775';
-import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, stepGates, stepSentries, stepTracers, fireHull, damageAt, autopilotInput, makeBodies, stepBodies, bodyAt, shotRangeFor, solidHeightAt, SOLID_HEIGHT, damageSentryAt, stepCrush, stepRam, ammoDotsLit, bodyHit, damageBody, powered, damageSplit } from './drive.js?v=7e146775';
-import { WORLD_KNOBS, makeWorldParams, clampWorldParams, makeWorld, worldBlocked, worldBuildingAt, worldLosFor, worldSentries, worldGates, terrainNormal, splitQuad, groundAt, outpostGround } from './world.js?v=7e146775';
-import { PALETTE, terrainMeshes, floraMeshes, LOOK, LOOKS } from './looks.js?v=7e146775';
-import { withParam } from './url.js?v=7e146775';
-import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=7e146775';
-import { query, loadCatalog } from './plate-tab.js?v=7e146775';
-import { modelledIds } from './catalog.js?v=7e146775';
-import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS, makeMobileShell, mobileShell, makeGuardObject, makeFlagStand, makeCarriedFlag } from './drive-rig.js?v=7e146775';
-import { makeSfx } from './sfx.js?v=7e146775';
-import { makeCrew, stepCrew, stepSquash, shotHits, splashHits, hullCovers, crewFreeAt, keyAreas, CREW_TUNE } from './crew.js?v=7e146775';
-import { makeCrewScene } from './crew-scene.js?v=7e146775';
-import { makeGuard, stepGuard, GUARD_TUNE } from './guard.js?v=7e146775';
-import { makeCtf, stepCtf, poleState, SLOTS, CTF_TUNE } from './ctf.js?v=7e146775';
-import { makeEnemy, stepEnemy, ENEMY_TUNE } from './enemy.js?v=7e146775';
-import { makeRescue, stepBoarding, stepUnloading, makeRescued, stepEntered, RESCUE_TUNE } from './rescue.js?v=7e146775';
-import { proto } from './plate-scene.js?v=7e146775';
-import { fileFor } from './catalog.js?v=7e146775';
-import { mulberry32 } from './rng.js?v=7e146775';
+import { noteStep } from './fps.js?v=6c60467a';
+import { bodyDims } from './catalog.js?v=6c60467a';
+import { makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M, reservedAt } from './plate.js?v=6c60467a';
+import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, stepGates, stepSentries, stepTracers, fireHull, damageAt, autopilotInput, makeBodies, stepBodies, bodyAt, shotRangeFor, solidHeightAt, SOLID_HEIGHT, damageSentryAt, stepCrush, stepRam, ammoDotsLit, bodyHit, damageBody, powered, damageSplit } from './drive.js?v=6c60467a';
+import { WORLD_KNOBS, makeWorldParams, clampWorldParams, makeWorld, worldBlocked, worldBuildingAt, worldLosFor, worldSentries, worldGates, terrainNormal, splitQuad, groundAt, outpostGround } from './world.js?v=6c60467a';
+import { PALETTE, terrainMeshes, floraMeshes, LOOK, LOOKS } from './looks.js?v=6c60467a';
+import { withParam } from './url.js?v=6c60467a';
+import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=6c60467a';
+import { query, loadCatalog } from './plate-tab.js?v=6c60467a';
+import { modelledIds } from './catalog.js?v=6c60467a';
+import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS, makeMobileShell, mobileShell, makeGuardObject, makeFlagStand, makeCarriedFlag } from './drive-rig.js?v=6c60467a';
+import { makeSfx } from './sfx.js?v=6c60467a';
+import { makeCrew, stepCrew, stepSquash, shotHits, splashHits, hullCovers, crewFreeAt, keyAreas, CREW_TUNE } from './crew.js?v=6c60467a';
+import { makeCrewScene } from './crew-scene.js?v=6c60467a';
+import { makeGuard, stepGuard, GUARD_TUNE } from './guard.js?v=6c60467a';
+import { makeCtf, stepCtf, poleState, SLOTS, CTF_TUNE } from './ctf.js?v=6c60467a';
+import { makeEnemy, stepEnemy, ENEMY_TUNE } from './enemy.js?v=6c60467a';
+import { makeRescue, stepBoarding, stepUnloading, makeRescued, stepEntered, RESCUE_TUNE } from './rescue.js?v=6c60467a';
+import { proto } from './plate-scene.js?v=6c60467a';
+import { fileFor } from './catalog.js?v=6c60467a';
+import { mulberry32 } from './rng.js?v=6c60467a';
 
 const ARRIVE_M = 8;
 
@@ -342,7 +342,7 @@ export function initWorldTab(root) {
     if (arrivedAt < 0 && goalDist() <= ARRIVE_M) arrivedAt = simT;
   }
 
-  const logLine = () => `[world] t=${simT.toFixed(1)} hull=${hull.x.toFixed(1)},${hull.z.toFixed(1)} y=${world.heightAt(hull.x, hull.z).toFixed(2)} heading=${hull.heading.toFixed(0)} goal=${goalDist().toFixed(1)} tracking=${sentries.filter((s) => s.tracking).length} lobs=${tracers.filter((t) => t.kind === 'lob').length} hits=${hits} ammo=${hull.ammo} down=${squashed} sentriesDown=${sentries.filter((s) => !s.alive).length} crushed=${crushed} bodiesBroken=${bodiesBroken} power=${world.plates.map((p) => (powered(p.plate) ? 'on' : 'off')).join('/')} aboard=${rescue.aboard} rescued=${rescue.rescued} score=${rescue.score} camps=${camps.length} guards=${guards.map((g) => g.state + ':' + g.shots).join('/')} flag=${ctf ? (ctf.won ? 'won' : ctf.set ? 'set:' + Math.ceil(ctf.hold) + (ctf.paused ? 'P' : '') : ctf.carrying ? 'carried' : 'theirs') : '-'} hp=${hull.hp} deaths=${deaths} enemy=${enemy ? (enemy.alive ? `${enemy.state}:${enemy.hp}:${enemy.inside ? 'in' : 'out'}:${enemy.x.toFixed(0)},${enemy.z.toFixed(0)}` : 'dead') : '-'} crewIn=${crews.reduce((n, c) => n + c.crew.walkers.filter((w) => w.alive && !crewFreeAt(c.plate, w.x, w.z, c.solid)).length, 0)}${arrivedAt >= 0 ? ' ARRIVED' : ''}`;
+  const logLine = () => `[world] t=${simT.toFixed(1)} hull=${hull.x.toFixed(1)},${hull.z.toFixed(1)} y=${world.heightAt(hull.x, hull.z).toFixed(2)} heading=${hull.heading.toFixed(0)} goal=${goalDist().toFixed(1)} tracking=${sentries.filter((s) => s.tracking).length} lobs=${tracers.filter((t) => t.kind === 'lob').length} hits=${hits} ammo=${hull.ammo} down=${squashed} sentriesDown=${sentries.filter((s) => !s.alive).length} crushed=${crushed} bodiesBroken=${bodiesBroken} power=${world.plates.map((p) => (powered(p.plate) ? 'on' : 'off')).join('/')} aboard=${rescue.aboard} rescued=${rescue.rescued} score=${rescue.score} camps=${camps.length} guards=${guards.map((g) => g.state + ':' + g.shots).join('/')} flag=${ctf ? (ctf.won ? 'won' : ctf.set ? 'set:' + Math.ceil(ctf.hold) + (ctf.paused ? 'P' : '') : ctf.carrying ? 'carried' : 'theirs') : '-'} hp=${hull.hp} cam=${camera.position.x.toFixed(0)},${camera.position.y.toFixed(1)},${camera.position.z.toFixed(0)} hullVis=${hullObj.visible ? 1 : 0}:${hullObj.children.length} deaths=${deaths} enemy=${enemy ? (enemy.alive ? `${enemy.state}:${enemy.hp}:${enemy.inside ? 'in' : 'out'}:${enemy.x.toFixed(0)},${enemy.z.toFixed(0)}` : 'dead') : '-'} crewIn=${crews.reduce((n, c) => n + c.crew.walkers.filter((w) => w.alive && !crewFreeAt(c.plate, w.x, w.z, c.solid)).length, 0)}${arrivedAt >= 0 ? ' ARRIVED' : ''}`;
 
   function sync() {
     const g = groundAt(world, hull.x, hull.z);

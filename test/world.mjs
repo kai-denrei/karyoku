@@ -1,4 +1,5 @@
-import { makeWorld, worldKnobProblems, worldBlocked, gateOutside, groundAt, WORLD_TUNE, ROAD_CLEAR_M, OUTPOST_R, outpostGround } from '../src/world.js';
+import { makeWorld, worldKnobProblems, worldBlocked, gateOutside, groundAt, WORLD_TUNE, ROAD_CLEAR_M, OUTPOST_R, outpostGround, SPAWN_CLEAR_M } from '../src/world.js';
+import { makeHull, stepHull } from '../src/drive.js';
 import { PLATE_TUNE, KIND, CELL_M } from '../src/plate.js';
 import { check, near, done } from './check.mjs';
 
@@ -83,5 +84,17 @@ check('spawn is at A\'s gate outside point', near(w.spawn.x, ax) && near(w.spawn
   check('no tree or rock in a camp', os.every((o) => [...w.trees, ...w.rocks].every((t) => Math.hypot(t.x - o.x, t.z - o.z) > o.r + 4)));
   check('the props block the hull, the clearing does not', os.every((o) => o.props.every((pr) => worldBlocked(w, o.x + pr.dx, o.z + pr.dz)) && !worldBlocked(w, o.x + 0.5, o.z + 0.5)));
   check('the crew has walkable areas facing the props', os.every((o) => o.areas.length >= 4 && o.areas.every((a) => outpostGround(w, o).walkableAt(a.x, a.z) && typeof a.fx === 'number')));
+}
+// THE APRONS: flat, clear ground where the tanks spawn
+{
+  for (const [name, pt] of [['spawn', w.spawn], ['goal', w.goal]]) {
+    check(`${name}: the ground there is flat`, Math.abs(w.heightAt(pt.x, pt.z)) < 0.01 && Math.abs(w.heightAt(pt.x + 10, pt.z)) < 0.01, `${w.heightAt(pt.x, pt.z).toFixed(2)}`);
+    check(`${name}: no tree or rock within 30 m`, [...w.trees, ...w.rocks].every((t) => Math.hypot(t.x - pt.x, t.z - pt.z) >= SPAWN_CLEAR_M));
+  }
+  // a hull driving straight out of the spawn for eight seconds is not stopped by anything
+  const h = makeHull(w.spawn.x, w.spawn.z, w.spawn.heading);
+  let blockedAtAll = false;
+  for (let i = 0; i < 60; i++) if (!stepHull(h, { fwd: true }, 1 / 60, (x, z) => worldBlocked(w, x, z))) blockedAtAll = true; // one second: the apron's thirty metres
+  check('a hull driving straight out of the spawn clears the apron unblocked', !blockedAtAll && Math.hypot(h.x - w.spawn.x, h.z - w.spawn.z) > 25, `${Math.hypot(h.x - w.spawn.x, h.z - w.spawn.z).toFixed(0)} m`);
 }
 done();
