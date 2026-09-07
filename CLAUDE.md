@@ -268,6 +268,13 @@ no build step, Node invariant suites).
   never displayed properly): the radome stand-in, its manifest entry, the
   asset row, the modelled set and the command zone list. A 40k Stalheart
   is in the works at the workshop to replace the 165k terraformer.
+- KEY AREAS (`keyAreas`): the fronts of buildings with doors (NOT yard
+  stock, which is bodies and moves; NOT the compound's station and racks,
+  which stand behind a wall a walker cannot cross), the ROAD JUNCTIONS
+  (`plate.roads.nodes`, tag 'road', nothing to face) and the inner gates.
+  Before this, yard fronts were areas: walkers spawned boxed inside yards
+  and three of eight never walked; one paced inside the compound. The
+  walking test measures the farthest REACH from the start, not the end.
 - THE RAM: `RAM_IDS` (the comms tower) take a round per hit at
   `ramSpeed` 10 m/s, once per touch (0.8 s, `pc.ramCool`), down the same
   D0..D3 ladder as shells (`stepRam(plate, hull, dt, tune)`, called

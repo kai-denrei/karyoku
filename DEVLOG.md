@@ -4,6 +4,21 @@ Newest first. Each entry: what landed, then how it works, for programmers.
 Decisions and dead ends in more detail live in `.deban/` (local, not
 published).
 
+## 8987fca — where the crew may go
+
+Removing the uplink reshuffled seed 7 and a crew check failed: three of
+eight walkers ever got more than four metres from where they started.
+The trace showed why, and it was older than the uplink: the crew's key
+areas still counted the fronts of yard stock, which are bodies now and
+pack with no gap, so walkers spawned boxed inside yards with no straight
+walk out; and the compound's station and racks counted too, so a walker
+spawned behind the wall paced between them forever. Areas are the fronts
+of buildings with doors, the inner gates, and now the road junctions, so
+there is always somewhere reachable to be seen going. All eight walkers
+range 23 to 88 metres in the same ninety seconds. The check measures the
+farthest point reached rather than where the clock stopped, since a
+walker is often back near its start by then.
+
 ## 7cea719 — the uplink, gone
 
 The orbital uplink never displayed properly (its stand-in was the NASA
