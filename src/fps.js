@@ -2,7 +2,7 @@
 // loop calls tickFps(now); once a second the nav shows the rate and
 // window.__fps carries it for a probe. `?perf=1` logs the renderer's
 // counts every two seconds: draw calls are what a big plate costs.
-import { query } from './url.js?v=04c2bc31';
+import { query } from './url.js?v=7dcea21e';
 let frames = 0, last = 0, fps = 0, el = null, perfAt = 0;
 const perf = query().get('perf') === '1';
 export function tickFps(now, renderer = null, scene = null) {

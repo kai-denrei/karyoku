@@ -1,69 +1,81 @@
-// crew-scene.js — the astronauts on screen. The compact astronaut GLB is
-// skinned (51 skins, three Mixamo clips), so a walker cannot be a clone of
-// a shared prototype without SkeletonUtils: each one is PARSED fresh from
-// the one downloaded buffer. Orange suits, NOT glowing: the crew sits in a
-// bloom group of weight zero. Walk, run and idle clips blend by state. A
-// squashed walker leaves a red splash on the floor — the Amiga moment.
+// crew-scene.js — the crew on screen: the workshop's three station
+// characters (astronaut, scientist, worker), low-poly, one skin each and
+// seven clips (Idle, Walk, Run, Kneel, Scared, Point, Lie). Each model is
+// loaded ONCE and every walker is a skinned clone of it (a bone-aware
+// clone, the way SkeletonUtils does it, since the skeleton must be rebound
+// to the clone's own bones). The walker's `act` picks the clip; weights
+// crossfade so a change of mind does not snap. The dead lie where they
+// fell, on the red splash — the Amiga moment with a body in it.
 import * as THREE from '../vendor/three.module.js';
-import { GLTFLoader } from '../vendor/GLTFLoader.js';
-import { MeshoptDecoder } from '../vendor/meshopt_decoder.module.js';
-import { fitModel, bustToken } from './glbmodels.js?v=04c2bc31';
-import { SUIT } from './crew.js?v=04c2bc31';
-import { BZ } from './looks.js?v=04c2bc31';
+import { loadGlbWithClips } from './glbmodels.js?v=7dcea21e';
+import { CREW_KINDS } from './crew.js?v=7dcea21e';
+import { BZ, styleForLook } from './looks.js?v=7dcea21e';
 
-const ASTRO_URL = 'assets/models/astronaut-compact.glb';
-const PERSON_M = 1.8;
-const SUIT_MATS = /^mat_(body|body1|pauldrons|backpack|knee_pod|helmet_cap)$/;
-const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
-let bufferP = null;
-function buffer() {
-  if (!bufferP) bufferP = fetch(`${ASTRO_URL}${bustToken()}`).then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(`HTTP ${r.status}`))));
-  return bufferP;
-}
-function parseFresh() {
-  return buffer().then((buf) => new Promise((resolve, reject) => loader.parse(buf.slice(0), '', resolve, reject)));
-}
+export const CREW_URLS = CREW_KINDS.map((k) => `assets/crew/${k}_station.glb`);
+const AUTHORED_M = 2.1, PERSON_M = 1.8;
+const FADE = 0.18; // s, between clips
+const CLIPS = { idle: 'Idle', walk: 'Walk', run: 'Run', point: 'Point', kneel: 'Kneel', scared: 'Scared', lie: 'Lie' };
 
-// One walker: { obj, setPose, tick }. Resolves null if the model cannot load.
-export async function makeAstronaut() {
-  let gltf;
-  try { gltf = await parseFresh(); } catch (e) { console.warn('[crew] astronaut failed to load', e); return null; }
-  const scene = gltf.scene;
-  const colour = new THREE.Color(SUIT);
-  scene.traverse((o) => {
-    if (!o.isMesh || !o.material) return;
-    for (const m of Array.isArray(o.material) ? o.material : [o.material]) {
-      if (SUIT_MATS.test(m.name || '')) {
-        // battlezone: a flat unlit orange, no emissive; colony: orange with the
-        // suit's own shading — and in neither look does the crew bloom
-        if (BZ) { o.material = new THREE.MeshBasicMaterial({ color: colour }); }
-        else { m.color.copy(colour); if (m.emissive) m.emissive.setHex(0x000000); }
-      }
-    }
+// SkeletonUtils.clone, the part of it a skinned GLB needs
+function cloneSkinned(source) {
+  const sourceLookup = new Map(), cloneLookup = new Map();
+  const clone = source.clone();
+  const pair = (a, b) => { sourceLookup.set(b, a); cloneLookup.set(a, b); for (let i = 0; i < a.children.length; i++) pair(a.children[i], b.children[i]); };
+  pair(source, clone);
+  clone.traverse((node) => {
+    if (!node.isSkinnedMesh) return;
+    const src = sourceLookup.get(node);
+    node.skeleton = src.skeleton.clone();
+    node.bindMatrix.copy(src.bindMatrix);
+    node.skeleton.bones = src.skeleton.bones.map((bone) => cloneLookup.get(bone));
+    node.bind(node.skeleton, node.bindMatrix);
   });
-  const obj = fitModel(scene, { height: PERSON_M, maxSpan: PERSON_M * 2 });
+  return clone;
+}
+
+// one walker of a kind: { obj, setPose, tick }, or null when the model failed
+export async function makeWalkerRig(kind) {
+  const res = await loadGlbWithClips(CREW_URLS[kind % CREW_URLS.length]);
+  if (!res) return null;
+  const scene = cloneSkinned(res.scene);
+  scene.scale.setScalar(PERSON_M / AUTHORED_M);
+  if (BZ) styleForLook(scene);
+  else scene.traverse((o) => { if (o.isMesh && o.material && o.material.emissive) o.material.emissive.setHex(0x000000); });
+  const obj = new THREE.Group();
+  obj.add(scene);
   const mixer = new THREE.AnimationMixer(scene);
-  const clipOf = (re) => gltf.animations.find((c) => re.test(c.name));
-  const acts = {
-    walk: clipOf(/walk/i) ? mixer.clipAction(clipOf(/walk/i)) : null,
-    run: clipOf(/run/i) ? mixer.clipAction(clipOf(/run/i)) : null,
-    idle: clipOf(/idle/i) ? mixer.clipAction(clipOf(/idle/i)) : null,
-  };
-  for (const [k, a] of Object.entries(acts)) if (a) { a.play(); a.setEffectiveWeight(k === 'idle' ? 1 : 0); }
+  const acts = {};
+  for (const [act, name] of Object.entries(CLIPS)) {
+    const clip = res.clips.find((c) => c.name === name);
+    if (!clip) continue;
+    const a = mixer.clipAction(clip);
+    if (act === 'lie') { a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; }
+    a.play();
+    a.setEffectiveWeight(act === 'idle' ? 1 : 0);
+    acts[act] = a;
+  }
   let mode = 'idle';
+  const weights = { idle: 1 };
   return {
     obj,
     // the model's authored forward is +z; heading 0 is north (-z)
-    setPose(x, y, z, headingDeg, moving, running) {
+    setPose(x, y, z, headingDeg, act) {
       obj.position.set(x, y, z);
       obj.rotation.y = Math.PI - headingDeg * Math.PI / 180;
-      const want = !moving ? 'idle' : running && acts.run ? 'run' : 'walk';
-      if (want !== mode) {
-        mode = want;
-        for (const [k, a] of Object.entries(acts)) if (a) a.setEffectiveWeight(k === mode ? 1 : 0);
-      }
+      const want = acts[act] ? act : (act === 'run' && acts.walk ? 'walk' : 'idle');
+      if (want !== mode) { mode = want; if (want === 'lie' && acts.lie) acts.lie.reset().play(); }
     },
-    tick(dt) { mixer.update(dt); },
+    tick(dt) {
+      // crossfade toward the wanted clip
+      for (const [k, a] of Object.entries(acts)) {
+        const target = k === mode ? 1 : 0;
+        const cur = weights[k] ?? 0;
+        const next = cur + Math.max(-1, Math.min(1, (target - cur))) * Math.min(1, dt / FADE);
+        weights[k] = next;
+        a.setEffectiveWeight(next);
+      }
+      mixer.update(dt);
+    },
   };
 }
 
@@ -83,37 +95,32 @@ export function makeSplat(x, y, z) {
   return g;
 }
 
-// A plate's crew as objects: builds them lazily, in order, so a slow parse
-// never stalls the frame. `sync(dt, groundY)` moves whoever is ready and
-// lays a splash for whoever died since last frame.
+// A plate's crew as objects: built lazily, in order, so a slow load never
+// stalls the frame. `sync(dt, groundY, near)` poses whoever is ready, lays
+// a splash for whoever died since last frame, and leaves the body lying.
 export function makeCrewScene(group, crew) {
   const rigs = new Array(crew.walkers.length).fill(null);
   const splatted = new Set();
   (async () => {
     for (let i = 0; i < crew.walkers.length; i++) {
-      const rig = await makeAstronaut();
+      const rig = await makeWalkerRig(crew.walkers[i].kind || 0);
       if (!rig) return;
       rigs[i] = rig;
       group.add(rig.obj);
     }
-    console.log(`[crew] ${rigs.filter(Boolean).length} astronauts on the plate`);
+    console.log(`[crew] ${rigs.filter(Boolean).length} on the plate: ${crew.walkers.map((w) => CREW_KINDS[w.kind || 0]).join(' ')}`);
   })();
   return {
     group,
-    // `near(x, z)` says whether a walker is close enough to draw
     sync(dt, groundY = () => 0, near = null) {
       crew.walkers.forEach((w, i) => {
         const rig = rigs[i];
-        if (!w.alive) {
-          if (rig && rig.obj.parent) group.remove(rig.obj);
-          if (!splatted.has(w)) { splatted.add(w); group.add(makeSplat(w.x, groundY(w.x, w.z), w.z)); }
-          return;
-        }
+        if (!w.alive && !splatted.has(w)) { splatted.add(w); group.add(makeSplat(w.x, groundY(w.x, w.z), w.z)); }
         if (!rig) return;
         const show = !near || near(w.x, w.z);
         rig.obj.visible = show;
         if (!show) return;
-        rig.setPose(w.x, groundY(w.x, w.z), w.z, w.heading, w.moving, w.running);
+        rig.setPose(w.x, groundY(w.x, w.z), w.z, w.heading, w.act || 'idle');
         rig.tick(dt);
       });
     },

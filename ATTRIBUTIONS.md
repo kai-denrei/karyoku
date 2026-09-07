@@ -62,3 +62,10 @@ low-passed or trimmed): `muzzle_gears.mp3` (bicycle gears in reverse,
 100825), `ui_click.mp3` (cassette recorder stop button, 359987),
 `hull_hit.mp3` (metal hit 12, 193278), `hull_wall.mp3` (hitting wall,
 85571), `thuds.mp3` (thud_me, 70412: twelve thuds, sliced by offset).
+
+## Station crew (2026-09-07)
+
+`assets/crew/` is the workshop's station-crew kit at
+jelaludo.github.io/SentryTowers_A6/station-crew (astronaut, scientist,
+worker; rigged, seven clips each). The compact astronaut it replaces is
+no longer in the repo.

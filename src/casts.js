@@ -4,8 +4,8 @@
 // wearing the weathered metal, edged where it is a machine you look at up
 // close. The board's light is the TD board's, so the numbers are theirs.
 import * as THREE from '../vendor/three.module.js';
-import { tintModel, addEdgeOutlines } from './glbmodels.js?v=04c2bc31';
-import { applyWeatheredMaterial } from './materials.js?v=04c2bc31';
+import { tintModel, addEdgeOutlines } from './glbmodels.js?v=7dcea21e';
+import { applyWeatheredMaterial } from './materials.js?v=7dcea21e';
 
 export function hideCollisionNodes(root) {
   root.traverse((o) => { if (/collision/i.test(o.name || '')) o.visible = false; });

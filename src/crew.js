@@ -14,7 +14,7 @@
 // asks it too, with the walker's own radius, so nobody walks through a
 // container or the tank. Something that rolls onto a walker slowly shoves
 // them out (`escape`); fast, it squashes them (stepSquash).
-import { KIND, CELL_M, rotSide, DIRS } from './plate.js?v=04c2bc31';
+import { KIND, CELL_M, rotSide, DIRS } from './plate.js?v=7dcea21e';
 
 export const CREW_TUNE = {
   walk: 1.4, run: 4.6,      // m/s
@@ -33,7 +33,19 @@ export const CREW_TUNE = {
   // over them, and a little speed is enough. Home crews keep the shove.
   squashSpeedEnemy: 0.4,
   squashMEnemy: 1.0,
+  // LIVELY: on arriving at a building's front a walker may POINT at it, or
+  // kneel a while as if checking something; a threatened walker either
+  // runs or COWERS (a coin toss), and a cowering one breaks and runs if
+  // the hull comes closer than cowerBreakM. Walkers keep `separation`
+  // metres apart, centre to centre.
+  pointChance: 0.4, pointMin: 2.0, pointMax: 4.5,
+  kneelChance: 0.2, kneelMin: 2.0, kneelMax: 4.0,
+  cowerChance: 0.5, cowerBreakM: 9,
+  separation: 0.9,
 };
+export const CREW_KINDS = ['astronaut', 'scientist', 'worker'];
+// what a walker is doing, for the scene's clips
+export const ACTS = ['idle', 'walk', 'run', 'point', 'kneel', 'scared', 'lie'];
 export const SUIT = 0xff7a1a; // orange, every one of them
 
 const walkable = (plate, cx, cz) => {
@@ -96,7 +108,8 @@ export function escape(plate, w, solid, tune = CREW_TUNE) {
 // walkable cell touching the infirmary. In metres, cell centres.
 export function keyAreas(plate) {
   const out = [];
-  const push = (cx, cz, tag) => { if (walkable(plate, cx, cz)) out.push({ x: (cx + 0.5) * CELL_M, z: (cz + 0.5) * CELL_M, tag }); };
+  // `fx, fz` is what stands there, to face and point at
+  const push = (cx, cz, tag, fx = null, fz = null) => { if (walkable(plate, cx, cz)) out.push({ x: (cx + 0.5) * CELL_M, z: (cz + 0.5) * CELL_M, tag, fx, fz }); };
   for (const pc of plate.pieces) {
     if (pc.kind === KIND.BUILDING && pc.zone !== 'band' && pc.id !== 'logistics_container') {
       const side = rotSide('S', pc.rot);
@@ -104,7 +117,7 @@ export function keyAreas(plate) {
       const mx = pc.x + Math.floor(pc.pw / 2), mz = pc.z + Math.floor(pc.ph / 2);
       const cx = side === 'E' ? pc.x + pc.pw : side === 'W' ? pc.x - 1 : mx;
       const cz = side === 'S' ? pc.z + pc.ph : side === 'N' ? pc.z - 1 : mz;
-      push(cx, cz, pc.landmark ? 'infirmary' : pc.id);
+      push(cx, cz, pc.landmark ? 'infirmary' : pc.id, (pc.x + pc.pw / 2) * CELL_M, (pc.z + pc.ph / 2) * CELL_M);
       void dx; void dz;
     }
   }
@@ -112,7 +125,7 @@ export function keyAreas(plate) {
     if (g.ring !== 'inner' && plate.inset > 0) continue;
     const [ox, oz] = DIRS[g.side];
     const gc = plate.pieces[g.pieceIndex];
-    push(Math.floor(gc.x + gc.pw / 2 - ox * 2), Math.floor(gc.z + gc.ph / 2 - oz * 2), 'gate');
+    push(Math.floor(gc.x + gc.pw / 2 - ox * 2), Math.floor(gc.z + gc.ph / 2 - oz * 2), 'gate', (gc.x + gc.pw / 2) * CELL_M, (gc.z + gc.ph / 2) * CELL_M);
   }
   return out;
 }
@@ -165,7 +178,8 @@ export function makeCrew(plate, n, rng, tune = CREW_TUNE, solid = null) {
     let x, z;
     if (areas.length) { const a = areas[Math.floor(rng() * areas.length)]; x = a.x; z = a.z; }
     else { const [cx, cz] = cells[Math.floor(rng() * cells.length)]; x = (cx + 0.5) * CELL_M; z = (cz + 0.5) * CELL_M; }
-    const w = { x, z, heading: rng() * 360, target: null, wait: rng() * tune.idleMax, running: false, fleeing: false, moving: false, alive: true };
+    const w = { x, z, heading: rng() * 360, target: null, wait: rng() * tune.idleMax, running: false, fleeing: false, moving: false, alive: true,
+      kind: i % CREW_KINDS.length, act: 'idle', actT: 0, face: null, cowering: false };
     // never born inside a container: shoved to the nearest free ground
     if (!crewFreeAt(plate, w.x, w.z, solid)) { const e = escape(plate, w, solid, tune); if (e) { w.x = e.x; w.z = e.z; } }
     crew.push(w);
@@ -179,8 +193,9 @@ export function makeCrew(plate, n, rng, tune = CREW_TUNE, solid = null) {
 // shoved by it, only by containers, so the hull can roll over them.
 export function stepCrew(crew, plate, dt, rng, threat = null, tune = CREW_TUNE, solid = null, hullAt = null) {
   const { walkers, areas } = crew;
+  const faceTo = (w, x, z) => { w.heading = Math.atan2(x - w.x, -(z - w.z)) * 180 / Math.PI; };
   for (const w of walkers) {
-    if (!w.alive) continue;
+    if (!w.alive) { w.act = 'lie'; w.moving = false; continue; }
     // something rolled onto this walker (a slow hull, a pushed container):
     // shove them to the nearest free ground and let them pick again
     const underHull = hullAt && hullAt(w.x, w.z);
@@ -189,12 +204,28 @@ export function stepCrew(crew, plate, dt, rng, threat = null, tune = CREW_TUNE, 
       if (e) { w.x = e.x; w.z = e.z; w.target = null; w.wait = 0.3; w.moving = false; }
     }
     const near = threat ? Math.hypot(threat.x - w.x, threat.z - w.z) : Infinity;
-    if (threat && near < tune.fleeM && !w.fleeing) {
-      w.fleeing = true; w.running = true; w.target = pickArea(plate, w, areas, rng, threat, solid); w.wait = 0;
+    if (threat && near < tune.fleeM && !w.fleeing && !w.cowering) {
+      // the coin: run, or freeze and cower facing it
+      if (rng() < tune.cowerChance) { w.cowering = true; w.target = null; w.moving = false; w.actT = 0; w.act = 'scared'; }
+      else { w.fleeing = true; w.running = true; w.target = pickArea(plate, w, areas, rng, threat, solid); w.wait = 0; w.actT = 0; }
+    }
+    if (w.cowering) {
+      faceTo(w, threat ? threat.x : w.x, threat ? threat.z : w.z);
+      w.moving = false; w.act = 'scared';
+      if (!threat || near > tune.safeM) { w.cowering = false; w.wait = 0.5; w.act = 'idle'; }
+      else if (near < tune.cowerBreakM) { w.cowering = false; w.fleeing = true; w.running = true; w.target = pickArea(plate, w, areas, rng, threat, solid); w.wait = 0; }
+      else continue;
     }
     if (w.fleeing && near > tune.safeM && !w.target) w.fleeing = false;
+    // a timed act (pointing, kneeling): hold it, facing what it is about
+    if (w.actT > 0) {
+      w.actT -= dt; w.moving = false;
+      if (w.face) faceTo(w, w.face.x, w.face.z);
+      if (w.actT > 0) continue;
+      w.act = 'idle'; w.face = null;
+    }
     if (!w.target) {
-      w.moving = false;
+      w.moving = false; w.act = 'idle';
       w.wait -= dt;
       if (w.wait > 0) continue;
       w.target = pickArea(plate, w, areas, rng, w.fleeing ? threat : null, solid);
@@ -206,8 +237,15 @@ export function stepCrew(crew, plate, dt, rng, threat = null, tune = CREW_TUNE, 
     const step = (w.running ? tune.run : tune.walk) * dt;
     w.heading = Math.atan2(dx, -dz) * 180 / Math.PI;
     if (d <= step) {
-      w.x = w.target.x; w.z = w.target.z; w.target = null; w.moving = false;
+      const at = w.target;
+      w.x = at.x; w.z = at.z; w.target = null; w.moving = false;
       w.wait = w.fleeing ? 0.2 : tune.idleMin + rng() * (tune.idleMax - tune.idleMin);
+      // arrived somewhere with something to look at: point at it, or kneel
+      if (!w.fleeing && at.fx !== null && at.fx !== undefined && at.tag !== 'gate' && rng() < tune.pointChance) {
+        w.act = 'point'; w.actT = tune.pointMin + rng() * (tune.pointMax - tune.pointMin); w.face = { x: at.fx, z: at.fz };
+      } else if (!w.fleeing && rng() < tune.kneelChance) {
+        w.act = 'kneel'; w.actT = tune.kneelMin + rng() * (tune.kneelMax - tune.kneelMin);
+      } else w.act = 'idle';
       continue;
     }
     const nx = w.x + dx / d * step, nz = w.z + dz / d * step;
@@ -217,8 +255,31 @@ export function stepCrew(crew, plate, dt, rng, threat = null, tune = CREW_TUNE, 
     let mx = nx, mz = nz, ok = crewFreeAt(plate, nx, nz, solid);
     if (!ok && crewFreeAt(plate, nx, w.z, solid) && Math.hypot(w.target.x - nx, w.target.z - w.z) < d - step * 0.1) { mx = nx; mz = w.z; ok = true; }
     if (!ok && crewFreeAt(plate, w.x, nz, solid) && Math.hypot(w.target.x - w.x, w.target.z - nz) < d - step * 0.1) { mx = w.x; mz = nz; ok = true; }
-    if (!ok) { w.target = null; w.moving = false; w.wait = w.fleeing ? 0.2 : tune.idleMin; continue; }
-    w.x = mx; w.z = mz; w.moving = true;
+    if (!ok) { w.target = null; w.moving = false; w.act = 'idle'; w.wait = w.fleeing ? 0.2 : tune.idleMin; continue; }
+    w.x = mx; w.z = mz; w.moving = true; w.act = w.running ? 'run' : 'walk';
+  }
+  // SEPARATION: no two live walkers share the ground. Each pair closer
+  // than `separation` is pushed apart by half the overlap each, onto free
+  // ground only (a walker against a wall stays; the other gives way).
+  const sep = tune.separation;
+  for (let i = 0; i < walkers.length; i++) {
+    const a = walkers[i];
+    if (!a.alive) continue;
+    for (let j = i + 1; j < walkers.length; j++) {
+      const b = walkers[j];
+      if (!b.alive) continue;
+      let dx = b.x - a.x, dz = b.z - a.z;
+      let d = Math.hypot(dx, dz);
+      if (d >= sep) continue;
+      if (d < 1e-6) { dx = 1; dz = 0; d = 1; }
+      const push = (sep - d) / 2 + 0.01;
+      const ax = a.x - dx / d * push, az = a.z - dz / d * push, bx = b.x + dx / d * push, bz = b.z + dz / d * push;
+      const aOk = crewFreeAt(plate, ax, az, solid), bOk = crewFreeAt(plate, bx, bz, solid);
+      if (aOk) { a.x = ax; a.z = az; }
+      if (bOk) { b.x = bx; b.z = bz; }
+      if (!aOk && bOk) { b.x += dx / d * push; b.z += dz / d * push; }
+      if (aOk && !bOk) { a.x -= dx / d * push; a.z -= dz / d * push; }
+    }
   }
 }
 
@@ -230,7 +291,7 @@ export function stepCrew(crew, plate, dt, rng, threat = null, tune = CREW_TUNE, 
 export function shotHits(crew, x, z, y = 0, tune = CREW_TUNE) {
   if (y > tune.softH) return null;
   for (const w of crew.walkers) {
-    if (w.alive && Math.hypot(w.x - x, w.z - z) <= tune.softR) { w.alive = false; w.moving = false; return w; }
+    if (w.alive && Math.hypot(w.x - x, w.z - z) <= tune.softR) { w.alive = false; w.moving = false; w.act = 'lie'; return w; }
   }
   return null;
 }
@@ -239,7 +300,7 @@ export function shotHits(crew, x, z, y = 0, tune = CREW_TUNE) {
 export function splashHits(crew, x, z, tune = CREW_TUNE) {
   const out = [];
   for (const w of crew.walkers) {
-    if (w.alive && Math.hypot(w.x - x, w.z - z) <= tune.splashR) { w.alive = false; w.moving = false; out.push(w); }
+    if (w.alive && Math.hypot(w.x - x, w.z - z) <= tune.splashR) { w.alive = false; w.moving = false; w.act = 'lie'; out.push(w); }
   }
   return out;
 }
@@ -253,7 +314,7 @@ export function stepSquash(crew, hull, hullR, tune = CREW_TUNE) {
   if (Math.abs(hull.speed || 0) < need) return out;
   for (const w of crew.walkers) {
     if (!w.alive) continue;
-    if (Math.hypot(hull.x - w.x, hull.z - w.z) <= reach) { w.alive = false; w.moving = false; out.push(w); }
+    if (Math.hypot(hull.x - w.x, hull.z - w.z) <= reach) { w.alive = false; w.moving = false; w.act = 'lie'; out.push(w); }
   }
   return out;
 }

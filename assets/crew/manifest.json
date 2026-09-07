@@ -1,0 +1,173 @@
+{
+  "version": 2,
+  "units": "meters",
+  "up": "+Y",
+  "forward": "+Z",
+  "assets": [
+    {
+      "id": "astronaut",
+      "name": "EVA / Astronaut",
+      "file": "astronaut_station.glb",
+      "triangles": 1568,
+      "bytes": 255008,
+      "rig": "station_shared_v2",
+      "joints": 20,
+      "materials": 7,
+      "animations": [
+        {
+          "name": "Idle",
+          "duration_s": 3.0,
+          "loop": true,
+          "preview_speed_mps": 0
+        },
+        {
+          "name": "Walk",
+          "duration_s": 1.2,
+          "loop": true,
+          "preview_speed_mps": 1.15
+        },
+        {
+          "name": "Run",
+          "duration_s": 0.8,
+          "loop": true,
+          "preview_speed_mps": 3.0
+        },
+        {
+          "name": "Kneel",
+          "duration_s": 3.0,
+          "loop": true,
+          "preview_speed_mps": 0
+        },
+        {
+          "name": "Scared",
+          "duration_s": 2.0,
+          "loop": true,
+          "preview_speed_mps": 0
+        },
+        {
+          "name": "Point",
+          "duration_s": 3.0,
+          "loop": true,
+          "preview_speed_mps": 0
+        },
+        {
+          "name": "Lie",
+          "duration_s": 4.0,
+          "loop": true,
+          "preview_speed_mps": 0
+        }
+      ],
+      "description": "Broad EVA shoulder armor, gold visor, twin life-support cylinders and helmet lamp."
+    },
+    {
+      "id": "scientist",
+      "name": "Xenobiology / Scientist",
+      "file": "scientist_station.glb",
+      "triangles": 1540,
+      "bytes": 252064,
+      "rig": "station_shared_v2",
+      "joints": 20,
+      "materials": 7,
+      "animations": [
+        {
+          "name": "Idle",
+          "duration_s": 3.0,
+          "loop": true,
+          "preview_speed_mps": 0
+        },
+        {
+          "name": "Walk",
+          "duration_s": 1.2,
+          "loop": true,
+          "preview_speed_mps": 1.15
+        },
+        {
+          "name": "Run",
+          "duration_s": 0.8,
+          "loop": true,
+          "preview_speed_mps": 3.0
+        },
+        {
+          "name": "Kneel",
+          "duration_s": 3.0,
+          "loop": true,
+          "preview_speed_mps": 0
+        },
+        {
+          "name": "Scared",
+          "duration_s": 2.0,
+          "loop": true,
+          "preview_speed_mps": 0
+        },
+        {
+          "name": "Point",
+          "duration_s": 3.0,
+          "loop": true,
+          "preview_speed_mps": 0
+        },
+        {
+          "name": "Lie",
+          "duration_s": 4.0,
+          "loop": true,
+          "preview_speed_mps": 0
+        }
+      ],
+      "description": "Teal containment suit, specimen canisters, wrist scanner and sample pouches."
+    },
+    {
+      "id": "worker",
+      "name": "Engineering / Worker",
+      "file": "worker_station.glb",
+      "triangles": 1496,
+      "bytes": 248584,
+      "rig": "station_shared_v2",
+      "joints": 20,
+      "materials": 7,
+      "animations": [
+        {
+          "name": "Idle",
+          "duration_s": 3.0,
+          "loop": true,
+          "preview_speed_mps": 0
+        },
+        {
+          "name": "Walk",
+          "duration_s": 1.2,
+          "loop": true,
+          "preview_speed_mps": 1.15
+        },
+        {
+          "name": "Run",
+          "duration_s": 0.8,
+          "loop": true,
+          "preview_speed_mps": 3.0
+        },
+        {
+          "name": "Kneel",
+          "duration_s": 3.0,
+          "loop": true,
+          "preview_speed_mps": 0
+        },
+        {
+          "name": "Scared",
+          "duration_s": 2.0,
+          "loop": true,
+          "preview_speed_mps": 0
+        },
+        {
+          "name": "Point",
+          "duration_s": 3.0,
+          "loop": true,
+          "preview_speed_mps": 0
+        },
+        {
+          "name": "Lie",
+          "duration_s": 4.0,
+          "loop": true,
+          "preview_speed_mps": 0
+        }
+      ],
+      "description": "Orange engineering suit, reinforced knee pads, tool belt and helmet work light."
+    }
+  ]
+}

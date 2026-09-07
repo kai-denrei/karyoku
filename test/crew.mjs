@@ -1,5 +1,5 @@
 import { generatePlate, makePlateParams, PLATE_TUNE, CELL_M } from '../src/plate.js';
-import { makeCrew, stepCrew, stepSquash, shotHits, splashHits, keyAreas, crewWalkableAt, crewFreeAt, hullCovers, escape, CREW_TUNE, SUIT } from '../src/crew.js';
+import { makeCrew, stepCrew, stepSquash, shotHits, splashHits, keyAreas, crewWalkableAt, crewFreeAt, hullCovers, escape, CREW_TUNE, CREW_KINDS, ACTS, SUIT } from '../src/crew.js';
 import { mulberry32 } from '../src/rng.js';
 import { check, done } from './check.mjs';
 
@@ -27,7 +27,7 @@ check('sometimes they run', ran > 0 && ran < movingFrames * 0.6, `ran ${ran} of 
 // from it (a walker cornered between a wall and two buildings can only run
 // past it — the ground decides, and the rules must not pretend otherwise)
 {
-  let fled = 0, farther = 0;
+  let fled = 0, cowered = 0, fledFar = 0;
   for (let k = 0; k < 6; k++) {
     const c2 = makeCrew(plate, 6, mulberry32(5));
     const w = c2.walkers[k];
@@ -35,13 +35,15 @@ check('sometimes they run', ran > 0 && ran < movingFrames * 0.6, `ran ${ran} of 
     // the road's western end, with the base wall at their backs
     const threat = { x: w.x - 10, z: w.z };
     const d0 = Math.hypot(w.x - threat.x, w.z - threat.z);
-    for (let i = 0; i < 4 * 60; i++) stepCrew(c2, plate, 1 / 60, rng, threat);
+    for (let i = 0; i < 4 * 60; i++) { stepCrew(c2, plate, 1 / 60, rng, threat); if (w.fleeing) w.wasFleeing = true; if (w.cowering) w.wasCowering = true; }
     const d1 = Math.hypot(w.x - threat.x, w.z - threat.z);
-    if (w.fleeing) fled++;
-    if (d1 > d0 + 5) farther++;
+    if (w.wasFleeing) fled++;
+    else if (w.wasCowering) cowered++;
+    if (w.wasFleeing && d1 > d0 + 5) fledFar++;
   }
-  check('every threatened walker flees', fled === 6, `${fled} of 6`);
-  check('most of them get well away from the threat', farther >= 4, `${farther} of 6`);
+  check('every threatened walker runs or cowers', fled + cowered === 6, `fled ${fled} cowered ${cowered} of 6`);
+  check('both answers show up across the six', fled >= 1 && cowered >= 1, `fled ${fled} cowered ${cowered}`);
+  check('those who ran got well away', fledFar >= fled - 1, `${fledFar} of ${fled}`);
 }
 // the Amiga moment
 {
@@ -118,5 +120,26 @@ check('sometimes they run', ran > 0 && ran < movingFrames * 0.6, `ran ${ran} of 
   stepCrew(enemy, plate, 1 / 60, mulberry32(5), null, CREW_TUNE, under2, under2);
   check('an enemy walker under a creeping hull stays put', e.alive && !crewFreeAt(plate, e.x, e.z, under2));
   check('...and the creeping hull squashes them', stepSquash(enemy, creeper2, 2).length === 1 && !e.alive);
+}
+// LIVELY: three kinds, pointing and kneeling at the fronts, apart from each other, the dead lying
+{
+  const c7 = makeCrew(plate, 9, mulberry32(31));
+  check('the three kinds cycle through the crew', CREW_KINDS.length === 3 && c7.walkers.every((w, i) => w.kind === i % 3));
+  check('key areas know what they face', keyAreas(plate).filter((a) => a.tag !== 'gate').every((a) => typeof a.fx === 'number'));
+  const seen = new Set();
+  let tooClose = 0, frames = 0;
+  const r7 = mulberry32(32);
+  for (let i = 0; i < 180 * 60; i++) {
+    stepCrew(c7, plate, 1 / 60, r7);
+    for (const w of c7.walkers) seen.add(w.act);
+    for (let a = 0; a < c7.walkers.length; a++) for (let b = a + 1; b < c7.walkers.length; b++) { frames++; if (Math.hypot(c7.walkers[a].x - c7.walkers[b].x, c7.walkers[a].z - c7.walkers[b].z) < CREW_TUNE.separation * 0.6) tooClose++; }
+  }
+  check('in three minutes they walk, run, point and kneel', ['walk', 'run', 'point', 'kneel', 'idle'].every((a) => seen.has(a)), [...seen].join(' '));
+  check('every act is a known act', [...seen].every((a) => ACTS.includes(a)));
+  check('they keep apart: almost never inside half the separation', tooClose / frames < 0.002, `${tooClose} of ${frames}`);
+  const w0 = c7.walkers[0];
+  stepSquash(c7, { x: w0.x, z: w0.z, speed: 6 }, 2);
+  stepCrew(c7, plate, 1 / 60, r7);
+  check('the dead lie', !w0.alive && w0.act === 'lie');
 }
 done();

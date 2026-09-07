@@ -181,7 +181,7 @@ no build step, Node invariant suites).
   rewritten for moved bodies, edges rebaked in BZ), rebuilt when a state
   changes. Props capped at 6 per block. At 120 x 90: 11.2k -> ~3k objects,
   61 M -> 35 M tris (colony), the composer still renders the scene twice
-  (bloom pass + final); the compact astronaut is 95k tris, skinned.
+  (was two passes; see ONE SCENE RENDER); the old astronaut (95k tris) is gone.
 - FIVE MORE CUES (operator clips, processed): `hull.bump` (set by
   `stepHull` when a solid stops it dead at >= 1.5 m/s) -> `sfx.wallHit`;
   `hull.elevating` (the muzzle actually moved) -> `sfx.elevating` loops
@@ -201,6 +201,19 @@ no build step, Node invariant suites).
   function (`const` is in its dead zone): the world tab's power-down block
   did and every frame threw once the station fell ("the game freezes").
   `?killpower=N` fells plate N's station after two seconds to prove it.
+- THE STATION CREW (replaces the compact astronaut, which is gone):
+  `assets/crew/` holds the workshop's astronaut, scientist and worker
+  (1.5k tris, one skin, clips Idle/Walk/Run/Kneel/Scared/Point/Lie,
+  authored 2.1 m, scaled to 1.8). `crew-scene.js` loads each ONCE and
+  clones per walker with a bone-rebinding clone (`cloneSkinned`, the
+  SkeletonUtils recipe); `w.act` picks the clip, weights crossfade in
+  0.18 s; Lie plays once and clamps; the body stays on the splat.
+  `crew.js`: `w.kind` cycles the three; on arrival at a front a walker
+  POINTS at it (`pointChance`, faces `area.fx, fz`) or KNEELS; a threat
+  inside `fleeM` is a coin (`cowerChance`): run, or cower facing it
+  (`scared`) until it leaves `safeM` or comes inside `cowerBreakM`, then
+  run; walkers keep `separation` (0.9 m) apart by a pairwise push onto
+  free ground. Defaults: 10 on the drive plate, 7 per world plate.
 - World: plate A is HOME (gates open, sentries silent), plate B is HOSTILE
   (gates shut, sentries live) — you breach B through its wall.
 - Probes: `#drive?seed=7&tick=4&fire=1&hold=1&aim=wall` shoots the wall
