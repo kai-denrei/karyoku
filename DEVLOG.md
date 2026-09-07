@@ -4,6 +4,30 @@ Newest first. Each entry: what landed, then how it works, for programmers.
 Decisions and dead ends in more detail live in `.deban/` (local, not
 published).
 
+## df02eb7 — the station crew
+
+The workshop's three station characters replace the compact astronaut:
+astronaut, scientist and worker, fifteen hundred triangles each against
+the old ninety-five thousand, one skin, seven clips (Idle, Walk, Run,
+Kneel, Scared, Point, Lie). Each model loads once and every walker is a
+bone-rebinding clone of it (the SkeletonUtils recipe, written here since
+it is not vendored); the walker's `act` picks the clip and the weights
+crossfade in a fifth of a second.
+
+They are livelier now. Walkers cycle the three kinds. Arriving at a
+building's front, a walker may point at it for a few seconds (the key
+areas now carry what they face) or kneel as if checking something. A
+tank inside the flee radius is a coin toss: run for a far key area, or
+freeze and cower facing it until it leaves, and a cowering walker whose
+tank comes inside nine metres breaks and runs. Walkers keep nine tenths
+of a metre apart by a pairwise push onto free ground, so a crowd at a
+gate no longer stands inside itself, and they still slide around
+containers, the tank and every wall. The dead lie where they fell, on
+the red splash, in the Lie clip clamped at its end. The suite watches a
+crew for three simulated minutes and asserts it walked, ran, pointed and
+knelt, kept apart, answered a threat both ways across six walkers, and
+lay down when run over.
+
 ## 8b1cc57 — one scene render, and the freeze
 
 THE FREEZE. Felling the power station in the world stopped the game: the
