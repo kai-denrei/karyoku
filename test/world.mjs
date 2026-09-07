@@ -1,4 +1,4 @@
-import { makeWorld, worldKnobProblems, worldBlocked, gateOutside, groundAt, WORLD_TUNE, ROAD_CLEAR_M } from '../src/world.js';
+import { makeWorld, worldKnobProblems, worldBlocked, gateOutside, groundAt, WORLD_TUNE, ROAD_CLEAR_M, OUTPOST_R, outpostGround } from '../src/world.js';
 import { PLATE_TUNE, KIND, CELL_M } from '../src/plate.js';
 import { check, near, done } from './check.mjs';
 
@@ -72,5 +72,16 @@ check('spawn is at A\'s gate outside point', near(w.spawn.x, ax) && near(w.spawn
   for (const q of w.mesh.quads) { const signs = []; for (let i = 0; i < 4; i++) { const a = V[q[i]], b = V[q[(i + 1) % 4]], c = V[q[(i + 2) % 4]]; signs.push(Math.sign((b[0] - a[0]) * (c[1] - b[1]) - (b[1] - a[1]) * (c[0] - b[0]))); } if (new Set(signs).size > 1) concave++; else if (signs[0] < 0) inv++; }
   check('no inverted quads after relaxation', inv === 0, `got ${inv}`);
   check('no concave quads after relaxation', concave === 0, `got ${concave}`);
+}
+// THE OUTPOSTS: ours and theirs by turns, on open ground, clear of everything
+{
+  const os = w.outposts;
+  check('the world has its outposts', os.length === WORLD_TUNE.outposts, `${os.length}`);
+  check('ours and theirs by turns', os.every((o, i) => o.side === (i % 2 === 0 ? 'home' : 'hostile')));
+  check('each is off the road and outside every plate margin', os.every((o) => w.road.points.every(([x, z]) => Math.hypot(x - o.x, z - o.z) > OUTPOST_R + 10) && w.plates.every((p) => o.x < p.ox - 20 || o.x > p.ox + p.wM + 20 || o.z < p.oz - 20 || o.z > p.oz + p.hM + 20)));
+  check('they keep apart', os.every((a) => os.every((b) => a === b || Math.hypot(a.x - b.x, a.z - b.z) >= 90)));
+  check('no tree or rock in a camp', os.every((o) => [...w.trees, ...w.rocks].every((t) => Math.hypot(t.x - o.x, t.z - o.z) > o.r + 4)));
+  check('the props block the hull, the clearing does not', os.every((o) => o.props.every((pr) => worldBlocked(w, o.x + pr.dx, o.z + pr.dz)) && !worldBlocked(w, o.x + 0.5, o.z + 0.5)));
+  check('the crew has walkable areas facing the props', os.every((o) => o.areas.length >= 4 && o.areas.every((a) => outpostGround(w, o).walkableAt(a.x, a.z) && typeof a.fx === 'number')));
 }
 done();

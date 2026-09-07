@@ -5,20 +5,20 @@
 import * as THREE from '../vendor/three.module.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { bodyDims } from './catalog.js?v=de91215a';
-import { generatePlate, makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M, dirOfYaw } from './plate.js?v=de91215a';
+import { bodyDims } from './catalog.js?v=1abb261a';
+import { generatePlate, makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M, dirOfYaw } from './plate.js?v=1abb261a';
 import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, blockedAt, makeGates, stepGates,
-  spawnFor, makeSentries, stepSentries, losClear, stepTracers, rayStop, fireHull, damageAt, makeBodies, stepBodies, bodyAt, shotRangeFor, damageSentryAt, stepCrush, ammoDotsLit, bodyHit, damageBody, powered } from './drive.js?v=de91215a';
-import { PALETTE, LOOK, LOOKS } from './looks.js?v=de91215a';
-import { withParam } from './url.js?v=de91215a';
-import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=de91215a';
-import { query, loadCatalog } from './plate-tab.js?v=de91215a';
-import { modelledIds } from './catalog.js?v=de91215a';
-import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS, makeMobileShell, mobileShell } from './drive-rig.js?v=de91215a';
-import { makeSfx } from './sfx.js?v=de91215a';
-import { makeCrew, stepCrew, stepSquash, shotHits, splashHits, hullCovers, crewFreeAt, CREW_TUNE } from './crew.js?v=de91215a';
-import { makeCrewScene } from './crew-scene.js?v=de91215a';
-import { mulberry32 } from './rng.js?v=de91215a';
+  spawnFor, makeSentries, stepSentries, losClear, stepTracers, rayStop, fireHull, damageAt, makeBodies, stepBodies, bodyAt, shotRangeFor, damageSentryAt, stepCrush, ammoDotsLit, bodyHit, damageBody, powered } from './drive.js?v=1abb261a';
+import { PALETTE, LOOK, LOOKS } from './looks.js?v=1abb261a';
+import { withParam } from './url.js?v=1abb261a';
+import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=1abb261a';
+import { query, loadCatalog } from './plate-tab.js?v=1abb261a';
+import { modelledIds } from './catalog.js?v=1abb261a';
+import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS, makeMobileShell, mobileShell } from './drive-rig.js?v=1abb261a';
+import { makeSfx } from './sfx.js?v=1abb261a';
+import { makeCrew, stepCrew, stepSquash, shotHits, splashHits, hullCovers, crewFreeAt, CREW_TUNE } from './crew.js?v=1abb261a';
+import { makeCrewScene } from './crew-scene.js?v=1abb261a';
+import { mulberry32 } from './rng.js?v=1abb261a';
 
 export function initDriveTab(root) {
   const { renderer, scene, camera, hud, notice, resize, render, setGroups, post, radar } = makeViewer(root);

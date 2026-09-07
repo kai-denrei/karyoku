@@ -10,12 +10,12 @@
 // and the hull samples it where it stands, so the two cannot disagree
 // beyond the mesh's own faceting, and a plate sits on ground that is
 // exactly zero because the mask says so, not because a vertex was edited.
-import { mulberry32 } from './rng.js?v=de91215a';
-import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=de91215a';
-import { generateMesh, relax } from './organic-grid.js?v=de91215a';
-import { valueNoise2D } from './noise.js?v=de91215a';
-import { generatePlate, makePlateParams, CELL_M, DIRS, yawOfSide, KIND } from './plate.js?v=de91215a';
-import { makeGates, makeSentries, blockedAt, losClear, buildingAt, gateCentre } from './drive.js?v=de91215a';
+import { mulberry32 } from './rng.js?v=1abb261a';
+import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=1abb261a';
+import { generateMesh, relax } from './organic-grid.js?v=1abb261a';
+import { valueNoise2D } from './noise.js?v=1abb261a';
+import { generatePlate, makePlateParams, CELL_M, DIRS, yawOfSide, KIND, shuffled } from './plate.js?v=1abb261a';
+import { makeGates, makeSentries, blockedAt, losClear, buildingAt, gateCentre } from './drive.js?v=1abb261a';
 
 export const ROAD_CLEAR_M = 7;
 export const WORLD_TUNE = {
@@ -29,6 +29,7 @@ export const WORLD_TUNE = {
   slopeK: 6,        // road cost multiplier per unit slope
   treeRate: 0.35,
   rockRate: 0.06,
+  outposts: 4,      // mini outposts on the ground between the bases, ours and theirs by turns
   trunkR: 0.9,      // m
   rockR: 2.2,       // m
 };
@@ -43,6 +44,7 @@ export const WORLD_KNOBS = [
   { key: 'slopeK', label: 'road slope cost', group: 'road', min: 0, max: 30, step: 1 },
   { key: 'treeRate', label: 'tree rate', group: 'cover', min: 0, max: 1, step: 0.05 },
   { key: 'rockRate', label: 'rock rate', group: 'cover', min: 0, max: 0.5, step: 0.01 },
+  { key: 'outposts', label: 'outposts', group: 'cover', min: 0, max: 8, step: 1 },
   { key: 'trunkR', label: 'trunk radius (m)', group: 'cover', min: 0.3, max: 3, step: 0.1 },
   { key: 'rockR', label: 'rock radius (m)', group: 'cover', min: 0.5, max: 6, step: 0.1 },
 ];
@@ -219,6 +221,7 @@ export function makeWorld(params, plateParams, allowed = undefined) {
   // trees and rocks
   const bucket = (x, z) => `${Math.floor(x / 16)},${Math.floor(z / 16)}`;
   const put = (item) => { const k = bucket(item.x, item.z); if (!world.hash.has(k)) world.hash.set(k, []); world.hash.get(k).push(item); };
+  world.outposts = [];
   // nothing stands within ROAD_CLEAR_M of the road's own line: a quad off
   // the road can still put a trunk at the road's edge, and the hull met one
   // 2.9 m ahead of its spawn
@@ -233,9 +236,49 @@ export function makeWorld(params, plateParams, allowed = undefined) {
     }
     return best;
   };
+  // THE OUTPOSTS: small working camps on the open ground, ours and theirs
+  // by turns, well off the road and clear of the plates, far from each
+  // other. A few crates, a barrel and a panel rack about a centre, the
+  // props solid to the hull; a crew of their side works there. Ours are
+  // STRANDED: the hull can pick them up (rescue.js).
+  {
+    const want = Math.round(tune.outposts || 0);
+    const R = OUTPOST_R;
+    const order = shuffled(rng, mesh.quads.map((_, qi) => qi));
+    for (const qi of order) {
+      if (world.outposts.length >= want) break;
+      if (world.road.set.has(qi)) continue;
+      const [cx, cz] = world.centroids[qi];
+      if (cx < R + 20 || cz < R + 20 || cx > S - R - 20 || cz > S - R - 20) continue;
+      let mask = 1;
+      for (const p of plates) mask = Math.min(mask, smoothstep(0, tune.plateMargin, rectDist(cx, cz, p.ox, p.oz, p.ox + p.wM, p.oz + p.hM)));
+      if (mask < 0.999) continue;
+      if (distToRoad(cx, cz) < R + 16) continue;
+      if (world.outposts.some((o) => Math.hypot(o.x - cx, o.z - cz) < 90)) continue;
+      const side = world.outposts.length % 2 === 0 ? 'home' : 'hostile';
+      // props on a wide ring so the crew's straight walks between them
+      // cross the open middle rather than each other
+      const props = [
+        { id: 'cargo_crate', dx: 7.5, dz: -5.5, rot: Math.floor(rng() * 4), r: 1.3 },
+        { id: 'cargo_crate', dx: 10.5, dz: -4.5, rot: Math.floor(rng() * 4), r: 1.3 },
+        { id: 'fuel_barrel', dx: -8.0, dz: 6.0, rot: 0, r: 1.0 },
+        { id: 'solar_panel_rack', dx: -3.5, dz: -9.5, rot: Math.floor(rng() * 4), r: 3.2 },
+        { id: 'pallet_stack', dx: 8.5, dz: 7.5, rot: Math.floor(rng() * 4), r: 1.3 },
+      ];
+      const o = { x: cx, z: cz, r: R, side, props, areas: [] };
+      for (const pr of props) put({ kind: 'prop', x: cx + pr.dx, z: cz + pr.dz, r: pr.r, outpost: o });
+      // where the crew works: beside each prop, facing it, and the centre
+      // the work spots sit on the INSIDE of each prop (toward the centre), so every walk crosses the clearing
+      for (const pr of props) { const d = Math.hypot(pr.dx, pr.dz) || 1; const k = (d - pr.r - 1.6) / d; o.areas.push({ x: cx + pr.dx * k, z: cz + pr.dz * k, tag: pr.id, fx: cx + pr.dx, fz: cz + pr.dz }); }
+      o.areas.push({ x: cx + 1.5, z: cz + 1.0, tag: 'camp', fx: cx - 3.5, fz: cz - 9.5 });
+      world.outposts.push(o);
+    }
+    if (world.outposts.length < want) warnings.push(`only ${world.outposts.length} of ${want} outposts found room`);
+  }
   mesh.quads.forEach((q, qi) => {
     if (world.road.set.has(qi)) return;
     const [cx, cz] = world.centroids[qi];
+    if (world.outposts.some((o) => Math.hypot(o.x - cx, o.z - cz) < o.r + 8)) return; // a camp keeps its clearing
     let mask = 1;
     for (const p of plates) mask = Math.min(mask, smoothstep(0, tune.plateMargin, rectDist(cx, cz, p.ox, p.oz, p.ox + p.wM, p.oz + p.hM)));
     if (mask < 0.5) return;
@@ -326,6 +369,10 @@ export function worldBlocked(world, x, z) {
   }
   return false;
 }
+
+export const OUTPOST_R = 14;
+// the ground an outpost's crew may walk: its clearing, off the props and off the plates
+export const outpostGround = (world, o) => ({ walkableAt: (x, z) => Math.hypot(x - o.x, z - o.z) < o.r + 6 && !plateOf(world, x, z) && !worldBlocked(world, x, z) });
 
 export const worldBuildingAt = (world, x, z) => { const p = plateOf(world, x, z); return p ? buildingAt(p.plate, x - p.ox, z - p.oz) : false; };
 

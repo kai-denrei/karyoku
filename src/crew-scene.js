@@ -7,9 +7,9 @@
 // crossfade so a change of mind does not snap. The dead lie where they
 // fell, on the red splash — the Amiga moment with a body in it.
 import * as THREE from '../vendor/three.module.js';
-import { loadGlbWithClips } from './glbmodels.js?v=de91215a';
-import { CREW_KINDS, CREW_PAINT, TEAM_PAINT } from './crew.js?v=de91215a';
-import { BZ, styleForLook } from './looks.js?v=de91215a';
+import { loadGlbWithClips } from './glbmodels.js?v=1abb261a';
+import { CREW_KINDS, CREW_PAINT, TEAM_PAINT } from './crew.js?v=1abb261a';
+import { BZ, styleForLook } from './looks.js?v=1abb261a';
 
 export const CREW_URLS = CREW_KINDS.map((k) => `assets/crew/${k}_station.glb`);
 const AUTHORED_M = 2.1, PERSON_M = 1.8;
@@ -144,22 +144,30 @@ export function makeSplat(x, y, z) {
 // stalls the frame. `sync(dt, groundY, near)` poses whoever is ready, lays
 // a splash for whoever died since last frame, and leaves the body lying.
 export function makeCrewScene(group, crew) {
-  const rigs = new Array(crew.walkers.length).fill(null);
+  const rigs = [];
+  const asked = new Set();
   const splatted = new Set();
-  (async () => {
-    for (let i = 0; i < crew.walkers.length; i++) {
-      const rig = await makeWalkerRig(crew.walkers[i].kind || 0, crew.hostile ? 'hostile' : 'home');
+  let announced = false;
+  // rigs are made on demand, in order, so a crew that GROWS (rescued
+  // walkers unloading at home) gets its new members drawn too
+  const ensure = (i) => {
+    if (asked.has(i)) return;
+    asked.add(i);
+    makeWalkerRig(crew.walkers[i].kind || 0, crew.hostile ? 'hostile' : 'home').then((rig) => {
       if (!rig) return;
       rigs[i] = rig;
-      group.add(rig.obj);
-    }
-    console.log(`[crew] ${rigs.filter(Boolean).length} on the plate: ${crew.walkers.map((w) => CREW_KINDS[w.kind || 0]).join(' ')}`);
-  })();
+      if (!crew.walkers[i].gone) group.add(rig.obj);
+      if (!announced && rigs.filter(Boolean).length >= Math.min(crew.walkers.length, 3)) { announced = true; console.log(`[crew] ${crew.walkers.length} walkers: ${crew.walkers.map((w) => CREW_KINDS[w.kind || 0]).join(' ')}`); }
+    });
+  };
   return {
     group,
     sync(dt, groundY = () => 0, near = null) {
       crew.walkers.forEach((w, i) => {
+        if (!asked.has(i)) ensure(i);
         const rig = rigs[i];
+        // gone: aboard the hull or through a door; no body, no splash
+        if (w.gone) { if (rig && rig.obj.parent) group.remove(rig.obj); return; }
         if (!w.alive && !splatted.has(w)) { splatted.add(w); group.add(makeSplat(w.x, groundY(w.x, w.z), w.z)); }
         if (!rig) return;
         const show = !near || near(w.x, w.z);

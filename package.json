@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node test/rng.mjs && node test/catalog.mjs && node test/plate.mjs && node test/drive.mjs && node test/world.mjs && node test/crew.mjs && node test/stick.mjs && node test/pwa.mjs && node test/audiomix.mjs && node test/audiogate.mjs && node test/audiomanifest.mjs && node test/impactfx.mjs && node test/tankfeel.mjs && node test/soundlab.mjs && node test/radar.mjs",
+    "test": "node test/rng.mjs && node test/catalog.mjs && node test/plate.mjs && node test/drive.mjs && node test/world.mjs && node test/crew.mjs && node test/stick.mjs && node test/pwa.mjs && node test/audiomix.mjs && node test/audiogate.mjs && node test/audiomanifest.mjs && node test/impactfx.mjs && node test/tankfeel.mjs && node test/soundlab.mjs && node test/radar.mjs && node test/rescue.mjs",
     "serve": "python3 scripts/serve.py 8150",
     "bust": "./scripts/bust.sh"
   }

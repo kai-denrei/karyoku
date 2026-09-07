@@ -13,9 +13,9 @@
 // `rotation.y = -rot * PI/2`. Yaw is compass degrees, 0 = N, 90 = E.
 // Plate width and depth are EVEN, because roads are 2 x 2 pieces laid on
 // even coordinates and a gate's road port has to land on one.
-import { mulberry32 } from './rng.js?v=de91215a';
-import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=de91215a';
-import { specById } from './catalog-spec.js?v=de91215a';
+import { mulberry32 } from './rng.js?v=1abb261a';
+import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=1abb261a';
+import { specById } from './catalog-spec.js?v=1abb261a';
 
 export const CELL_M = 4;
 
@@ -609,7 +609,7 @@ function roadSides(s, x, z, pw, ph) {
   return out;
 }
 
-function shuffled(rng, arr) {
+export function shuffled(rng, arr) {
   const a = arr.slice();
   for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
   return a;

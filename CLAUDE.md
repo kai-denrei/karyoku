@@ -234,6 +234,31 @@ no build step, Node invariant suites).
 - THE WRECK slumps IN PLACE now (tilted on its plinth, sunk 0.4 m, dark):
   the toppled-beside pose made a heptapod's legs a bright unnameable pile.
 - Probes: `?breakat=x,z` starts the nearest body destroyed.
+
+## Outposts and the rescue (operator, 2026-09-07)
+- `world.outposts` (`WORLD_TUNE.outposts` 4, `OUTPOST_R` 14): camps on
+  open ground, ours and theirs by turns, off the road (R + 16), outside
+  the plate margins, 90 m apart; five props on a wide ring (crates,
+  barrel, rack, pallet) as blockers in `world.hash` (`kind: 'prop'`),
+  work spots INSIDE the ring (`o.areas`, each facing its prop) so every
+  walk crosses the clearing; trees and rocks keep out of R + 8.
+  `outpostGround(world, o)` is a duck-typed ground (`walkableAt`) the
+  crew module accepts in place of a plate (`crewWalkableAt`); `makeCrew`
+  takes `areasOverride`.
+- RESCUE (`rescue.js`, `test/rescue.mjs`): a STOPPED hull (< 1.5 m/s)
+  within `boardM` 24 m of a home camp pulls its walkers to it; within
+  `boardAt` 5.2 m (past the hull's own 4 m half-length) they are
+  `gone`/`aboard`, ten fit. At the drop (the home infirmary front, else
+  the facing gate) a stopped hull unloads one every 0.6 s behind itself
+  into the home crew as `makeRescued` walkers with `goal` = the door area
+  (`mission: 'enter'`; `stepCrew` sends a goal-bearing walker straight
+  there and marks `entered`/`gone` on arrival); `stepEntered` scores
+  `bonus` 100 each. HUD: `aboard N/10 · rescued · score`; probe
+  `aboard= rescued= score= camps=`; `?rescueprobe=1&tick=26` parks the
+  hull at our first camp at t=1 and at the drop at t=8 and ends
+  `rescued=4 score=400`. Crew scenes GROW (rigs made on demand) and a
+  `gone` walker is removed with no splash.
+- The radar shows camp props as statics and their crews as units by side.
 - World: plate A is HOME (gates open, sentries silent), plate B is HOSTILE
   (gates shut, sentries live) — you breach B through its wall.
 - Probes: `#drive?seed=7&tick=4&fire=1&hold=1&aim=wall` shoots the wall

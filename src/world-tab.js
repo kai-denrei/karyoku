@@ -5,20 +5,23 @@
 import * as THREE from '../vendor/three.module.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { bodyDims } from './catalog.js?v=de91215a';
-import { makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M } from './plate.js?v=de91215a';
-import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, stepGates, stepSentries, stepTracers, fireHull, damageAt, autopilotInput, makeBodies, stepBodies, bodyAt, shotRangeFor, solidHeightAt, SOLID_HEIGHT, damageSentryAt, stepCrush, ammoDotsLit, bodyHit, damageBody, powered } from './drive.js?v=de91215a';
-import { WORLD_KNOBS, makeWorldParams, clampWorldParams, makeWorld, worldBlocked, worldBuildingAt, worldLosFor, worldSentries, worldGates, terrainNormal, splitQuad, groundAt } from './world.js?v=de91215a';
-import { PALETTE, terrainMeshes, floraMeshes, LOOK, LOOKS } from './looks.js?v=de91215a';
-import { withParam } from './url.js?v=de91215a';
-import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=de91215a';
-import { query, loadCatalog } from './plate-tab.js?v=de91215a';
-import { modelledIds } from './catalog.js?v=de91215a';
-import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS, makeMobileShell, mobileShell } from './drive-rig.js?v=de91215a';
-import { makeSfx } from './sfx.js?v=de91215a';
-import { makeCrew, stepCrew, stepSquash, shotHits, splashHits, hullCovers, crewFreeAt, CREW_TUNE } from './crew.js?v=de91215a';
-import { makeCrewScene } from './crew-scene.js?v=de91215a';
-import { mulberry32 } from './rng.js?v=de91215a';
+import { bodyDims } from './catalog.js?v=1abb261a';
+import { makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M } from './plate.js?v=1abb261a';
+import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, stepGates, stepSentries, stepTracers, fireHull, damageAt, autopilotInput, makeBodies, stepBodies, bodyAt, shotRangeFor, solidHeightAt, SOLID_HEIGHT, damageSentryAt, stepCrush, ammoDotsLit, bodyHit, damageBody, powered } from './drive.js?v=1abb261a';
+import { WORLD_KNOBS, makeWorldParams, clampWorldParams, makeWorld, worldBlocked, worldBuildingAt, worldLosFor, worldSentries, worldGates, terrainNormal, splitQuad, groundAt, outpostGround } from './world.js?v=1abb261a';
+import { PALETTE, terrainMeshes, floraMeshes, LOOK, LOOKS } from './looks.js?v=1abb261a';
+import { withParam } from './url.js?v=1abb261a';
+import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=1abb261a';
+import { query, loadCatalog } from './plate-tab.js?v=1abb261a';
+import { modelledIds } from './catalog.js?v=1abb261a';
+import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS, makeMobileShell, mobileShell } from './drive-rig.js?v=1abb261a';
+import { makeSfx } from './sfx.js?v=1abb261a';
+import { makeCrew, stepCrew, stepSquash, shotHits, splashHits, hullCovers, crewFreeAt, keyAreas, CREW_TUNE } from './crew.js?v=1abb261a';
+import { makeCrewScene } from './crew-scene.js?v=1abb261a';
+import { makeRescue, stepBoarding, stepUnloading, makeRescued, stepEntered, RESCUE_TUNE } from './rescue.js?v=1abb261a';
+import { proto } from './plate-scene.js?v=1abb261a';
+import { fileFor } from './catalog.js?v=1abb261a';
+import { mulberry32 } from './rng.js?v=1abb261a';
 
 const ARRIVE_M = 8;
 
@@ -42,6 +45,7 @@ export function initWorldTab(root) {
 
   let catalog = null, world = null, group = null, rigs = [], gates = [], sentries = [], tracers = [], hull = null, bodies = [];
   let crews = [], crewRng = null;
+  let camps = [], rescue = makeRescue(), drop = null, campGroup = null;
   // what a shot can damage: anything the catalog has damaged models for
   const destructible = (pc) => { const e = catalog && catalog.get(pc.id); return !!(e && e.states[1] && e.states[3]); };
   const CREW_N = Number(q.get('crew') || 12);
@@ -81,6 +85,41 @@ export function initWorldTab(root) {
       const g = new THREE.Group(); g.name = 'crew'; rigs[pi].group.add(g);
       return { plate: p.plate, p, crew, solid, scene: makeCrewScene(g, crew) };
     });
+    // THE OUTPOSTS: props on the ground, a crew of their side about them;
+    // ours are stranded and wait for a lift (rescue.js)
+    campGroup = new THREE.Group(); campGroup.name = 'camps'; group.add(campGroup);
+    camps = world.outposts.map((o) => {
+      const g = new THREE.Group(); g.position.set(0, 0, 0); campGroup.add(g);
+      const tint = o.side === 'hostile' ? PALETTE.hostile : PALETTE.home;
+      for (const pr of o.props) {
+        const entry = catalog.get(pr.id);
+        const url = entry && !entry.placeholder ? fileFor(entry, 0) : null;
+        if (!url) continue;
+        proto(url, [], null, tint).then((root) => {
+          if (!root) return;
+          const obj = root.clone();
+          const x = o.x + pr.dx, z = o.z + pr.dz;
+          obj.position.set(x, groundAt(world, x, z).y, z);
+          obj.rotation.y = -pr.rot * Math.PI / 2;
+          obj.name = 'camp-prop';
+          g.add(obj);
+        });
+      }
+      const ground = outpostGround(world, o);
+      const solid = (x, z) => hull && hullCovers(hull, x, z);
+      const crew = makeCrew(ground, 4, crewRng, CREW_TUNE, solid, o.areas);
+      crew.hostile = o.side === 'hostile';
+      const cg = new THREE.Group(); cg.name = 'crew'; g.add(cg);
+      return { o, ground, solid, crew, group: g, scene: makeCrewScene(cg, crew) };
+    });
+    rescue = makeRescue();
+    // the drop: the home plate's infirmary front, else the inside of its facing gate
+    {
+      const home = world.plates[0];
+      const areas = keyAreas(home.plate);
+      const a = areas.find((k) => k.tag === 'infirmary') || areas.find((k) => k.tag === 'gate') || null;
+      drop = a ? { area: a, x: a.x + home.ox, z: a.z + home.oz } : null;
+    }
     squashed = 0; crushed = 0; sfx.clearBodies();
     tracers = [];
     hits = 0; simT = 0; lastLog = 0; arrivedAt = -1; breached = 0;
@@ -93,7 +132,15 @@ export function initWorldTab(root) {
 
   const goalDist = () => Math.hypot(hull.x - world.goal.x, hull.z - world.goal.z);
 
+  let probeStage = 0;
   function step(dt, input) {
+    if (rescueProbeOn && camps.length && drop) {
+      const cam0 = camps.find((c) => !c.crew.hostile);
+      if (probeStage === 0 && simT >= 1 && cam0) { hull.x = cam0.o.x + 16; hull.z = cam0.o.z; hull.speed = 0; probeStage = 1; console.log('[rescue] parked at camp'); }
+      if (probeStage === 1 && simT >= 8) { hull.x = drop.x + 6; hull.z = drop.z; hull.speed = 0; probeStage = 2; console.log('[rescue] parked at the drop'); }
+      input = { ...input, fwd: false, rev: false, throttle: 0 };
+      if (cam0 && Math.floor(simT) !== Math.floor(simT - dt)) console.log(`[rescue] t=${simT.toFixed(0)} hull=${hull.x.toFixed(0)},${hull.z.toFixed(0)} speed=${hull.speed} ` + cam0.crew.walkers.map((w) => `d=${Math.hypot(w.x - hull.x, w.z - hull.z).toFixed(1)} b=${w.boarding ? 1 : 0} tgt=${w.target ? w.target.tag : '-'} act=${w.act} alive=${w.alive ? 1 : 0} gone=${w.gone ? 1 : 0} mv=${w.moving ? 1 : 0}`).join(' | '));
+    }
     world.plates.forEach((p, pi) => {
       const local = { x: hull.x - p.ox, z: hull.z - p.oz, heading: hull.heading, speed: hull.speed };
       for (const pc of stepCrush(p.plate, local, P)) {
@@ -119,6 +166,20 @@ export function initWorldTab(root) {
       powerWas[pi] = on;
     });
     // a crew fears the hull only on the hostile plate; a hull squashes anyone, anywhere
+    // the camps: their crews work, fear the hull if hostile, board it if ours
+    for (const c of camps) {
+      stepCrew(c.crew, c.ground, dt, crewRng, c.crew.hostile ? hull : null, CREW_TUNE, c.solid, (x, z) => hullCovers(hull, x, z));
+      for (const w of stepSquash(c.crew, hull, P.hullR)) { squashed++; sfx.softHit([w.x, groundAt(world, w.x, w.z).y + 0.6, w.z], 0); }
+    }
+    stepBoarding(rescue, camps.filter((c) => !c.crew.hostile).map((c) => c.crew), hull, RESCUE_TUNE);
+    if (drop && stepUnloading(rescue, hull, drop.x, drop.z, dt, RESCUE_TUNE)) {
+      // climb down behind the hull, into the home plate's crew, bound for the door
+      const home = world.plates[0];
+      const [fx, fz] = [Math.sin(hull.heading * Math.PI / 180), -Math.cos(hull.heading * Math.PI / 180)];
+      const w = makeRescued(hull.x - fx * 5 - home.ox, hull.z - fz * 5 - home.oz, rescue.boarded % 3, drop.area, (hull.heading + 180) % 360);
+      crews[0].crew.walkers.push(w);
+    }
+    stepEntered(rescue, crews[0].crew, RESCUE_TUNE);
     for (const c of crews) {
       const local = { x: hull.x - c.p.ox, z: hull.z - c.p.oz, heading: hull.heading, speed: hull.speed };
       stepCrew(c.crew, c.plate, dt, crewRng, c.p.hostile ? local : null, CREW_TUNE, c.solid, (x, z) => hullCovers(local, x, z));
@@ -148,8 +209,13 @@ export function initWorldTab(root) {
     // in its splash; a shell through an astronaut stops there
     const splash = (x, z) => {
       for (const c of crews) for (const w of splashHits(c.crew, x - c.p.ox, z - c.p.oz)) { squashed++; sfx.softHit([w.x + c.p.ox, groundAt(world, w.x + c.p.ox, w.z + c.p.oz).y + 1.0, w.z + c.p.oz], distTo(x, z)); }
+      for (const c of camps) for (const w of splashHits(c.crew, x, z)) { squashed++; sfx.softHit([w.x, groundAt(world, w.x, w.z).y + 1.0, w.z], distTo(x, z)); }
     };
     const through = (x, z, y, t) => {
+      for (const c of camps) {
+        const w = shotHits(c.crew, x, z, y);
+        if (w) { const n = Math.hypot(t.vx, t.vz) || 1; squashed++; sfx.impact('shell', [x, t.y, z], [-t.vx / n, 0.2, -t.vz / n], distTo(x, z)); sfx.softHit([w.x, t.y, w.z], distTo(x, z), [-t.vx / n, 0.4, -t.vz / n]); return true; }
+      }
       for (const c of crews) {
         const w = shotHits(c.crew, x - c.p.ox, z - c.p.oz, y);
         if (w) {
@@ -186,7 +252,7 @@ export function initWorldTab(root) {
     if (arrivedAt < 0 && goalDist() <= ARRIVE_M) arrivedAt = simT;
   }
 
-  const logLine = () => `[world] t=${simT.toFixed(1)} hull=${hull.x.toFixed(1)},${hull.z.toFixed(1)} y=${world.heightAt(hull.x, hull.z).toFixed(2)} heading=${hull.heading.toFixed(0)} goal=${goalDist().toFixed(1)} tracking=${sentries.filter((s) => s.tracking).length} lobs=${tracers.filter((t) => t.kind === 'lob').length} hits=${hits} ammo=${hull.ammo} down=${squashed} sentriesDown=${sentries.filter((s) => !s.alive).length} crushed=${crushed} bodiesBroken=${bodiesBroken} power=${world.plates.map((p) => (powered(p.plate) ? 'on' : 'off')).join('/')} crewIn=${crews.reduce((n, c) => n + c.crew.walkers.filter((w) => w.alive && !crewFreeAt(c.plate, w.x, w.z, c.solid)).length, 0)}${arrivedAt >= 0 ? ' ARRIVED' : ''}`;
+  const logLine = () => `[world] t=${simT.toFixed(1)} hull=${hull.x.toFixed(1)},${hull.z.toFixed(1)} y=${world.heightAt(hull.x, hull.z).toFixed(2)} heading=${hull.heading.toFixed(0)} goal=${goalDist().toFixed(1)} tracking=${sentries.filter((s) => s.tracking).length} lobs=${tracers.filter((t) => t.kind === 'lob').length} hits=${hits} ammo=${hull.ammo} down=${squashed} sentriesDown=${sentries.filter((s) => !s.alive).length} crushed=${crushed} bodiesBroken=${bodiesBroken} power=${world.plates.map((p) => (powered(p.plate) ? 'on' : 'off')).join('/')} aboard=${rescue.aboard} rescued=${rescue.rescued} score=${rescue.score} camps=${camps.length} crewIn=${crews.reduce((n, c) => n + c.crew.walkers.filter((w) => w.alive && !crewFreeAt(c.plate, w.x, w.z, c.solid)).length, 0)}${arrivedAt >= 0 ? ' ARRIVED' : ''}`;
 
   function sync() {
     const g = groundAt(world, hull.x, hull.z);
@@ -202,6 +268,11 @@ export function initWorldTab(root) {
       for (const gr of rigs[pi].gateRigs) { const g = p.gates[gr.index]; if (g) setGateOpen(gr, g.open); }
     });
     for (const c of crews) c.scene.sync(lastDt, () => 0, (x, z) => camera.position.y - y > 150 || Math.hypot(x + c.p.ox - camera.position.x, z + c.p.oz - camera.position.z) < CULL_M);
+    for (const c of camps) {
+      const near = camera.position.y - y > 150 || Math.hypot(c.o.x - camera.position.x, c.o.z - camera.position.z) < CULL_M + c.o.r;
+      c.group.visible = near;
+      if (near) c.scene.sync(lastDt, (x, z) => groundAt(world, x, z).y, null);
+    }
     rigs.forEach((r, pi) => r.loopRigs.forEach((lr, i) => { lr.mixer.update(lastDt); const p = world.plates[pi]; sfx.machine(`${pi}:${i}`, Math.hypot(lr.obj.position.x + p.ox - hull.x, lr.obj.position.z + p.oz - hull.z)); }));
     sfx.tick(lastDt);
     pool.sync(tracers, (x, z) => world.heightAt(x, z), lastDt, P.splashR);
@@ -214,10 +285,14 @@ export function initWorldTab(root) {
       if (p.plate.power && powered(p.plate)) { const st = p.plate.pieces[p.plate.power.pieceIndex]; contacts.push({ x: (st.x + 1) * CELL_M + p.ox, z: (st.z + 1) * CELL_M + p.oz, side, kind: 'static' }); }
       for (const w of crews[pi].crew.walkers) if (w.alive) contacts.push({ x: w.x + p.ox, z: w.z + p.oz, side, kind: 'unit' });
     });
+    for (const c of camps) {
+      for (const pr of c.o.props) contacts.push({ x: c.o.x + pr.dx, z: c.o.z + pr.dz, side: c.o.side, kind: 'static' });
+      for (const w of c.crew.walkers) if (w.alive) contacts.push({ x: w.x, z: w.z, side: c.o.side, kind: 'unit' });
+    }
     radar.paint(simT, hull, contacts);
     hud.textContent = mobileShell
-      ? `goal ${goalDist().toFixed(0)} m${arrivedAt >= 0 ? ' · ARRIVED' : ''} · muzzle ${hull.elev.toFixed(0)} · range ${shotRangeFor(hull, P).toFixed(0)} m · shells ${hull.ammo} · hits ${hits} · breached ${breached} · crew down ${squashed}`
-      : `goal ${goalDist().toFixed(0)} m${arrivedAt >= 0 ? ` · ARRIVED at ${arrivedAt.toFixed(1)} s` : ''} · muzzle ${hull.elev.toFixed(0)} deg · range ${shotRangeFor(hull, P).toFixed(0)} m · hits ${hits} · shots ${hull.shots} · shells ${hull.ammo}/${P.ammoMax} · breached ${breached} · crew down ${squashed} · sentries ${sentries.filter((s) => s.alive).length}/${sentries.length} · cam ${view.camera} · WASD drive · SPACE fire · SHIFT+W/S muzzle · 1-4 cameras · R regenerate`;
+      ? `goal ${goalDist().toFixed(0)} m${arrivedAt >= 0 ? ' · ARRIVED' : ''} · shells ${hull.ammo} · aboard ${rescue.aboard}/${RESCUE_TUNE.capacity} · rescued ${rescue.rescued} · score ${rescue.score} · hits ${hits} · crew down ${squashed}`
+      : `goal ${goalDist().toFixed(0)} m${arrivedAt >= 0 ? ` · ARRIVED at ${arrivedAt.toFixed(1)} s` : ''} · muzzle ${hull.elev.toFixed(0)} deg · range ${shotRangeFor(hull, P).toFixed(0)} m · hits ${hits} · shots ${hull.shots} · shells ${hull.ammo}/${P.ammoMax} · aboard ${rescue.aboard}/${RESCUE_TUNE.capacity} · rescued ${rescue.rescued} · score ${rescue.score} · breached ${breached} · crew down ${squashed} · sentries ${sentries.filter((s) => s.alive).length}/${sentries.length} · cam ${view.camera} · WASD drive · SPACE fire · SHIFT+W/S muzzle · 1-4 cameras · R regenerate`;
   }
 
   const regenerate = () => { plateParams.seed = (plateParams.seed + 1) % 1000000; gui.controllersRecursive().forEach((c) => c.updateDisplay()); build(); };
@@ -257,6 +332,7 @@ export function initWorldTab(root) {
   let last = 0;
   const probe = q.get('probe') === '1';
   const CULL_M = q.get('cull') !== null ? Number(q.get('cull')) : 260;
+  const rescueProbeOn = q.get('rescueprobe') === '1';
   loadCatalog().then(({ catalog: c, error }) => {
     catalog = c;
     if (error) { notice.textContent = `base-kit manifest unavailable, placeholders only (${error})`; notice.hidden = false; }
@@ -266,6 +342,8 @@ export function initWorldTab(root) {
     // ?killpower=N: plate N's station goes to D3 after two simulated seconds (the freeze probe)
     const killPower = q.get('killpower') !== null ? Number(q.get('killpower')) : -1;
     if (killPower >= 0) { const p = world.plates[killPower]; if (p && p.plate.power) setTimeout(() => { p.plate.pieces[p.plate.power.pieceIndex].state = 3; rigs[killPower].rebuild(); console.log('[world] station felled on plate', killPower); }, 2000); }
+    // ?rescueprobe=1 (with ?tick=N): at t=1 the hull is parked beside our first
+    // camp, stopped; at t=8 beside the drop; the probe line counts the rest
     const tick = Number(q.get('tick') || 0);
     if (tick > 0) {
       let idx = 0;

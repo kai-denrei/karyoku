@@ -14,7 +14,7 @@
 // asks it too, with the walker's own radius, so nobody walks through a
 // container or the tank. Something that rolls onto a walker slowly shoves
 // them out (`escape`); fast, it squashes them (stepSquash).
-import { KIND, CELL_M, rotSide, DIRS } from './plate.js?v=de91215a';
+import { KIND, CELL_M, rotSide, DIRS } from './plate.js?v=1abb261a';
 
 export const CREW_TUNE = {
   walk: 1.4, run: 4.6,      // m/s
@@ -48,7 +48,7 @@ export const CREW_KINDS = ['astronaut', 'scientist', 'worker'];
 export const CREW_PAINT = { astronaut: 0x9aa4ab, scientist: 0x2f6fd6, worker: 0xe0641a };
 export const TEAM_PAINT = { home: 0x2ad2ff, hostile: 0xff4d2e };
 // what a walker is doing, for the scene's clips
-export const ACTS = ['idle', 'walk', 'run', 'point', 'kneel', 'scared', 'lie'];
+export const ACTS = ['idle', 'walk', 'run', 'point', 'kneel', 'scared', 'lie', 'gone'];
 export const SUIT = 0xff7a1a; // orange, every one of them
 
 const walkable = (plate, cx, cz) => {
@@ -56,7 +56,9 @@ const walkable = (plate, cx, cz) => {
   const k = plate.cells[cz * plate.w + cx];
   return k === KIND.FOUNDATION || k === KIND.ROAD;
 };
-export const crewWalkableAt = (plate, x, z) => walkable(plate, Math.floor(x / CELL_M), Math.floor(z / CELL_M));
+// a plate answers by its cells; any other ground (an outpost's clearing)
+// answers by its own `walkableAt(x, z)`
+export const crewWalkableAt = (plate, x, z) => (plate.walkableAt ? plate.walkableAt(x, z) : walkable(plate, Math.floor(x / CELL_M), Math.floor(z / CELL_M)));
 
 // The hull as an oriented box in plate metres. Heading is compass degrees,
 // forward is [sin, -cos] (drive.js), right is [cos, sin].
@@ -171,11 +173,12 @@ function pickArea(plate, w, areas, rng, avoid = null, solid = null) {
 
 // n walkers, standing at key areas (or on random walkable cells inside the
 // base when there are fewer areas than walkers)
-export function makeCrew(plate, n, rng, tune = CREW_TUNE, solid = null) {
-  const areas = keyAreas(plate);
+// `areasOverride`: an outpost hands in its own areas (a plate's come from its pieces)
+export function makeCrew(plate, n, rng, tune = CREW_TUNE, solid = null, areasOverride = null) {
+  const areas = areasOverride || keyAreas(plate);
   const cells = [];
   const inset = plate.inset || 0;
-  for (let z = inset + 1; z < plate.h - 1 - inset; z++) for (let x = inset + 1; x < plate.w - 1 - inset; x++) if (walkable(plate, x, z)) cells.push([x, z]);
+  if (plate.cells) for (let z = inset + 1; z < plate.h - 1 - inset; z++) for (let x = inset + 1; x < plate.w - 1 - inset; x++) if (walkable(plate, x, z)) cells.push([x, z]);
   const crew = [];
   for (let i = 0; i < n && (areas.length || cells.length); i++) {
     let x, z;
@@ -227,6 +230,9 @@ export function stepCrew(crew, plate, dt, rng, threat = null, tune = CREW_TUNE, 
       if (w.actT > 0) continue;
       w.act = 'idle'; w.face = null;
     }
+    // a walker on a MISSION (a rescued one heading for the infirmary) goes
+    // straight to its goal, no dawdling
+    if (!w.target && w.goal) { w.target = w.goal; w.running = true; w.wait = 0; }
     if (!w.target) {
       w.moving = false; w.act = 'idle';
       w.wait -= dt;
@@ -242,6 +248,8 @@ export function stepCrew(crew, plate, dt, rng, threat = null, tune = CREW_TUNE, 
     if (d <= step) {
       const at = w.target;
       w.x = at.x; w.z = at.z; w.target = null; w.moving = false;
+      // arrived at the goal of a mission: through the door and gone
+      if (w.goal && at === w.goal) { w.alive = false; w.gone = true; w.entered = true; w.act = 'gone'; continue; }
       w.wait = w.fleeing ? 0.2 : tune.idleMin + rng() * (tune.idleMax - tune.idleMin);
       // arrived somewhere with something to look at: point at it, or kneel
       if (!w.fleeing && at.fx !== null && at.fx !== undefined && at.tag !== 'gate' && rng() < tune.pointChance) {
