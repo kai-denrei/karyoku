@@ -216,7 +216,24 @@ no build step, Node invariant suites).
   inside `fleeM` is a coin (`cowerChance`): run, or cower facing it
   (`scared`) until it leaves `safeM` or comes inside `cowerBreakM`, then
   run; walkers keep `separation` (0.9 m) apart by a pairwise push onto
-  free ground. Defaults: 10 on the drive plate, 7 per world plate.
+  free ground. Defaults: 18 on the drive plate, 12 per world plate.
+  PAINT: the suit says the trade (`CREW_PAINT`: astronaut grey, scientist
+  blue, worker orange), the BACKPACK says the team (`TEAM_PAINT`): the kit
+  has no backpack material, so `prepareModel` cuts every triangle behind
+  the spine (z < -0.11, y 0.85..1.65) out of each body part into a second
+  skinned mesh named 'backpack' that wears the side's material per clone.
+- THE RADAR (`radar.js` pure, `makeRadar` in drive-rig): a PPI scope
+  top-left (the notice moved right of it), heading-up, 220 m, sweep and
+  phosphor as the reference; contacts `{ x, z, side, kind }` from the tabs
+  every frame: ours blue squares (statics) and dark-blue dots (people),
+  theirs red and orange, the hull a white arrowhead. `test/radar.mjs`
+  holds the conventions.
+- THE PICK: a click names what is under the pointer (notice + `[pick]`
+  log): instanced pieces and bodies by instance (`im.userData.pieces` /
+  `.bodies`), sentries by label, else the nearest named ancestor.
+- THE WRECK slumps IN PLACE now (tilted on its plinth, sunk 0.4 m, dark):
+  the toppled-beside pose made a heptapod's legs a bright unnameable pile.
+- Probes: `?breakat=x,z` starts the nearest body destroyed.
 - World: plate A is HOME (gates open, sentries silent), plate B is HOSTILE
   (gates shut, sentries live) — you breach B through its wall.
 - Probes: `#drive?seed=7&tick=4&fire=1&hold=1&aim=wall` shoots the wall

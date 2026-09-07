@@ -14,7 +14,7 @@
 // asks it too, with the walker's own radius, so nobody walks through a
 // container or the tank. Something that rolls onto a walker slowly shoves
 // them out (`escape`); fast, it squashes them (stepSquash).
-import { KIND, CELL_M, rotSide, DIRS } from './plate.js?v=ef62a95e';
+import { KIND, CELL_M, rotSide, DIRS } from './plate.js?v=de91215a';
 
 export const CREW_TUNE = {
   walk: 1.4, run: 4.6,      // m/s
@@ -44,6 +44,9 @@ export const CREW_TUNE = {
   separation: 0.9,
 };
 export const CREW_KINDS = ['astronaut', 'scientist', 'worker'];
+// the suit says the TRADE, the backpack says the TEAM
+export const CREW_PAINT = { astronaut: 0x9aa4ab, scientist: 0x2f6fd6, worker: 0xe0641a };
+export const TEAM_PAINT = { home: 0x2ad2ff, hostile: 0xff4d2e };
 // what a walker is doing, for the scene's clips
 export const ACTS = ['idle', 'walk', 'run', 'point', 'kneel', 'scared', 'lie'];
 export const SUIT = 0xff7a1a; // orange, every one of them

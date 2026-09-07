@@ -5,23 +5,23 @@
 import * as THREE from '../vendor/three.module.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { bodyDims } from './catalog.js?v=ef62a95e';
-import { generatePlate, makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M, dirOfYaw } from './plate.js?v=ef62a95e';
+import { bodyDims } from './catalog.js?v=de91215a';
+import { generatePlate, makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M, dirOfYaw } from './plate.js?v=de91215a';
 import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, blockedAt, makeGates, stepGates,
-  spawnFor, makeSentries, stepSentries, losClear, stepTracers, rayStop, fireHull, damageAt, makeBodies, stepBodies, bodyAt, shotRangeFor, damageSentryAt, stepCrush, ammoDotsLit, bodyHit, damageBody, powered } from './drive.js?v=ef62a95e';
-import { PALETTE, LOOK, LOOKS } from './looks.js?v=ef62a95e';
-import { withParam } from './url.js?v=ef62a95e';
-import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=ef62a95e';
-import { query, loadCatalog } from './plate-tab.js?v=ef62a95e';
-import { modelledIds } from './catalog.js?v=ef62a95e';
-import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS, makeMobileShell, mobileShell } from './drive-rig.js?v=ef62a95e';
-import { makeSfx } from './sfx.js?v=ef62a95e';
-import { makeCrew, stepCrew, stepSquash, shotHits, splashHits, hullCovers, crewFreeAt, CREW_TUNE } from './crew.js?v=ef62a95e';
-import { makeCrewScene } from './crew-scene.js?v=ef62a95e';
-import { mulberry32 } from './rng.js?v=ef62a95e';
+  spawnFor, makeSentries, stepSentries, losClear, stepTracers, rayStop, fireHull, damageAt, makeBodies, stepBodies, bodyAt, shotRangeFor, damageSentryAt, stepCrush, ammoDotsLit, bodyHit, damageBody, powered } from './drive.js?v=de91215a';
+import { PALETTE, LOOK, LOOKS } from './looks.js?v=de91215a';
+import { withParam } from './url.js?v=de91215a';
+import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=de91215a';
+import { query, loadCatalog } from './plate-tab.js?v=de91215a';
+import { modelledIds } from './catalog.js?v=de91215a';
+import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS, makeMobileShell, mobileShell } from './drive-rig.js?v=de91215a';
+import { makeSfx } from './sfx.js?v=de91215a';
+import { makeCrew, stepCrew, stepSquash, shotHits, splashHits, hullCovers, crewFreeAt, CREW_TUNE } from './crew.js?v=de91215a';
+import { makeCrewScene } from './crew-scene.js?v=de91215a';
+import { mulberry32 } from './rng.js?v=de91215a';
 
 export function initDriveTab(root) {
-  const { renderer, scene, camera, hud, notice, resize, render, setGroups, post } = makeViewer(root);
+  const { renderer, scene, camera, hud, notice, resize, render, setGroups, post, radar } = makeViewer(root);
   post.post.weights.crew = 0; // orange suits, not glowing
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
@@ -41,7 +41,7 @@ export function initDriveTab(root) {
   const crewSolid = (x, z) => bodyAt(bodies, x, z) || hullCovers(hull, x, z);
   let crew = [], crewScene = null, crewRng = null;
   const destructible = (pc) => { const e = catalog && catalog.get(pc.id); return !!(e && e.states[1] && e.states[3]); };
-  const CREW_N = Number(q.get('crew') || 10);
+  const CREW_N = Number(q.get('crew') || 18);
   let hits = 0, simT = 0, lastLog = 0, lastDt = 0.016, breached = 0, squashed = 0, crushed = 0, powerWas = true, bodiesBroken = 0;
 
   function build() {
@@ -80,6 +80,8 @@ export function initDriveTab(root) {
     hull = makeHull(sp.x, sp.z, sp.heading, P);
     if (q.get('elev') !== null) hull.elev = Number(q.get('elev')); // a probe's muzzle
     if (q.get('ammo') !== null) hull.ammo = Number(q.get('ammo')); // a probe's rack
+    // ?breakat=x,z: the body nearest that point starts DESTROYED (state 3), to see what its debris looks like
+    if (q.get('breakat')) { const [bx, bz] = q.get('breakat').split(',').map(Number); const b = bodies.reduce((best, c) => (Math.hypot(c.x - bx, c.z - bz) < Math.hypot(best.x - bx, best.z - bz) ? c : best), bodies[0]); if (b) { while (!b.dead) damageBody(b); console.log(`[drive] broke ${b.id} at ${b.x.toFixed(0)},${b.z.toFixed(0)}`); } }
     // ?at=x,z and ?heading=deg park a probe's hull anywhere on the plate
     if (q.get('at')) { const [ax, az] = q.get('at').split(',').map(Number); if (Number.isFinite(ax) && Number.isFinite(az)) { hull.x = ax; hull.z = az; } }
     if (q.get('heading') !== null) hull.heading = Number(q.get('heading'));
@@ -175,6 +177,12 @@ export function initDriveTab(root) {
     sfx.tick(lastDt);
     pool.sync(tracers, () => 0, lastDt, P.splashR);
     followCamera(camera, controls, hull, 0, view.camera, lastDt, null, { cx: plate.w * CELL_M / 2, cz: plate.h * CELL_M / 2, span: Math.max(plate.w, plate.h) * CELL_M }, (x, z) => blockedAt(plate, gates, x, z));
+    // the scope: this plate is the enemy's, so its towers are red and its people orange
+    const contacts = [];
+    for (const s of sentries) if (s.alive) contacts.push({ x: s.cx, z: s.cz, side: 'hostile', kind: 'static' });
+    if (plate.power && powered(plate)) { const st = plate.pieces[plate.power.pieceIndex]; contacts.push({ x: (st.x + 1) * CELL_M, z: (st.z + 1) * CELL_M, side: 'hostile', kind: 'static' }); }
+    if (crew) for (const w of crew.walkers) if (w.alive) contacts.push({ x: w.x, z: w.z, side: 'hostile', kind: 'unit' });
+    radar.paint(simT, hull, contacts);
     hud.textContent = mobileShell
       ? `muzzle ${hull.elev.toFixed(0)} · range ${shotRangeFor(hull, P).toFixed(0)} m · shells ${hull.ammo} · hits ${hits} · breached ${breached} · crew down ${squashed}`
       : `muzzle ${hull.elev.toFixed(0)} deg · range ${shotRangeFor(hull, P).toFixed(0)} m · hits ${hits} · shots ${hull.shots} · shells ${hull.ammo}/${P.ammoMax} · breached ${breached} · crew down ${squashed} · sentries ${sentries.filter((s) => s.alive).length}/${sentries.length} · power ${powered(plate) ? 'on' : 'OFF'} · gates ${gateWord()} · cam ${view.camera} · WASD drive · SPACE fire · SHIFT+W/S muzzle · 1-4 cameras · R regenerate`;

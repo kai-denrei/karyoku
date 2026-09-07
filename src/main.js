@@ -1,11 +1,11 @@
 // main.js — the tab shell. Each tab initialises the first time it is shown;
 // the hash picks the first one (`#drive`, `#plate?seed=7`). The build token
 // in the nav is read from the <meta name="cb"> that bust.sh maintains.
-import { initPlateTab } from './plate-tab.js?v=ef62a95e';
-import { initWorldTab } from './world-tab.js?v=ef62a95e';
-import { initDriveTab } from './drive-tab.js?v=ef62a95e';
-import { registerServiceWorker } from './pwa.js?v=ef62a95e';
-import { initSoundLabTab } from './soundlab-tab.js?v=ef62a95e';
+import { initPlateTab } from './plate-tab.js?v=de91215a';
+import { initWorldTab } from './world-tab.js?v=de91215a';
+import { initDriveTab } from './drive-tab.js?v=de91215a';
+import { registerServiceWorker } from './pwa.js?v=de91215a';
+import { initSoundLabTab } from './soundlab-tab.js?v=de91215a';
 
 const meta = document.querySelector('meta[name="cb"]');
 const tok = document.getElementById('build-token');

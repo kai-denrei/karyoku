@@ -7,14 +7,57 @@
 // crossfade so a change of mind does not snap. The dead lie where they
 // fell, on the red splash — the Amiga moment with a body in it.
 import * as THREE from '../vendor/three.module.js';
-import { loadGlbWithClips } from './glbmodels.js?v=ef62a95e';
-import { CREW_KINDS } from './crew.js?v=ef62a95e';
-import { BZ, styleForLook } from './looks.js?v=ef62a95e';
+import { loadGlbWithClips } from './glbmodels.js?v=de91215a';
+import { CREW_KINDS, CREW_PAINT, TEAM_PAINT } from './crew.js?v=de91215a';
+import { BZ, styleForLook } from './looks.js?v=de91215a';
 
 export const CREW_URLS = CREW_KINDS.map((k) => `assets/crew/${k}_station.glb`);
 const AUTHORED_M = 2.1, PERSON_M = 1.8;
 const FADE = 0.18; // s, between clips
 const CLIPS = { idle: 'Idle', walk: 'Walk', run: 'Run', point: 'Point', kneel: 'Kneel', scared: 'Scared', lie: 'Lie' };
+
+// THE BACKPACK is not a material of its own in the kit, so it is cut out
+// by POSITION once per model: every triangle of a body part that sits
+// behind the spine (model -z) between hip and shoulder height becomes a
+// second skinned mesh, and that mesh wears the team's colour per walker.
+const BACK_Z = -0.11, BACK_Y0 = 0.85, BACK_Y1 = 1.65;
+const teamMats = new Map(); // side -> material
+function teamMat(side) {
+  if (!teamMats.has(side)) teamMats.set(side, BZ ? new THREE.MeshBasicMaterial({ color: TEAM_PAINT[side], wireframe: true }) : new THREE.MeshStandardMaterial({ color: TEAM_PAINT[side], roughness: 0.55, metalness: 0.2 }));
+  return teamMats.get(side);
+}
+const prepared = new Set();
+function prepareModel(res, kind) {
+  if (prepared.has(res)) return;
+  prepared.add(res);
+  const paint = new THREE.Color(CREW_PAINT[CREW_KINDS[kind]]);
+  const backs = [];
+  res.scene.traverse((o) => {
+    if (!o.isSkinnedMesh) return;
+    const name = (o.material && o.material.name) || '';
+    if (/suit/.test(name)) o.material.color.copy(paint);
+    const g = o.geometry;
+    const pos = g.attributes.position;
+    const idx = g.index ? Array.from(g.index.array) : [...Array(pos.count).keys()];
+    const back = [], front = [];
+    const isBack = (i) => pos.getZ(i) < BACK_Z && pos.getY(i) > BACK_Y0 && pos.getY(i) < BACK_Y1;
+    for (let t = 0; t < idx.length; t += 3) {
+      const a = idx[t], b = idx[t + 1], c = idx[t + 2];
+      (isBack(a) && isBack(b) && isBack(c) ? back : front).push(a, b, c);
+    }
+    if (back.length < 30 || /visor|status|marking/.test(name)) return; // nothing worth a colour here
+    const bg = g.clone(); bg.setIndex(back);
+    g.setIndex(front);
+    const bm = new THREE.SkinnedMesh(bg, o.material);
+    bm.name = 'backpack';
+    bm.bindMode = o.bindMode; bm.bindMatrix.copy(o.bindMatrix);
+    bm.skeleton = o.skeleton;
+    bm.bind(o.skeleton, o.bindMatrix);
+    backs.push({ parent: o.parent, mesh: bm, from: name });
+  });
+  for (const b of backs) b.parent.add(b.mesh);
+  console.log(`[crew] ${CREW_KINDS[kind]}: backpack cut from ${backs.map((b) => b.from.split('/').pop().trim()).join(', ') || 'nothing'}`);
+}
 
 // SkeletonUtils.clone, the part of it a skinned GLB needs
 function cloneSkinned(source) {
@@ -34,10 +77,12 @@ function cloneSkinned(source) {
 }
 
 // one walker of a kind: { obj, setPose, tick }, or null when the model failed
-export async function makeWalkerRig(kind) {
+export async function makeWalkerRig(kind, side = 'home') {
   const res = await loadGlbWithClips(CREW_URLS[kind % CREW_URLS.length]);
   if (!res) return null;
+  prepareModel(res, kind % CREW_URLS.length);
   const scene = cloneSkinned(res.scene);
+  scene.traverse((o) => { if (o.name === 'backpack') o.material = teamMat(side); });
   scene.scale.setScalar(PERSON_M / AUTHORED_M);
   if (BZ) styleForLook(scene);
   else scene.traverse((o) => { if (o.isMesh && o.material && o.material.emissive) o.material.emissive.setHex(0x000000); });
@@ -103,7 +148,7 @@ export function makeCrewScene(group, crew) {
   const splatted = new Set();
   (async () => {
     for (let i = 0; i < crew.walkers.length; i++) {
-      const rig = await makeWalkerRig(crew.walkers[i].kind || 0);
+      const rig = await makeWalkerRig(crew.walkers[i].kind || 0, crew.hostile ? 'hostile' : 'home');
       if (!rig) return;
       rigs[i] = rig;
       group.add(rig.obj);

@@ -2,13 +2,14 @@
 // the hull model with a stand-in until it lands, the key state, the tracer
 // meshes, and the two cameras. Rendering only; the rules are drive.js.
 import * as THREE from '../vendor/three.module.js';
-import { applySpaceScene, makeStars, makeComposer, PALETTE } from './looks.js?v=ef62a95e';
-import { tickFps } from './fps.js?v=ef62a95e';
-import { castHull } from './casts.js?v=ef62a95e';
-import { styleForLook, BZ } from './looks.js?v=ef62a95e';
-import { STICK, stickVector, knobOffset } from './stick.js?v=ef62a95e';
-import { query } from './url.js?v=ef62a95e';
-import { loadGlb, mergeByMaterial, makeShellRack } from './glbmodels.js?v=ef62a95e';
+import { applySpaceScene, makeStars, makeComposer, PALETTE } from './looks.js?v=de91215a';
+import { tickFps } from './fps.js?v=de91215a';
+import { radarProject, radarBearing, sweepAngle, radarPhosphor, radarColor, RADAR_RANGE_M } from './radar.js?v=de91215a';
+import { castHull } from './casts.js?v=de91215a';
+import { styleForLook, BZ } from './looks.js?v=de91215a';
+import { STICK, stickVector, knobOffset } from './stick.js?v=de91215a';
+import { query } from './url.js?v=de91215a';
+import { loadGlb, mergeByMaterial, makeShellRack } from './glbmodels.js?v=de91215a';
 
 const HULL_URL = 'assets/models/mkcx2.glb';
 // The nodes that must keep moving through the merge, and the ones that
@@ -292,6 +293,88 @@ export function makeMobileShell(root, keys, { onCamera = () => {} } = {}) {
   return { stickEl, thumbs };
 }
 
+// THE RADAR: a PPI scope in the corner, heading-up, the hull at the
+// centre. `paint(t, hull, contacts)` every frame with contacts
+// [{ x, z, side: 'home'|'hostile', kind: 'static'|'unit' }] in the hull's
+// own metres. Statics are squares, people are dots; the beam flares
+// whatever it passes and the phosphor fades behind it.
+export function makeRadar(root, size = 150) {
+  const el = document.createElement('canvas');
+  el.className = 'radar';
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  el.width = size * dpr; el.height = size * dpr;
+  el.style.width = `${size}px`; el.style.height = `${size}px`;
+  root.appendChild(el);
+  const ctx = el.getContext('2d');
+  const m = size, cx = m / 2, cy = m / 2, R = m / 2 - 3;
+  return {
+    el,
+    paint(t, hull, contacts, range = RADAR_RANGE_M) {
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, m, m);
+      const sweep = sweepAngle(t);
+      ctx.fillStyle = 'rgba(3, 12, 10, 0.86)';
+      ctx.beginPath(); ctx.arc(cx, cy, R + 3, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = 'rgba(120, 220, 200, 0.18)';
+      ctx.lineWidth = 1;
+      for (const f of [1 / 3, 2 / 3, 1]) { ctx.beginPath(); ctx.arc(cx, cy, R * f, 0, Math.PI * 2); ctx.stroke(); }
+      ctx.beginPath(); ctx.moveTo(cx - R, cy); ctx.lineTo(cx + R, cy); ctx.moveTo(cx, cy - R); ctx.lineTo(cx, cy + R); ctx.stroke();
+      // the beam: a conic trail building toward the beam line, then the hot edge
+      const phi = sweep - Math.PI / 2;
+      if (ctx.createConicGradient) {
+        const grad = ctx.createConicGradient(phi, cx, cy);
+        grad.addColorStop(0, 'rgba(120, 240, 200, 0)'); grad.addColorStop(0.72, 'rgba(120, 240, 200, 0)'); grad.addColorStop(1, 'rgba(120, 240, 200, 0.28)');
+        ctx.fillStyle = grad;
+        ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.strokeStyle = 'rgba(160, 255, 220, 0.85)'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + R * Math.sin(sweep), cy - R * Math.cos(sweep)); ctx.stroke();
+      // contacts
+      for (const c of contacts) {
+        const q = radarProject(c.x, c.z, hull.x, hull.z, hull.heading, range);
+        const px = cx + q.x * R, py = cy + q.y * R;
+        ctx.globalAlpha = (q.clamped ? 0.35 : 0.5) + 0.5 * radarPhosphor(radarBearing(q.x, q.y), sweep);
+        ctx.fillStyle = radarColor(c.side, c.kind);
+        if (c.kind === 'static') ctx.fillRect(px - 2.5, py - 2.5, 5, 5);
+        else { ctx.beginPath(); ctx.arc(px, py, 2, 0, Math.PI * 2); ctx.fill(); }
+      }
+      ctx.globalAlpha = 1;
+      // the hull: a white arrowhead, always up
+      ctx.fillStyle = radarColor('self');
+      ctx.beginPath(); ctx.moveTo(cx, cy - 6); ctx.lineTo(cx + 4, cy + 4); ctx.lineTo(cx, cy + 1.5); ctx.lineTo(cx - 4, cy + 4); ctx.closePath(); ctx.fill();
+    },
+  };
+}
+
+// THE PICK (operator: "we still have not identified what this strange
+// shape is"): a click names what is under the pointer, in the notice and
+// the console. Instanced pieces and bodies answer by instance; everything
+// else by the nearest named ancestor.
+export function makePick(renderer, camera, scene, notice) {
+  const ray = new THREE.Raycaster();
+  const ptr = new THREE.Vector2();
+  let hideAt = 0;
+  renderer.domElement.addEventListener('click', (ev) => {
+    const r = renderer.domElement.getBoundingClientRect();
+    ptr.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
+    ray.setFromCamera(ptr, camera);
+    const hits = ray.intersectObjects(scene.children, true).filter((h) => h.object.visible && !h.object.isLine && !h.object.isPoints);
+    if (!hits.length) return;
+    const h = hits[0];
+    let label = null;
+    const o = h.object;
+    if (o.isInstancedMesh && o.userData.pieces && h.instanceId !== undefined) { const pc = o.userData.pieces[h.instanceId]; label = `${pc.id} d${pc.state} (piece at ${pc.x},${pc.z}${pc.crushed ? ', crushed' : ''})`; }
+    else if (o.isInstancedMesh && o.userData.bodies && h.instanceId !== undefined) { const b = o.userData.bodies[h.instanceId]; label = `${b.id} d${b.state} (body${b.dead ? ', dead' : ''})`; }
+    else { let n = o; while (n && !n.userData.label && !n.name) n = n.parent; label = n ? (n.userData.label || n.name) : o.type; }
+    const p = h.point;
+    const text = `pick: ${label} at ${p.x.toFixed(1)}, ${p.z.toFixed(1)}`;
+    console.log(`[pick] ${text} (${o.type} ${o.name || ''})`);
+    notice.textContent = text; notice.hidden = false;
+    hideAt = performance.now() + 4000;
+  });
+  return { tick() { if (hideAt && performance.now() > hideAt) { hideAt = 0; notice.hidden = true; } } };
+}
+
 export function makeViewer(root) {
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   // 1.5, not 2: the bloom chain is a full-frame cost and a 2x retina frame
@@ -310,6 +393,8 @@ export function makeViewer(root) {
   notice.className = 'notice';
   notice.hidden = true;
   root.appendChild(notice);
+  const radar = makeRadar(root);
+  const pick = makePick(renderer, camera, scene, notice);
   function resize() {
     const w = root.clientWidth, h = root.clientHeight;
     renderer.setSize(w, h, false);
@@ -319,5 +404,5 @@ export function makeViewer(root) {
   }
   addEventListener('resize', resize);
   resize();
-  return { renderer, scene, camera, hud, notice, resize, render: () => { post.render(); tickFps(performance.now(), renderer, scene); }, setGroups: (fn) => post.setGroups(fn), post };
+  return { renderer, scene, camera, hud, notice, radar, resize, render: () => { post.render(); pick.tick(); tickFps(performance.now(), renderer, scene); }, setGroups: (fn) => post.setGroups(fn), post };
 }

@@ -5,16 +5,16 @@
 // as clones with their YAW pivot exposed, and everything else as a labelled
 // placeholder box of its footprint.
 import * as THREE from '../vendor/three.module.js';
-import { KIND, CELL_M, ringCoverage, LANDMARK, dirOfYaw } from './plate.js?v=ef62a95e';
-import { fileFor, fitFor, SECTION_COLOR, PLACEHOLDER_HEIGHT_M } from './catalog.js?v=ef62a95e';
-import { LOB_FAMILIES, LOB_ELEV_DEG } from './drive.js?v=ef62a95e';
-import { PALETTE, neonBox, BZ, styleForLook, bakeEdges } from './looks.js?v=ef62a95e';
-import { prepFor, ladderTint, dressMetal } from './casts.js?v=ef62a95e';
-import { tintModel } from './glbmodels.js?v=ef62a95e';
-import { BODY_IDS } from './drive.js?v=ef62a95e';
+import { KIND, CELL_M, ringCoverage, LANDMARK, dirOfYaw } from './plate.js?v=de91215a';
+import { fileFor, fitFor, SECTION_COLOR, PLACEHOLDER_HEIGHT_M } from './catalog.js?v=de91215a';
+import { LOB_FAMILIES, LOB_ELEV_DEG } from './drive.js?v=de91215a';
+import { PALETTE, neonBox, BZ, styleForLook, bakeEdges } from './looks.js?v=de91215a';
+import { prepFor, ladderTint, dressMetal } from './casts.js?v=de91215a';
+import { tintModel } from './glbmodels.js?v=de91215a';
+import { BODY_IDS } from './drive.js?v=de91215a';
 // pieces whose model carries a looping clip: the assembly kit's machines
 export const LOOP_IDS = new Set(['robotic_assembly_line', 'robotic_arm', 'conveyor_module']);
-import { loadGlb, loadGlbWithClips, mergeByMaterial, fitModel } from './glbmodels.js?v=ef62a95e';
+import { loadGlb, loadGlbWithClips, mergeByMaterial, fitModel } from './glbmodels.js?v=de91215a';
 
 const labelCache = new Map();
 function labelTexture(text) {
@@ -104,6 +104,7 @@ function instanced(root, pieces, transformOf) {
     const im = new THREE.InstancedMesh(part.geometry, part.material, pieces.length);
     matrices.forEach((M, i) => { im.setMatrixAt(i, m.multiplyMatrices(M, part.local)); });
     im.instanceMatrix.needsUpdate = true;
+    im.userData.pieces = pieces; // the pick names an instance by its piece
     g.add(im);
   }
   // battlezone: the instances' edges, baked once into one line set
@@ -373,6 +374,7 @@ export function buildPlateGroup({ plate, catalog, wallState = 0, showArcs = true
       if (!root) return;
       const inst = root.clone();
       inst.name = 'sentry';
+      inst.userData.label = `sentry ${index}: ${st.family} t${st.tier}`;
       const yaw = inst.getObjectByName('YAW') || inst;
       yaw.rotation.y = yawRotation(st.yawDeg);
       // a lobber holds its barrel up: the workshop applies elevation as a
@@ -425,6 +427,7 @@ export function buildPlateGroup({ plate, catalog, wallState = 0, showArcs = true
       const meshes = [];
       for (const part of parts) {
         const im = new THREE.InstancedMesh(part.geometry, part.material, bs.length);
+        im.userData.bodies = bs; // the pick names an instance by its body
         matrices.forEach((M, i) => im.setMatrixAt(i, tmpM.multiplyMatrices(M, part.local)));
         im.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
         im.instanceMatrix.needsUpdate = true;
@@ -527,28 +530,28 @@ export function buildPlateGroup({ plate, catalog, wallState = 0, showArcs = true
     r.broken = true;
     sentryYaws.delete(index);
     const { inst, yaw, pitch } = r;
-    // it falls BACKWARD, into the band behind it: sideways along the ring
-    // put a corner sentry's head through the wall
-    const [dx, dz] = dirOfYaw(r.home + 180);
-    // the proto is FIT to the socket, so the yaw node's frame is scaled:
+    // THE HEAD SLUMPS IN PLACE. The first cut knocked it off the plinth to
+    // lie beside it; for a family with legs (the heptapod) that was a bright
+    // pile of spikes in the yard nobody could name (operator, 2026-09-07).
+    // Now it drops onto its plinth, sunk a little, tilted off the bearing,
+    // barrel drooped, dark: a broken tower of its own kind, still readable.
+    // The proto is FIT to the socket, so the yaw node's frame is scaled:
     // metres wanted here must be divided by that scale before they are local
     const sc = new THREE.Vector3();
     yaw.parent.getWorldScale(sc);
     const k = 1 / (sc.y || 1);
-    yaw.rotation.order = 'YZX';
-    yaw.rotation.set(0.35, yawRotation(r.home + 25), 1.75);
-    yaw.position.set(dx * 2.2 * k, 0, dz * 2.2 * k);
-    if (pitch) pitch.rotation.x = 0.5;
-    // rest it on the ground: the pivot is up at the bearing, so after the
-    // tip the head hangs in the air until measured down
+    yaw.rotation.order = 'YXZ';
+    yaw.rotation.set(0.32, yawRotation(r.home + 20), 0.22);
+    if (pitch) pitch.rotation.x = 0.55;
     inst.updateMatrixWorld(true);
     const box = new THREE.Box3().setFromObject(yaw);
-    const groundY = new THREE.Vector3().setFromMatrixPosition(inst.matrixWorld).y - 0.6;
-    if (Number.isFinite(box.min.y)) yaw.position.y -= (box.min.y - groundY - 0.05) * k;
+    const plinthY = new THREE.Vector3().setFromMatrixPosition(inst.matrixWorld).y;
+    // sit the head's lowest point 0.4 m below the plinth top: collapsed, not floating
+    if (Number.isFinite(box.min.y)) yaw.position.y -= (box.min.y - (plinthY - 0.4)) * k;
     inst.updateMatrixWorld(true);
     const after = new THREE.Box3().setFromObject(yaw), wp = new THREE.Vector3();
     yaw.getWorldPosition(wp);
-    console.log(`[wreck] sentry ${index} ground=${groundY.toFixed(2)} head at ${wp.x.toFixed(1)},${wp.y.toFixed(2)},${wp.z.toFixed(1)} box y ${after.min.y.toFixed(2)}..${after.max.y.toFixed(2)} x ${after.min.x.toFixed(1)}..${after.max.x.toFixed(1)} z ${after.min.z.toFixed(1)}..${after.max.z.toFixed(1)} meshes ${(() => { let n = 0; yaw.traverse((o) => { if (o.isMesh || o.isLineSegments) n++; }); return n; })()}`);
+    console.log(`[wreck] sentry ${index} plinth=${plinthY.toFixed(2)} head at ${wp.x.toFixed(1)},${wp.y.toFixed(2)},${wp.z.toFixed(1)} box y ${after.min.y.toFixed(2)}..${after.max.y.toFixed(2)} x ${after.min.x.toFixed(1)}..${after.max.x.toFixed(1)} z ${after.min.z.toFixed(1)}..${after.max.z.toFixed(1)} meshes ${(() => { let n = 0; yaw.traverse((o) => { if (o.isMesh || o.isLineSegments) n++; }); return n; })()}`);
     // and dark: scorched paint in the colony look, dimmed lines in battlezone
     darken(inst);
   };
