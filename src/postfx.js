@@ -24,7 +24,7 @@ import { ShaderPass } from '../vendor/ShaderPass.js';
 import { OutputPass } from '../vendor/OutputPass.js';
 import * as THREE from '../vendor/three.module.js';
 import { buildWeightMap, materialConflicts, clampWeight, DEFAULT_BLOOM_WEIGHTS }
-  from './bloomweights.js?v=9d12b062';
+  from './bloomweights.js?v=04c2bc31';
 
 const COARSE = typeof matchMedia === 'function'
   && matchMedia('(pointer: coarse)').matches;
@@ -42,21 +42,45 @@ export function bloomTargetSize(cssW, cssH, pixelRatio, scale) {
   };
 }
 
-// base + bloom, in linear space, before OutputPass converts. Same place
-// the bloom was applied before this change.
-const AddBloomShader = {
-  uniforms: { tDiffuse: { value: null }, tBloom: { value: null } },
-  vertexShader: /* glsl */`
-    varying vec2 vUv;
-    void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }
-  `,
+// ONE SCENE RENDER, NOT TWO (karyoku, 2026-09-07). The reference rendered
+// the scene twice a frame: once with every material's colour scaled by its
+// group's weight (the bloom source) and once plain. On a 120-cell plate
+// that doubled five thousand draw calls. Here the WEIGHT RIDES IN THE
+// ALPHA CHANNEL of the one plain render: an opaque material's `opacity`
+// is written to the target's alpha untouched (nothing blends an opaque
+// draw), so opacity = weight costs nothing visible and the bloom source is
+// simply rgb * alpha, one full-screen pass. Transparent materials cannot
+// carry a weight this way (their alpha IS their blend), so they are set
+// to leave the destination alpha alone and inherit the weight of whatever
+// surface they are drawn over: a wall's edge glows like the wall, the
+// tank's edges like the tank. Weights are applied once and re-applied
+// every few dozen frames for objects that arrived since, not per frame.
+const VERT = /* glsl */`
+  varying vec2 vUv;
+  void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }
+`;
+// the bloom source: the scene times its weights
+const WeightShader = {
+  uniforms: { tBase: { value: null } },
+  vertexShader: VERT,
   fragmentShader: /* glsl */`
-    uniform sampler2D tDiffuse;
-    uniform sampler2D tBloom;
+    uniform sampler2D tBase;
     varying vec2 vUv;
-    void main() { gl_FragColor = texture2D(tDiffuse, vUv) + texture2D(tBloom, vUv); }
+    void main() { vec4 b = texture2D(tBase, vUv); gl_FragColor = vec4(b.rgb * b.a, 1.0); }
   `,
 };
+// base + pure bloom, in linear space, before OutputPass converts
+const AddBloomShader = {
+  uniforms: { tBase: { value: null }, tBloom: { value: null } },
+  vertexShader: VERT,
+  fragmentShader: /* glsl */`
+    uniform sampler2D tBase;
+    uniform sampler2D tBloom;
+    varying vec2 vUv;
+    void main() { gl_FragColor = vec4(texture2D(tBase, vUv).rgb + texture2D(tBloom, vUv).rgb, 1.0); }
+  `,
+};
+const REAPPLY_EVERY = 30; // frames between weight sweeps for newly arrived objects
 
 export function makeBloom(renderer, scene, camera, opts = {}) {
   const o = {
@@ -78,37 +102,40 @@ export function makeBloom(renderer, scene, camera, opts = {}) {
   const size = renderer.getSize(new THREE.Vector2());
   const b0 = bloomTargetSize(size.x, size.y, renderer.getPixelRatio(), o.scale);
 
-  // --- pass A: the weighted scene -> bloom
-  const bloomComposer = new EffectComposer(renderer);
-  bloomComposer.renderToScreen = false;
-  bloomComposer.addPass(new RenderPass(scene, camera));
-  const bloom = new UnrealBloomPass(
-    new THREE.Vector2(b0.w, b0.h), o.strength, o.radius, o.threshold);
-  bloomComposer.addPass(bloom);
-
-  // --- pass B: the real scene + that bloom
-  const finalComposer = new EffectComposer(renderer);
+  // --- A: the one scene render, weights in alpha
+  const baseComposer = new EffectComposer(renderer);
+  baseComposer.renderToScreen = false;
   // EffectComposer's targets are created WITHOUT samples, so compositing
   // silently discards the renderer's antialias:true. On a wireframe board
   // that is the most visible side effect of adding a chain at all — ask
   // for MSAA back (samples survives setSize, so this is set once).
-  finalComposer.renderTarget1.samples = 4;
-  finalComposer.renderTarget2.samples = 4;
-  finalComposer.addPass(new RenderPass(scene, camera));
-  const addPass = new ShaderPass(AddBloomShader);
+  baseComposer.renderTarget1.samples = 4;
+  baseComposer.renderTarget2.samples = 4;
+  baseComposer.addPass(new RenderPass(scene, camera));
+  const baseTexture = () => baseComposer.readBuffer.texture; // a RenderPass never swaps
+
+  // --- B: rgb * alpha -> bloom (pure bloom left in renderTargetsHorizontal[0])
+  const bloomComposer = new EffectComposer(renderer);
+  bloomComposer.renderToScreen = false;
+  const weightPass = new ShaderPass(WeightShader, 'tNone'); // 'tNone': keep our own input texture
+  bloomComposer.addPass(weightPass);
+  const bloom = new UnrealBloomPass(
+    new THREE.Vector2(b0.w, b0.h), o.strength, o.radius, o.threshold);
+  bloomComposer.addPass(bloom);
+
+  // --- C: base + bloom -> screen
+  const finalComposer = new EffectComposer(renderer);
+  const addPass = new ShaderPass(AddBloomShader, 'tNone');
   finalComposer.addPass(addPass);
   // linear render targets -> without OutputPass the whole scene washes out
   finalComposer.addPass(new OutputPass());
 
+  baseComposer.setSize(size.x, size.y);
   bloomComposer.setSize(size.x, size.y);
   finalComposer.setSize(size.x, size.y);
 
-  // --- weighting: applied before the bloom render, undone straight after
-  const saved = [];          // { mat, r, g, b } and { obj, visible }
-  const savedVis = [];
-  const black = new THREE.Color(0, 0, 0);
-  let sceneBgSaved;
-
+  // --- weighting: written into the materials, kept, swept every few frames
+  let frame = 0;
   function applyWeights() {
     const map = buildWeightMap(groupsFn(), weights);
     if (!warnedConflict) {
@@ -116,42 +143,42 @@ export function makeBloom(renderer, scene, camera, opts = {}) {
       if (bad.length) {
         warnedConflict = true;
         console.warn(`[postfx] ${bad.length} material(s) shared across bloom groups — ` +
-          'the weighted pass can only render one weight. Give them separate materials.', bad);
+          'alpha can carry one weight per material. Give them separate materials.', bad);
       }
     }
     const dflt = clampWeight(weights.effects);
     scene.traverse((obj) => {
       const mat = obj.material;
       if (!mat) return;
-      const w = map.has(obj) ? map.get(obj) : dflt;
-      if (w === 0) { savedVis.push(obj); obj.visible = false; return; }
-      if (w === 1) return; // nothing to do — the common case, kept cheap
+      const w = Math.min(1, map.has(obj) ? map.get(obj) : dflt);
       const mats = Array.isArray(mat) ? mat : [mat];
       for (const m of mats) {
-        if (!m.color) continue;
-        saved.push({ mat: m, r: m.color.r, g: m.color.g, b: m.color.b });
-        m.color.setRGB(m.color.r * w, m.color.g * w, m.color.b * w);
+        if (m.userData.bloomW === w) continue;
+        m.userData.bloomW = w;
+        if (m.transparent) {
+          // keep the surface behind it as the weight: blend rgb, leave alpha
+          if (m.blending === THREE.NormalBlending) {
+            m.blending = THREE.CustomBlending;
+            m.blendSrc = THREE.SrcAlphaFactor; m.blendDst = THREE.OneMinusSrcAlphaFactor;
+            m.blendSrcAlpha = THREE.ZeroFactor; m.blendDstAlpha = THREE.OneFactor;
+            m.needsUpdate = true;
+          }
+          continue;
+        }
+        m.opacity = w;
       }
     });
-    sceneBgSaved = scene.background;
-    scene.background = black; // the sky must not bloom
-  }
-
-  function restoreWeights() {
-    for (const s of saved) s.mat.color.setRGB(s.r, s.g, s.b);
-    saved.length = 0;
-    for (const obj of savedVis) obj.visible = true;
-    savedVis.length = 0;
-    scene.background = sceneBgSaved;
   }
 
   return {
     render() {
       if (!enabled) { renderer.render(scene, camera); return; }
-      if (groupsFn) applyWeights();
+      if (groupsFn && frame++ % REAPPLY_EVERY === 0) applyWeights();
+      baseComposer.render();
+      weightPass.uniforms.tBase.value = baseTexture();
       bloomComposer.render();
-      if (groupsFn) restoreWeights();
       // the PURE bloom, taken before UnrealBloomPass's additive blend
+      addPass.uniforms.tBase.value = baseTexture();
       addPass.uniforms.tBloom.value = bloom.renderTargetsHorizontal[0].texture;
       finalComposer.render();
     },
@@ -159,6 +186,7 @@ export function makeBloom(renderer, scene, camera, opts = {}) {
       // ORDER MATTERS: composer.setSize() re-sizes EVERY pass (at device
       // pixels), which would clobber the bloom's scaled target — re-apply
       // the scaled bloom size AFTER it, and in DEVICE pixels too.
+      baseComposer.setSize(w, h);
       bloomComposer.setSize(w, h);
       finalComposer.setSize(w, h);
       const b = bloomTargetSize(w, h, renderer.getPixelRatio(), o.scale);
@@ -177,7 +205,7 @@ export function makeBloom(renderer, scene, camera, opts = {}) {
     addFinalPass(pass) { finalComposer.addPass(pass); },
     // fn() -> [[group, [roots]], ...], read fresh each frame so the caller
     // never has to tell us when its collections change.
-    setGroups(fn) { groupsFn = typeof fn === 'function' ? fn : null; },
+    setGroups(fn) { groupsFn = typeof fn === 'function' ? fn : null; frame = 0; },
     weights,
     params: o,
   };

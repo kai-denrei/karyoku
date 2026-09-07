@@ -189,6 +189,18 @@ no build step, Node invariant suites).
   `sfx.thud`, one of `THUD_SLICES` (twelve thuds in one file, played by
   `offset` + `duration`, both audio.js options now); `setCam` ->
   `sfx.uiClick`; `impact_hit` is the metal-hit clip.
+- ONE SCENE RENDER (postfx.js): the bloom WEIGHT rides in the ALPHA of the
+  single base render (an opaque material's `opacity` is written to alpha
+  untouched, so opacity = weight); the bloom source is rgb * alpha in a
+  full-screen pass; transparent materials get CustomBlending that leaves
+  the destination alpha alone and so inherit the weight of the surface
+  behind them. Weights are swept into materials every 30 frames, never
+  per frame. Three composers: base (MSAA), bloom, final. Calls at 120 x 90
+  went 5.5k -> 2.3k, tris 35 M -> 14 M.
+- A tab's step() must not call a helper declared LATER in the same
+  function (`const` is in its dead zone): the world tab's power-down block
+  did and every frame threw once the station fell ("the game freezes").
+  `?killpower=N` fells plate N's station after two seconds to prove it.
 - World: plate A is HOME (gates open, sentries silent), plate B is HOSTILE
   (gates shut, sentries live) — you breach B through its wall.
 - Probes: `#drive?seed=7&tick=4&fire=1&hold=1&aim=wall` shoots the wall

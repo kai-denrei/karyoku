@@ -5,20 +5,20 @@
 import * as THREE from '../vendor/three.module.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { bodyDims } from './catalog.js?v=9d12b062';
-import { makePlateParams, clampPlateParams, PLATE_KNOBS } from './plate.js?v=9d12b062';
-import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, stepGates, stepSentries, stepTracers, fireHull, damageAt, autopilotInput, makeBodies, stepBodies, bodyAt, shotRangeFor, solidHeightAt, SOLID_HEIGHT, damageSentryAt, stepCrush, ammoDotsLit, bodyHit, damageBody, powered } from './drive.js?v=9d12b062';
-import { WORLD_KNOBS, makeWorldParams, clampWorldParams, makeWorld, worldBlocked, worldBuildingAt, worldLosFor, worldSentries, worldGates, terrainNormal, splitQuad, groundAt } from './world.js?v=9d12b062';
-import { PALETTE, terrainMeshes, floraMeshes, LOOK, LOOKS } from './looks.js?v=9d12b062';
-import { withParam } from './url.js?v=9d12b062';
-import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=9d12b062';
-import { query, loadCatalog } from './plate-tab.js?v=9d12b062';
-import { modelledIds } from './catalog.js?v=9d12b062';
-import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS, makeMobileShell, mobileShell } from './drive-rig.js?v=9d12b062';
-import { makeSfx } from './sfx.js?v=9d12b062';
-import { makeCrew, stepCrew, stepSquash, shotHits, splashHits, hullCovers, crewFreeAt, CREW_TUNE } from './crew.js?v=9d12b062';
-import { makeCrewScene } from './crew-scene.js?v=9d12b062';
-import { mulberry32 } from './rng.js?v=9d12b062';
+import { bodyDims } from './catalog.js?v=04c2bc31';
+import { makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M } from './plate.js?v=04c2bc31';
+import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, stepGates, stepSentries, stepTracers, fireHull, damageAt, autopilotInput, makeBodies, stepBodies, bodyAt, shotRangeFor, solidHeightAt, SOLID_HEIGHT, damageSentryAt, stepCrush, ammoDotsLit, bodyHit, damageBody, powered } from './drive.js?v=04c2bc31';
+import { WORLD_KNOBS, makeWorldParams, clampWorldParams, makeWorld, worldBlocked, worldBuildingAt, worldLosFor, worldSentries, worldGates, terrainNormal, splitQuad, groundAt } from './world.js?v=04c2bc31';
+import { PALETTE, terrainMeshes, floraMeshes, LOOK, LOOKS } from './looks.js?v=04c2bc31';
+import { withParam } from './url.js?v=04c2bc31';
+import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=04c2bc31';
+import { query, loadCatalog } from './plate-tab.js?v=04c2bc31';
+import { modelledIds } from './catalog.js?v=04c2bc31';
+import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS, makeMobileShell, mobileShell } from './drive-rig.js?v=04c2bc31';
+import { makeSfx } from './sfx.js?v=04c2bc31';
+import { makeCrew, stepCrew, stepSquash, shotHits, splashHits, hullCovers, crewFreeAt, CREW_TUNE } from './crew.js?v=04c2bc31';
+import { makeCrewScene } from './crew-scene.js?v=04c2bc31';
+import { mulberry32 } from './rng.js?v=04c2bc31';
 
 const ARRIVE_M = 8;
 
@@ -115,7 +115,7 @@ export function initWorldTab(root) {
     // THE POWER, per plate: a station at D3 drops that plate's sentries
     world.plates.forEach((p, pi) => {
       const on = powered(p.plate);
-      if (powerWas[pi] && !on) { rigs[pi].setPowered(false); const st = p.plate.pieces[p.plate.power.pieceIndex]; const cx = (st.x + 1) * CELL_M + p.ox, cz = (st.z + 1) * CELL_M + p.oz; sfx.impact('shell', [cx, groundAt(world, cx, cz).y + 3, cz], [0, 1, 0], distTo(cx, cz), 4.5, 'impact_rubble'); }
+      if (powerWas[pi] && !on) { rigs[pi].setPowered(false); const st = p.plate.pieces[p.plate.power.pieceIndex]; const cx = (st.x + 1) * CELL_M + p.ox, cz = (st.z + 1) * CELL_M + p.oz; sfx.impact('shell', [cx, groundAt(world, cx, cz).y + 3, cz], [0, 1, 0], Math.hypot(cx - hull.x, cz - hull.z), 4.5, 'impact_rubble'); }
       powerWas[pi] = on;
     });
     // a crew fears the hull only on the hostile plate; a hull squashes anyone, anywhere
@@ -254,6 +254,9 @@ export function initWorldTab(root) {
     build();
     // ?tick=N drives N seconds before the first frame; ?auto=1 follows the
     // road instead of holding the lever straight
+    // ?killpower=N: plate N's station goes to D3 after two simulated seconds (the freeze probe)
+    const killPower = q.get('killpower') !== null ? Number(q.get('killpower')) : -1;
+    if (killPower >= 0) { const p = world.plates[killPower]; if (p && p.plate.power) setTimeout(() => { p.plate.pieces[p.plate.power.pieceIndex].state = 3; rigs[killPower].rebuild(); console.log('[world] station felled on plate', killPower); }, 2000); }
     const tick = Number(q.get('tick') || 0);
     if (tick > 0) {
       let idx = 0;
