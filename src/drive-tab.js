@@ -5,20 +5,20 @@
 import * as THREE from '../vendor/three.module.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { bodyDims } from './catalog.js?v=c43c648b';
-import { generatePlate, makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M, dirOfYaw } from './plate.js?v=c43c648b';
+import { bodyDims } from './catalog.js?v=9d12b062';
+import { generatePlate, makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M, dirOfYaw } from './plate.js?v=9d12b062';
 import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, blockedAt, makeGates, stepGates,
-  spawnFor, makeSentries, stepSentries, losClear, stepTracers, rayStop, fireHull, damageAt, makeBodies, stepBodies, bodyAt, shotRangeFor, damageSentryAt, stepCrush, ammoDotsLit, bodyHit, damageBody, powered } from './drive.js?v=c43c648b';
-import { PALETTE, LOOK, LOOKS } from './looks.js?v=c43c648b';
-import { withParam } from './url.js?v=c43c648b';
-import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=c43c648b';
-import { query, loadCatalog } from './plate-tab.js?v=c43c648b';
-import { modelledIds } from './catalog.js?v=c43c648b';
-import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS, makeMobileShell, mobileShell } from './drive-rig.js?v=c43c648b';
-import { makeSfx } from './sfx.js?v=c43c648b';
-import { makeCrew, stepCrew, stepSquash, shotHits, splashHits, hullCovers, crewFreeAt, CREW_TUNE } from './crew.js?v=c43c648b';
-import { makeCrewScene } from './crew-scene.js?v=c43c648b';
-import { mulberry32 } from './rng.js?v=c43c648b';
+  spawnFor, makeSentries, stepSentries, losClear, stepTracers, rayStop, fireHull, damageAt, makeBodies, stepBodies, bodyAt, shotRangeFor, damageSentryAt, stepCrush, ammoDotsLit, bodyHit, damageBody, powered } from './drive.js?v=9d12b062';
+import { PALETTE, LOOK, LOOKS } from './looks.js?v=9d12b062';
+import { withParam } from './url.js?v=9d12b062';
+import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=9d12b062';
+import { query, loadCatalog } from './plate-tab.js?v=9d12b062';
+import { modelledIds } from './catalog.js?v=9d12b062';
+import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS, makeMobileShell, mobileShell } from './drive-rig.js?v=9d12b062';
+import { makeSfx } from './sfx.js?v=9d12b062';
+import { makeCrew, stepCrew, stepSquash, shotHits, splashHits, hullCovers, crewFreeAt, CREW_TUNE } from './crew.js?v=9d12b062';
+import { makeCrewScene } from './crew-scene.js?v=9d12b062';
+import { mulberry32 } from './rng.js?v=9d12b062';
 
 export function initDriveTab(root) {
   const { renderer, scene, camera, hud, notice, resize, render, setGroups, post } = makeViewer(root);
@@ -90,9 +90,12 @@ export function initDriveTab(root) {
   function step(dt, input) {
     for (const pc of stepCrush(plate, hull, P)) { crushed++; sfx.impact('shell', [(pc.x + pc.pw / 2) * CELL_M, 0.6, (pc.z + pc.ph / 2) * CELL_M], [0, 1, 0], 0, 2.4, 'impact_rubble'); rig.rebuild(); }
     stepHull(hull, input, dt, (x, z) => blockedAt(plate, gates, x, z), P);
+    if (hull.bump) sfx.wallHit(hull.bump);
+    sfx.elevating(Boolean(hull.elevating));
     stepBodies(bodies, hull, (x, z) => blockedAt(plate, gates, x, z), P, dt);
     for (const b of bodies) {
       sfx.body(b.pieceIndex, b.moved, Math.hypot(b.x - hull.x, b.z - hull.z), dt);
+      if (b.touched) sfx.thud(0);
       if (b.rammed) { const r = damageBody(b); if (r && r.stepped) bodiesBroken++; sfx.bodyHit(b, [b.x, 1.2, b.z], 0, r); }
     }
     // THE POWER: the compound's station at D3 drops every sentry
@@ -179,7 +182,7 @@ export function initDriveTab(root) {
 
   const regenerate = () => { params.seed = (params.seed + 1) % 1000000; gui.controllersRecursive().forEach((c) => c.updateDisplay()); build(); };
   const CAMS = ['chase', 'top', 'orbit', 'overview'];
-  const setCam = (m) => { view.camera = m; controls.enabled = m === 'orbit'; camera.userData.placed = false; gui.controllersRecursive().forEach((c) => c.updateDisplay()); };
+  const setCam = (m) => { if (m !== view.camera) sfx.uiClick(); view.camera = m; controls.enabled = m === 'orbit'; camera.userData.placed = false; gui.controllersRecursive().forEach((c) => c.updateDisplay()); };
   const toggleCam = () => setCam(CAMS[(CAMS.indexOf(view.camera) + 1) % CAMS.length]);
   const keys = makeKeys({ c: toggleCam, r: regenerate, ...Object.fromEntries(Object.entries(CAMERA_KEYS).map(([k, m]) => [k, () => setCam(m)])) });
   makeMobileShell(root, keys, { onCamera: toggleCam });

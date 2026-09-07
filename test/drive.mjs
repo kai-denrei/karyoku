@@ -399,4 +399,24 @@ for (let seed = 1; seed <= 50; seed++) {
   let dark = 0; for (let i = 0; i < 300; i++) dark += stepSentries([s1], target, 1 / 60, () => true, DRIVE_TUNE, powered(p)).length;
   check('a dark sentry never tracks or fires where a powered one did', live > 0 && dark === 0 && !s1.tracking);
 }
+// what the hull tells the sound layer: a bump when a solid stops it at speed, the muzzle moving
+{
+  const wallAt = (x, z) => z < 90;   // a wall line north of z = 90
+  const h = makeHull(100, 100, 0);   // facing north
+  stepHull(h, { fwd: true }, 1 / 60, wallAt);
+  check('a clear step is no bump', h.bump === 0);
+  h.z = 90 + DRIVE_TUNE.hullR + 0.05;
+  stepHull(h, { fwd: true }, 1 / 60, wallAt);
+  check('a solid that stops the hull at speed is a bump of that speed', h.bump === DRIVE_TUNE.speed);
+  stepHull(h, { throttle: 0.05 }, 1 / 60, wallAt);
+  check('a creep into it is not', h.bump === 0);
+  const e = makeHull(0, 0, 0);
+  stepHull(e, { elevUp: true }, 1 / 60, () => false);
+  check('raising the muzzle reports elevating', e.elevating === true);
+  e.elev = DRIVE_TUNE.elevMax;
+  stepHull(e, { elevUp: true }, 1 / 60, () => false);
+  check('held at the stop it does not', e.elevating === false);
+  stepHull(e, {}, 1 / 60, () => false);
+  check('idle it does not', e.elevating === false);
+}
 done();

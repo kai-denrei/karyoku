@@ -7,9 +7,9 @@
 import * as THREE from '../vendor/three.module.js';
 import { GLTFLoader } from '../vendor/GLTFLoader.js';
 import { MeshoptDecoder } from '../vendor/meshopt_decoder.module.js';
-import { fitModel, bustToken } from './glbmodels.js?v=c43c648b';
-import { SUIT } from './crew.js?v=c43c648b';
-import { BZ } from './looks.js?v=c43c648b';
+import { fitModel, bustToken } from './glbmodels.js?v=9d12b062';
+import { SUIT } from './crew.js?v=9d12b062';
+import { BZ } from './looks.js?v=9d12b062';
 
 const ASTRO_URL = 'assets/models/astronaut-compact.glb';
 const PERSON_M = 1.8;

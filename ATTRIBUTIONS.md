@@ -56,3 +56,9 @@ workshop's format with the armored container renamed to `logistics_container`.
 
 `assets/audio/container_rumble.mp3` is the operator's clip
 (metal-container-rumble-325675), low-passed, trimmed and quietened here.
+
+Five more operator-supplied clips (2026-09-07), processed here (mono, some
+low-passed or trimmed): `muzzle_gears.mp3` (bicycle gears in reverse,
+100825), `ui_click.mp3` (cassette recorder stop button, 359987),
+`hull_hit.mp3` (metal hit 12, 193278), `hull_wall.mp3` (hitting wall,
+85571), `thuds.mp3` (thud_me, 70412: twelve thuds, sliced by offset).

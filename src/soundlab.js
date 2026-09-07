@@ -22,8 +22,9 @@ export const ELEMENTS = [
     { event: 'destroyed', key: 'tank_destroyed', wired: false },
     { event: 'idle bed (engine running, not moving)', key: 'tank_engine', wired: false, loop: true },
     { event: 'pushing a container (the container itself rumbles)', key: 'container_rumble', wired: true, loop: true },
-    { event: 'scraping a wall', key: null, want: 'short metallic grind on contact' },
-    { event: 'muzzle elevation change', key: null, want: 'faint servo tick per step' },
+    { event: 'hitting a wall at speed (gain follows the speed)', key: 'hull_wall', wired: true },
+    { event: 'bumping a crate, barrel, case, pallet or container: one of twelve thuds', key: 'thud', wired: true },
+    { event: 'muzzle elevation changing (loops while the key is held)', key: 'muzzle_gears', wired: true, loop: true },
   ] },
   { id: 'sentries', label: 'Sentries', events: [
     { event: 'needle fires', family: 'needle' },
@@ -79,7 +80,7 @@ export const ELEMENTS = [
     { event: 'a ram at speed (same as a round today)', key: null, want: 'a dull steel boom, lower than the crunch' },
   ] },
   { id: 'ui', label: 'Interface', events: [
-    { event: 'camera switch', key: null, want: 'small click, ui bus' },
+    { event: 'camera switch', key: 'ui_click', wired: true },
     { event: 'regenerate base', key: null, want: 'none, or a soft chime' },
 
   ] },

@@ -4,11 +4,11 @@
 // which round, how the engine bed follows the throttle, where a shell's
 // impact goes and which way it faces, how far a machine's hum carries.
 import * as THREE from '../vendor/three.module.js';
-import { makeAudio } from './audio.js?v=c43c648b';
-import { SENTRY_FIRE, DEATH_KEYS } from './audiomanifest.js?v=c43c648b';
-import { makeImpactBurst, IMPACT_TUNE, orientImpact } from './impactfx.js?v=c43c648b';
-import { PALETTE, BZ } from './looks.js?v=c43c648b';
-import { makeTankFeel, stepTankFeel, landTankFeel, fireTankFeel, applyTankFeel } from './tankfeel.js?v=c43c648b';
+import { makeAudio } from './audio.js?v=9d12b062';
+import { SENTRY_FIRE, DEATH_KEYS, THUD_SLICES } from './audiomanifest.js?v=9d12b062';
+import { makeImpactBurst, IMPACT_TUNE, orientImpact } from './impactfx.js?v=9d12b062';
+import { PALETTE, BZ } from './looks.js?v=9d12b062';
+import { makeTankFeel, stepTankFeel, landTankFeel, fireTankFeel, applyTankFeel } from './tankfeel.js?v=9d12b062';
 
 // the impact set is authored for a 4-unit wall; a shell on a 4 m cell
 // wants about this much of it
@@ -62,6 +62,7 @@ export function makeSfx(scene) {
   const ENGINE_STOP = 0.10;
   let thruster = null, level = 0, idle = 0, running = false;
   const feel = makeTankFeel();
+  let gears = null;         // the muzzle's loop while elevating
   const hums = new Map();   // key -> { h: loop handle | null, e: loop handle | null }
   const rumbles = new Map(); // body key -> { h: loop handle | null, still: seconds since it last moved }
   const RUMBLE_REACH = 50;   // m — a shoved container is silent past this
@@ -103,6 +104,16 @@ export function makeSfx(scene) {
     empty() { audio.play('laser_click'); },
     sentryFired(family, dist) { audio.play(SENTRY_FIRE[family] || 'tower_single', { dist }); },
     hitOnHull() { audio.play('impact_hit'); },
+    // the hull against the world
+    wallHit(speed) { audio.play('hull_wall', { gain: Math.min(1, 0.45 + speed / 12) }); },
+    thud(dist) { const [offset, duration] = THUD_SLICES[seed++ % THUD_SLICES.length]; audio.play('thud', { offset, duration, dist }); },
+    // the muzzle's gears turn while the elevation changes: a loop that
+    // starts with the key and stops with it
+    elevating(active) {
+      if (active && !gears) gears = audio.loop('muzzle_gears', { gain: 1 });
+      else if (!active && gears) { gears.stop(0.08); gears = null; }
+    },
+    uiClick() { audio.play('ui_click'); },
     // a machine's beds, kept by key, gain by distance from the listener
     machine(key, dist) {
       let m = hums.get(key);

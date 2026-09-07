@@ -17,7 +17,7 @@ check('the engine is three wired events', ['tank_spool_up', 'tank_thruster', 'ta
 check('the electric hum is gone from the manifest and listed as removed', !SOUNDS.assembly_electric && rows.some((r) => r.element === 'assembly' && r.status === 'missing' && /REMOVED/.test(r.want)));
 check('every manifest key is claimed by some element', unclaimedKeys(rows, SOUNDS).length === 0);
 check('the summary adds up', sum.wired + sum.unwired + sum.missing + sum.nofile === sum.total && sum.total === rows.length);
-check('loops are beds: thruster, hydraulics, the rumble', rows.filter((r) => r.loop).every((r) => ['tank_thruster', 'tank_engine', 'assembly_hydraulics', 'container_rumble'].includes(r.key)));
+check('loops are beds: thruster, hydraulics, the rumble', rows.filter((r) => r.loop).every((r) => ['tank_thruster', 'tank_engine', 'assembly_hydraulics', 'container_rumble', 'muzzle_gears'].includes(r.key)));
 check('the lab knows more gaps than clips it owns', sum.missing > 0);
 // families share rounds on purpose (railgun and needle both crack like a sniper), so a key may sit under several wired rows
 check('a shared round is listed under every family that fires it', Object.entries(SENTRY_FIRE).every(([f, k]) => rows.some((r) => r.family === f && r.key === k)));

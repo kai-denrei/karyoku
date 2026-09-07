@@ -11,8 +11,8 @@
 // THE ANTI-AIMBOT NUMBERS are yawRate and the arc: a sentry cannot point
 // outside its arc, and inside it turns at yawRate, so a hull that crosses
 // the arc fast, or stays in the blind sector, is never fired on.
-import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=c43c648b';
-import { KIND, CELL_M, wrapDeg, dirOfYaw, DIRS, yawOfSide, rotSide } from './plate.js?v=c43c648b';
+import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=9d12b062';
+import { KIND, CELL_M, wrapDeg, dirOfYaw, DIRS, yawOfSide, rotSide } from './plate.js?v=9d12b062';
 
 export const DRIVE_TUNE = {
   speed: 12,        // m/s forward
@@ -107,11 +107,18 @@ export function makeHull(x, z, heading = 0, tune = DRIVE_TUNE) {
 // points at hullR around the new centre are free; else the x part alone,
 // else the z part alone, else it stops. Sliding is what lets a hull hug a
 // wall, which is what cover means.
+// the hull tells the tab two things a sound hangs on: `bump` (the speed it
+// was doing when a solid stopped it dead this step, 0 otherwise) and
+// `elevating` (the muzzle actually moved this step, not just held at a stop)
+const BUMP_SPEED = 1.5;
 export function stepHull(hull, input, dt, blocked, tune = DRIVE_TUNE) {
   if (hull.cool > 0) hull.cool = Math.max(0, hull.cool - dt);
+  hull.bump = 0;
   // the muzzle: SHIFT+W raises, SHIFT+S lowers, inside the mount's stops
   const dElev = ((input.elevUp ? 1 : 0) - (input.elevDown ? 1 : 0)) * tune.elevRate * dt;
+  const elev0 = hull.elev;
   if (dElev) hull.elev = Math.max(tune.elevMin, Math.min(tune.elevMax, hull.elev + dElev));
+  hull.elevating = hull.elev !== elev0;
   const turn = ((input.right ? 1 : 0) - (input.left ? 1 : 0)) * tune.turnRate * dt;
   hull.heading = wrapDeg(hull.heading + turn);
   // a stick hands in a throttle (-rev..1) instead of the two keys: forward
@@ -130,6 +137,7 @@ export function stepHull(hull, input, dt, blocked, tune = DRIVE_TUNE) {
   if (freeAt(hull.x + mx, hull.z + mz)) { hull.x += mx; hull.z += mz; hull.vx = mx / dt; hull.vz = mz / dt; return true; }
   if (mx !== 0 && freeAt(hull.x + mx, hull.z)) { hull.x += mx; hull.vx = mx / dt; return true; }
   if (mz !== 0 && freeAt(hull.x, hull.z + mz)) { hull.z += mz; hull.vz = mz / dt; return true; }
+  if (Math.abs(v) >= BUMP_SPEED) hull.bump = Math.abs(v);
   return false;
 }
 
@@ -214,7 +222,7 @@ export function makeBodies(plate, ox = 0, oz = 0, dims = null) {
     const swap = pc.rot % 2 === 1;
     const d = dims && dims[pc.id];
     out.push({
-      pieceIndex, plate, id: pc.id, state: pc.state || 0, hits: 0, dead: (pc.state || 0) >= 3, moved: false, rammed: false, ramCool: 0,
+      pieceIndex, plate, id: pc.id, state: pc.state || 0, hits: 0, dead: (pc.state || 0) >= 3, moved: false, rammed: false, ramCool: 0, touched: false, touchCool: 0,
       x: ox + (pc.x + pc.pw / 2 + pc.offset[0]) * CELL_M, z: oz + (pc.z + pc.ph / 2 + pc.offset[1]) * CELL_M,
       hw: d ? d.w / 2 : (swap ? pc.ph : pc.pw) * CELL_M / 2 - 0.2, hd: d ? d.d / 2 : (swap ? pc.pw : pc.ph) * CELL_M / 2 - 0.2,
       rot: pc.rot,
@@ -257,11 +265,13 @@ function bodyFits(b, x, z, bodies, blocked) {
   return true;
 }
 // Settle the hull against every body. Returns how many bodies moved.
+const TOUCH_SPEED = 1.2;
 export function stepBodies(bodies, hull, blocked, tune = DRIVE_TUNE, dt = 1 / 60) {
   let moved = 0;
   for (const b of bodies) {
-    b.moved = false; b.rammed = false;
+    b.moved = false; b.rammed = false; b.touched = false;
     if (b.ramCool > 0) b.ramCool -= dt;
+    if ((b.touchCool || 0) > 0) b.touchCool -= dt;
     if (b.dead) continue;
     const [lx, lz] = toLocal(b, hull.x, hull.z);
     const cx = Math.max(-b.hw, Math.min(b.hw, lx)), cz = Math.max(-b.hd, Math.min(b.hd, lz));
@@ -275,8 +285,10 @@ export function stepBodies(bodies, hull, blocked, tune = DRIVE_TUNE, dt = 1 / 60
       nx = -dx * Math.sign(hull.speed || 1); nz = -dz * Math.sign(hull.speed || 1); d = 0;
     } else { nx /= d; nz /= d; }
     const pen = tune.hullR - d + 0.02;
-    // a RAM: contact at crushSpeed is a hit on the body, once per touch
+    // a RAM: contact at crushSpeed is a hit on the body, once per touch;
+    // a TOUCH at any real speed is a thud, once per half second
     if (Math.abs(hull.speed || 0) >= tune.crushSpeed && b.ramCool <= 0) { b.rammed = true; b.ramCool = 0.8; }
+    if (Math.abs(hull.speed || 0) >= TOUCH_SPEED && b.touchCool <= 0) { b.touched = true; b.touchCool = 0.5; }
     if (bodyFits(b, b.x - nx * pen, b.z - nz * pen, bodies, blocked)) { b.x -= nx * pen; b.z -= nz * pen; b.moved = true; moved++; }
     else { hull.x += nx * pen; hull.z += nz * pen; hull.vx = 0; hull.vz = 0; }
   }

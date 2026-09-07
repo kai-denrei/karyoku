@@ -182,6 +182,13 @@ no build step, Node invariant suites).
   changes. Props capped at 6 per block. At 120 x 90: 11.2k -> ~3k objects,
   61 M -> 35 M tris (colony), the composer still renders the scene twice
   (bloom pass + final); the compact astronaut is 95k tris, skinned.
+- FIVE MORE CUES (operator clips, processed): `hull.bump` (set by
+  `stepHull` when a solid stops it dead at >= 1.5 m/s) -> `sfx.wallHit`;
+  `hull.elevating` (the muzzle actually moved) -> `sfx.elevating` loops
+  `muzzle_gears`; `b.touched` (contact at >= 1.2 m/s, 0.5 s per body) ->
+  `sfx.thud`, one of `THUD_SLICES` (twelve thuds in one file, played by
+  `offset` + `duration`, both audio.js options now); `setCam` ->
+  `sfx.uiClick`; `impact_hit` is the metal-hit clip.
 - World: plate A is HOME (gates open, sentries silent), plate B is HOSTILE
   (gates shut, sentries live) — you breach B through its wall.
 - Probes: `#drive?seed=7&tick=4&fire=1&hold=1&aim=wall` shoots the wall

@@ -42,7 +42,15 @@ export const SOUNDS = {
   // --- impacts: what a hit sounds like, keyed by what was hit ----------------
   impact_shell:  { file: `${A}/tower_single.mp3`,   bus: 'tank', gain: 0.55, maxVoices: 3, minInterval: 0.05, rateJitter: 0.10 },
   impact_rubble: { file: `${A}/tank_destroyed.mp3`, bus: 'tank', gain: 0.70, maxVoices: 2, minInterval: 0.20, rateJitter: 0.05 },
-  impact_hit:    { file: `${A}/tank_secondary.mp3`, bus: 'tank', gain: 0.45, maxVoices: 3, minInterval: 0.08, rateJitter: 0.12 },
+  impact_hit:    { file: `${A}/hull_hit.mp3`,       bus: 'tank', gain: 0.70, maxVoices: 3, minInterval: 0.08, rateJitter: 0.08 },
+  // the hull against the world: a wall at speed; a crate, barrel, case,
+  // pallet or container at any speed (one of THUD_SLICES, a slice each)
+  hull_wall:     { file: `${A}/hull_wall.mp3`,      bus: 'tank', gain: 0.60, maxVoices: 2, minInterval: 0.35, rateJitter: 0.05 },
+  thud:          { file: `${A}/thuds.mp3`,          bus: 'tank', gain: 0.55, maxVoices: 3, minInterval: 0.12, rateJitter: 0.06 },
+  // the muzzle's gears while the elevation changes (a loop, muffled)
+  muzzle_gears:  { file: `${A}/muzzle_gears.mp3`,   bus: 'tank', gain: 0.35, maxVoices: 1, minInterval: 0, rateJitter: 0 },
+  // the interface: a cassette deck's stop button for a camera change
+  ui_click:      { file: `${A}/ui_click.mp3`,       bus: 'ui',   gain: 0.60, maxVoices: 2, minInterval: 0.08, rateJitter: 0 },
   // a sentry breaking: the reference's tank death, which is the big one
   sentry_destroyed: { file: `${A}/tank_destroyed.mp3`, bus: 'towers', gain: 0.90, maxVoices: 2, minInterval: 0.30, rateJitter: 0.05 },
 
@@ -68,6 +76,8 @@ export const SENTRY_FIRE = {
 };
 
 export const DEATH_KEYS = ['enemy_die_a', 'enemy_die_b', 'enemy_die_c'];
+// the thud file's twelve thuds: [offset, duration] seconds (silencedetect at -35 dB)
+export const THUD_SLICES = [0.27, 1.79, 3.29, 4.64, 5.72, 6.96, 7.96, 9.06, 10.13, 11.11, 12.02, 13.13].map((t) => [t, 0.45]);
 export const GLOBAL_VOICE_CAP = 24;
 // inverse-distance falloff, in METRES here: a turret 45 m off is half as loud
 export const DISTANCE_K = 45;
