@@ -4,6 +4,32 @@ Newest first. Each entry: what landed, then how it works, for programmers.
 Decisions and dead ends in more detail live in `.deban/` (local, not
 published).
 
+## c3bf1f9 — ours and the workshop's, on a hundred cells
+
+The crane and the drone pad displayed as a mess of parts, so the rule is
+now the operator's: nothing stays that we did not build ourselves (the
+trees, the rocks, the old Stalheart cast) or import from the workshop.
+Every NASA stand-in is gone with its folder; the crane, drone pad, radar
+dish and antenna ids are unmodelled and are not placed.
+
+The workshop's 40k-triangle set is in: the Terraformer 3000 at a quarter
+of the weight of the 165k build it replaces, all four states, and the
+Hugin cargo launchpad, ten cells square with its recovery cycle looping.
+Both are landmarks, and the Hugin takes the block farthest from the
+terraformer, so the two machines never display together.
+
+The default sim is a 100 x 76 plate at the tank's full speed, thirty
+metres a second, and sparse: a quarter density, three props a block, ten
+pieces of yard stock a block, fewer band crates. A default plate holds
+about 890 pieces and 50 bodies where the first cut held 1,300 and 470,
+and the key spots stand out. Three placement rules came with the size:
+the compound and the flag stand sit at the centre (spots nearest a point
+first, not any spot of a forty-cell block), the compound tries without
+its lane before it moves farther out, and a spot that gives a building
+no usable door is not a spot. The world is 1,200 m to hold two such
+plates without growing. Four size-bound checks were rewritten to read the
+tune or to run long enough for a big plate.
+
 ## 8987fca — where the crew may go
 
 Removing the uplink reshuffled seed 7 and a crew check failed: three of
