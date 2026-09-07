@@ -4,8 +4,8 @@
 // wearing the weathered metal, edged where it is a machine you look at up
 // close. The board's light is the TD board's, so the numbers are theirs.
 import * as THREE from '../vendor/three.module.js';
-import { tintModel, addEdgeOutlines } from './glbmodels.js?v=ef335ef3';
-import { applyWeatheredMaterial } from './materials.js?v=ef335ef3';
+import { tintModel, addEdgeOutlines } from './glbmodels.js?v=110951bf';
+import { applyWeatheredMaterial } from './materials.js?v=110951bf';
 
 export function hideCollisionNodes(root) {
   root.traverse((o) => { if (/collision/i.test(o.name || '')) o.visible = false; });
@@ -51,7 +51,7 @@ export function prepTerraformer(scene) {
   });
 }
 
-export const PREP = { 'container.glb': prepContainer, 'terraformer.glb': prepTerraformer };
+export const PREP = {}; // the house casts (the container, the old Stalheart) are gone; the preps stay for the record
 export const prepFor = (url) => PREP[url.split('/').pop()] || null;
 
 // The reference tank's ladder: same hue as the tint, lightness by rung.

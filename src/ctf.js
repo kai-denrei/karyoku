@@ -4,7 +4,7 @@
 // stops by the enemy's full pole takes its flag; stopped by its own empty
 // pole it plants it, the set is complete, and that is the win. Pure;
 // test/ctf.mjs. Positions in world metres.
-export const CTF_TUNE = { captureM: 7, stopSpeed: 1.5, winBonus: 1000 };
+export const CTF_TUNE = { captureM: 7, stopSpeed: 1.5, winBonus: 1000, holdS: 30 };
 export const SLOTS = [{ glyph: 'fire', banner: 'flag_ember', pole: 'pole_beacon' }, { glyph: 'power', banner: 'flag_vanguard', pole: 'pole_tactical' }];
 
 // `stands`: { home: [{x,z},{x,z}], hostile: [{x,z},{x,z}] } (slot order)
@@ -17,6 +17,10 @@ export function makeCtf(stands) {
       { slot: 1, glyph: 'power', owner: 'hostile', at: 'hostile', carried: false },
     ],
     carrying: null,   // the flag the hull carries, or null
+    // the SET: both flags on home's poles. The banners are dormant (grey)
+    // until then; complete, they get their colours back and a holdS
+    // countdown runs to the win.
+    set: false, hold: 0,
     won: false, score: 0, captures: 0, events: [],
   };
 }
@@ -24,9 +28,14 @@ const nearPole = (hull, stands, side, slot, tune) => stands[side] && stands[side
 
 // one step; returns events: 'capture' the frame the enemy flag is taken,
 // 'plant' (and won) the frame it goes up on the home pole
-export function stepCtf(ctf, hull, tune = CTF_TUNE) {
+export function stepCtf(ctf, hull, tune = CTF_TUNE, dt = 0) {
   const out = [];
   if (ctf.won) return out;
+  if (ctf.set) {
+    ctf.hold = Math.max(0, ctf.hold - dt);
+    if (ctf.hold <= 0) { ctf.won = true; ctf.score += tune.winBonus; out.push('win'); }
+    return out;
+  }
   const stopped = Math.abs(hull.speed || 0) < tune.stopSpeed;
   if (!stopped) return out;
   if (!ctf.carrying) {
@@ -39,7 +48,7 @@ export function stepCtf(ctf, hull, tune = CTF_TUNE) {
   const f = ctf.carrying;
   if (nearPole(hull, ctf.stands, 'home', f.slot, tune)) {
     f.carried = false; f.at = 'home'; ctf.carrying = null;
-    ctf.won = true; ctf.score += tune.winBonus;
+    ctf.set = true; ctf.hold = tune.holdS;
     out.push('plant');
   }
   return out;

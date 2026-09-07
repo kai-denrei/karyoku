@@ -14,7 +14,7 @@
 // asks it too, with the walker's own radius, so nobody walks through a
 // container or the tank. Something that rolls onto a walker slowly shoves
 // them out (`escape`); fast, it squashes them (stepSquash).
-import { KIND, CELL_M, rotSide, DIRS, YARD_IDS, POWER } from './plate.js?v=ef335ef3';
+import { KIND, CELL_M, rotSide, DIRS, YARD_IDS, POWER } from './plate.js?v=110951bf';
 
 export const CREW_TUNE = {
   walk: 1.4, run: 4.6,      // m/s

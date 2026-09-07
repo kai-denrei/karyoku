@@ -13,6 +13,8 @@ check('stopping by the enemy\'s full pole captures its power flag', ev.includes(
 check('a second stop there takes nothing more', stepCtf(c, { x: 306, z: 2, speed: 0 }).length === 0);
 check('stopping by home\'s FIRE pole (the wrong slot) plants nothing', stepCtf(c, { x: 1, z: 1, speed: 0 }).length === 0 && c.carrying && !c.won);
 const ev2 = stepCtf(c, { x: 9, z: 1, speed: 0 });
-check('stopping by home\'s empty power pole plants it: the set is complete, the win', ev2.includes('plant') && c.won && !c.carrying && poleState(c, 'home', 1) === 'flag' && c.score === CTF_TUNE.winBonus);
-check('after the win nothing more happens', stepCtf(c, { x: 306, z: 2, speed: 0 }).length === 0);
+check('stopping by home\'s empty power pole plants it: the set is complete, the hold starts', ev2.includes('plant') && c.set && !c.won && !c.carrying && poleState(c, 'home', 1) === 'flag' && c.hold === CTF_TUNE.holdS && c.score === 0);
+check('the hold counts down; nothing else happens meanwhile', stepCtf(c, { x: 306, z: 2, speed: 0 }, CTF_TUNE, 10).length === 0 && c.hold === CTF_TUNE.holdS - 10 && !c.won);
+const ev3 = stepCtf(c, { x: 0, z: 0, speed: 0 }, CTF_TUNE, CTF_TUNE.holdS);
+check('at the end of the hold: the win, the bonus, once', ev3.includes('win') && c.won && c.score === CTF_TUNE.winBonus && stepCtf(c, { x: 306, z: 2, speed: 0 }, CTF_TUNE, 5).length === 0);
 done();

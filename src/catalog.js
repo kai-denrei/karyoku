@@ -67,7 +67,6 @@ export function buildCatalog(spec, manifest, extras = []) {
 }
 // every id the catalog can draw — what the generator may place
 export const modelledIds = (cat) => new Set([...cat].filter(([, e]) => !e.placeholder).map(([id]) => id));
-export const HOUSE_URL = 'assets/models/';
 export const OUTPOST_URL = 'assets/outpost/';
 export const ASSEMBLY_URL = 'assets/assembly/';
 export const WAREHOUSE_URL = 'assets/warehouse/';

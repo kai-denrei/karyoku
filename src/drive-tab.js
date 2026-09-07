@@ -5,23 +5,23 @@
 import * as THREE from '../vendor/three.module.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { noteStep } from './fps.js?v=ef335ef3';
-import { bodyDims } from './catalog.js?v=ef335ef3';
-import { generatePlate, makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M, dirOfYaw, reservedAt } from './plate.js?v=ef335ef3';
+import { noteStep } from './fps.js?v=110951bf';
+import { bodyDims } from './catalog.js?v=110951bf';
+import { generatePlate, makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M, dirOfYaw, reservedAt } from './plate.js?v=110951bf';
 import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, blockedAt, makeGates, stepGates,
-  spawnFor, makeSentries, stepSentries, losClear, stepTracers, rayStop, fireHull, damageAt, makeBodies, stepBodies, bodyAt, shotRangeFor, damageSentryAt, stepCrush, stepRam, ammoDotsLit, bodyHit, damageBody, powered } from './drive.js?v=ef335ef3';
-import { PALETTE, LOOK, LOOKS } from './looks.js?v=ef335ef3';
-import { withParam } from './url.js?v=ef335ef3';
-import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=ef335ef3';
-import { query, loadCatalog } from './plate-tab.js?v=ef335ef3';
-import { modelledIds } from './catalog.js?v=ef335ef3';
-import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS, makeMobileShell, mobileShell, makeGuardObject, makeFlagStand, makeCarriedFlag } from './drive-rig.js?v=ef335ef3';
-import { makeSfx } from './sfx.js?v=ef335ef3';
-import { makeCrew, stepCrew, stepSquash, shotHits, splashHits, hullCovers, crewFreeAt, CREW_TUNE } from './crew.js?v=ef335ef3';
-import { makeCrewScene } from './crew-scene.js?v=ef335ef3';
-import { makeGuard, stepGuard, GUARD_TUNE } from './guard.js?v=ef335ef3';
-import { makeCtf, stepCtf, poleState, SLOTS, CTF_TUNE } from './ctf.js?v=ef335ef3';
-import { mulberry32 } from './rng.js?v=ef335ef3';
+  spawnFor, makeSentries, stepSentries, losClear, stepTracers, rayStop, fireHull, damageAt, makeBodies, stepBodies, bodyAt, shotRangeFor, damageSentryAt, stepCrush, stepRam, ammoDotsLit, bodyHit, damageBody, powered, damageSplit } from './drive.js?v=110951bf';
+import { PALETTE, LOOK, LOOKS } from './looks.js?v=110951bf';
+import { withParam } from './url.js?v=110951bf';
+import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=110951bf';
+import { query, loadCatalog } from './plate-tab.js?v=110951bf';
+import { modelledIds } from './catalog.js?v=110951bf';
+import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS, makeMobileShell, mobileShell, makeGuardObject, makeFlagStand, makeCarriedFlag } from './drive-rig.js?v=110951bf';
+import { makeSfx } from './sfx.js?v=110951bf';
+import { makeCrew, stepCrew, stepSquash, shotHits, splashHits, hullCovers, crewFreeAt, CREW_TUNE } from './crew.js?v=110951bf';
+import { makeCrewScene } from './crew-scene.js?v=110951bf';
+import { makeGuard, stepGuard, GUARD_TUNE } from './guard.js?v=110951bf';
+import { makeCtf, stepCtf, poleState, SLOTS, CTF_TUNE } from './ctf.js?v=110951bf';
+import { mulberry32 } from './rng.js?v=110951bf';
 
 export function initDriveTab(root) {
   const { renderer, scene, camera, hud, notice, resize, render, setGroups, post, radar } = makeViewer(root);
@@ -127,7 +127,7 @@ export function initDriveTab(root) {
     if (input.fire) { const shot = fireHull(hull, P); if (shot) { tracers.push(shot); sfx.fire(); } else if (hull.empty) sfx.empty(); }
     sfx.engine(hull.speed, P.speed, dt);
     stepGates(gates, hull, dt, P);
-    if (ctf) for (const ev of stepCtf(ctf, hull, CTF_TUNE)) if (ev === 'capture') { const f = ctf.carrying; if (stand) stand.set(f.slot, 'empty'); carried = makeCarriedFlag(hullObj, SLOTS[f.slot].banner); sfx.flagTaken(); console.log(`[ctf] captured the ${f.glyph} flag`); }
+    if (ctf) for (const ev of stepCtf(ctf, hull, CTF_TUNE, dt)) if (ev === 'capture') { const f = ctf.carrying; if (stand) stand.set(f.slot, 'empty'); carried = makeCarriedFlag(hullObj, SLOTS[f.slot].banner); sfx.flagTaken(); console.log(`[ctf] captured the ${f.glyph} flag`); }
     if (guard) {
       const ev = stepGuard(guard, hull, dt, GUARD_TUNE);
       const gd = Math.hypot(guard.x - hull.x, guard.z - hull.z);
@@ -148,9 +148,9 @@ export function initDriveTab(root) {
     hits += stepTracers(tracers, hull, dt, (x, z, t) => {
       if (t && t.kind === 'lob' && t.landed) { sfx.impact('shell', [x, 0.1, z], [0, 1, 0], distTo(x, z), 3.2, 'tower_aoe'); splash(x, z); return true; }
       if (t && t.kind === 'shot' && t.landed) {
-        const pc = damageAt(plate, x, z, destructible);
+        const pcs = damageSplit(plate, x, z, destructible);
         sfx.impact('shell', [x, 0.1, z], [0, 1, 0], distTo(x, z));
-        if (pc) wound(x, z, pc);
+        for (const pc of pcs) wound(x, z, pc);
         splash(x, z);
         return true;
       }
@@ -172,8 +172,7 @@ export function initDriveTab(root) {
         const hb = bodyHit(bodies, x, z);
         if (hb) { const r = damageBody(hb); if (r && r.stepped) bodiesBroken++; sfx.bodyHit(hb, [x, t.y, z], distTo(x, z), r); return true; }
         sfx.impact('shell', [x, t.y, z], [-t.vx / n, 0.2, -t.vz / n], distTo(x, z));
-        const pc = damageAt(plate, x, z, destructible);
-        if (pc) wound(x, z, pc);
+        for (const pc of damageSplit(plate, x, z, destructible)) wound(x, z, pc); // a seam hit wounds both walls
         const sd = damageSentryAt(plate, sentries, x, z, P);
         if (sd && sd.destroyed) { rig.breakSentry(sd.sentry.index); sfx.sentryDestroyed([sd.sentry.cx, 3.2, sd.sentry.cz], distTo(x, z)); }
       }

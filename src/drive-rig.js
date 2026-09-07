@@ -2,15 +2,15 @@
 // the hull model with a stand-in until it lands, the key state, the tracer
 // meshes, and the two cameras. Rendering only; the rules are drive.js.
 import * as THREE from '../vendor/three.module.js';
-import { applySpaceScene, makeStars, makeComposer, PALETTE } from './looks.js?v=ef335ef3';
-import { tickFps } from './fps.js?v=ef335ef3';
-import { radarProject, radarBearing, sweepAngle, radarPhosphor, radarColor, RADAR_RANGE_M } from './radar.js?v=ef335ef3';
-import { castHull } from './casts.js?v=ef335ef3';
-import { styleForLook, BZ } from './looks.js?v=ef335ef3';
-import { STICK, stickVector, knobOffset } from './stick.js?v=ef335ef3';
-import { query } from './url.js?v=ef335ef3';
-import { loadGlb, mergeByMaterial, makeShellRack } from './glbmodels.js?v=ef335ef3';
-import { animProto } from './plate-scene.js?v=ef335ef3';
+import { applySpaceScene, makeStars, makeComposer, PALETTE } from './looks.js?v=110951bf';
+import { tickFps } from './fps.js?v=110951bf';
+import { radarProject, radarBearing, sweepAngle, radarPhosphor, radarColor, RADAR_RANGE_M } from './radar.js?v=110951bf';
+import { castHull } from './casts.js?v=110951bf';
+import { styleForLook, BZ } from './looks.js?v=110951bf';
+import { STICK, stickVector, knobOffset } from './stick.js?v=110951bf';
+import { query } from './url.js?v=110951bf';
+import { loadGlb, mergeByMaterial, makeShellRack } from './glbmodels.js?v=110951bf';
+import { animProto } from './plate-scene.js?v=110951bf';
 
 const HULL_URL = 'assets/models/mkcx2.glb';
 // The nodes that must keep moving through the merge, and the ones that
@@ -431,11 +431,22 @@ export function makeGuardObject(scene) {
 // hull while it carries one.
 const FLAG_URL = (id) => `assets/flags/${id}.glb`;
 const FLAG_BASE_Y = 1.48; // the unit's origin is mid-pole; its foot is this far below
+// DORMANT cloth: grey until the set is complete, then the kit's own colours
+const DORMANT = BZ ? new THREE.MeshBasicMaterial({ color: 0x4a5a50, wireframe: true }) : new THREE.MeshStandardMaterial({ color: 0x6b7076, roughness: 0.8, metalness: 0.05 });
+const isCloth = (m) => m && /woven/i.test(m.name || '');
+function setCloth(obj, live) {
+  obj.traverse((o) => {
+    if (!o.isMesh) return;
+    if (!o.userData.cloth) { const mats = Array.isArray(o.material) ? o.material : [o.material]; if (mats.some(isCloth)) o.userData.cloth = o.material; else return; }
+    o.material = live ? o.userData.cloth : (Array.isArray(o.userData.cloth) ? o.userData.cloth.map((m) => (isCloth(m) ? DORMANT : m)) : DORMANT);
+  });
+}
 export function makeFlagStand(scene, poles, side, slots, groundY = () => 0) {
   const group = new THREE.Group(); group.name = `flags-${side}`; group.userData.label = `flag stand (${side})`;
   scene.add(group);
   const rigs = [null, null];
   const mixers = [];
+  let live = false;
   const build = (slot, state) => {
     const url = FLAG_URL(state === 'flag' ? slots[slot].banner : slots[slot].pole);
     return animProto(url).then((res) => {
@@ -444,6 +455,7 @@ export function makeFlagStand(scene, poles, side, slots, groundY = () => 0) {
       const p = poles[slot];
       obj.position.set(p.x, groundY(p.x, p.z) + FLAG_BASE_Y, p.z);
       obj.name = `flag-${slots[slot].glyph}-${state}`;
+      setCloth(obj, live);
       const mixer = new THREE.AnimationMixer(obj);
       const clip = (n) => res.clips.find((c) => c.name === n);
       if (clip('Flutter')) mixer.clipAction(clip('Flutter')).play();
@@ -459,6 +471,7 @@ export function makeFlagStand(scene, poles, side, slots, groundY = () => 0) {
   return {
     group,
     set(slot, state, anim = null) { show(slot, state, anim); },
+    setLive(on) { live = on; for (const r of rigs) if (r) setCloth(r.obj, on); },
     tick(dt) { for (const m of mixers) m.update(dt); },
   };
 }
@@ -471,6 +484,7 @@ export function makeCarriedFlag(hullObj, banner) {
     if (!res) return;
     const obj = res.root.clone();
     obj.position.y = FLAG_BASE_Y * 0.6;
+    setCloth(obj, false); // a carried flag is dormant: the set is not complete
     holder.add(obj);
     mixer = new THREE.AnimationMixer(obj);
     const c = res.clips.find((k) => k.name === 'Flutter'); if (c) mixer.clipAction(c).play();

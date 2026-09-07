@@ -19,7 +19,7 @@
 
 ## NASA 3D Resources — space-colony stand-ins
 
-- **Files:** `assets/models/nasa/*.glb` (gantry, insight, ibex,
+- **Files:** (the NASA stand-ins are no longer in the repo; this section is kept for the record) `assets/models/nasa/*.glb` (gantry, insight, ibex,
   launcher, cubesat), mapped to catalog roles in
   `assets/models/nasa/manifest.json`
 - **Source:** <https://github.com/nasa/NASA-3D-Resources> — Gantry, Habitat
@@ -77,3 +77,5 @@ no longer in the repo.
 `assets/flags/` is the workshop's ctf-flags kit (jelaludo.github.io/SentryTowers_A6/ctf-flags): six banner units, three poles and the capture socket, all vendored for later use.
 
 `assets/game-ready/` is the workshop's 40k-triangle set (jelaludo.github.io/SentryTowers_A6/game-assets): the Terraformer 3000 and the Hugin launchpad, four states each. The NASA stand-ins are no longer in the repo.
+
+The old Stalheart cast (`terraformer.glb`, the reference project's own) left the repo on 2026-09-07 once the workshop's Terraformer 3000 arrived.

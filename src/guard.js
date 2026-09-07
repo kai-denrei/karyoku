@@ -12,7 +12,7 @@ export const GUARD_TUNE = {
   leadT: 1.4,       // s: the mark is laid where the hull will be after this
   markT: 1.4,       // s the pointer holds before the shell drops
   cooldown: 2.2,    // s between shells (operator: it should shoot faster)
-  shellSpeed: 42,   // m/s along the ground
+  shellSpeed: 75,   // m/s along the ground (operator: faster)
   apex: 3,          // m of arc above the straight fall
 };
 export function makeGuard(cx, cz, hostile = true, tune = GUARD_TUNE) {

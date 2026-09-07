@@ -13,9 +13,9 @@
 // `rotation.y = -rot * PI/2`. Yaw is compass degrees, 0 = N, 90 = E.
 // Plate width and depth are EVEN, because roads are 2 x 2 pieces laid on
 // even coordinates and a gate's road port has to land on one.
-import { mulberry32 } from './rng.js?v=ef335ef3';
-import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=ef335ef3';
-import { specById } from './catalog-spec.js?v=ef335ef3';
+import { mulberry32 } from './rng.js?v=110951bf';
+import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=110951bf';
+import { specById } from './catalog-spec.js?v=110951bf';
 
 export const CELL_M = 4;
 
@@ -438,8 +438,8 @@ export const MODELLED = new Set([
   'robotic_assembly_line', 'robotic_arm', 'conveyor_module', 'control_platform', 'gantry_module', 'assembly_pallet',
   // house casts and NASA stand-ins
   // (every NASA stand-in is gone, operator 2026-09-07: the crane and the drone pad were a mess of
-  // parts; only what we built and what the workshop built remains)
-  'command_hq',
+  // parts; only what we built and what the workshop built remains; the old Stalheart cast went too
+  // once the workshop's terraformer arrived)
   // the base kit
   'wall_standard', 'wall_corner', 'gate_vehicle', 'foundation_flat',
 ]);
@@ -447,7 +447,7 @@ export const MODELLED = new Set([
 // the scene keeps — and is placed regardless of what is modelled
 export const SOCKET_ID = 'defense_sentry_socket';
 export const ZONES = {
-  command:   { buildings: ['command_hq', 'command_operations', 'command_comms'],
+  command:   { buildings: ['command_operations', 'command_comms'],
                props: ['field_signal', 'utility_conduit'] },
   logistics: { buildings: ['logistics_crane', 'logistics_container', 'gantry_module', 'cargo_crate', 'pallet_stack', 'secure_case', 'fuel_barrel'],
                props: ['cargo_crate', 'fuel_barrel'] },

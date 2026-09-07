@@ -295,6 +295,24 @@ no build step, Node invariant suites).
   lane and then without before any farther block; a spot with no
   orientation that gives a usable door is skipped (except yard stock, the
   compound and the flag stand).
+- SEAM HITS: `damageSplit(plate, x, z, destructible, seamM 0.7)` wounds the
+  wall hit AND its neighbour along the run when the impact is within
+  seamM of their shared edge (operator: reward the aim); both tabs use
+  it for every shell on a wall. Returns every piece whose state changed.
+- THE GANTRY HIT-BOX: `GANTRY_IDS` (the terraformer) block only their two
+  RAIL rows (`onRail`: the edge rows along the longer placed side); the
+  span is open to the hull (0.5 m to a shell, `SOLID_HEIGHT.rail` 6 m on a
+  rail) and hides nothing from a sentry. The tank drives under it.
+- `command_hq` (the old Stalheart cast, the last house model) is GONE with
+  `HOUSE_URL` and `assets/models/manifest.json`; `assets/models/` holds
+  the hull and the sentries only. The command zone packs operations and
+  comms. The drone's shell flies at 75 m/s.
+- THE SET (ctf.js): the banners are DORMANT (grey cloth, `setCloth`) until
+  both flags stand on home's poles; the plant makes `ctf.set` and starts
+  `hold` = `holdS` 30 s (`stepCtf(ctf, hull, tune, dt)` counts it down;
+  the tabs call `stand.setLive(true)` so the colours return); at zero the
+  'win' event, the bonus and `won`. HUD: `SET COMPLETE: hold N s`; probe
+  `flag=set:N`; `?ctfprobe=1&tick=40` ends `flag=won`.
 - THE RAM: `RAM_IDS` (the comms tower) take a round per hit at
   `ramSpeed` 10 m/s, once per touch (0.8 s, `pc.ramCool`), down the same
   D0..D3 ladder as shells (`stepRam(plate, hull, dt, tune)`, called

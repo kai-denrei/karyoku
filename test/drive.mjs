@@ -1,6 +1,6 @@
 import { generatePlate, makePlateParams, PLATE_TUNE, KIND, CELL_M, blindCells } from '../src/plate.js';
 import { DRIVE_TUNE, driveKnobProblems, makeHull, stepHull, blockedAt, makeGates, stepGates, spawnFor,
-  makeSentries, stepSentries, losClear, stepTracers, buildingAt, bearingTo, lobHeight, LOB_FAMILIES, fireHull, rayStop, damageAt, autopilotInput, makeBodies, stepBodies, bodyAt, BODY_IDS, hitsPerState, shotRangeFor, solidHeightAt, sentryAt, damageSentryAt, SOLID_HEIGHT, stepCrush, stepRam, RAM_IDS, FLAT_IDS, CRUSH_IDS, ammoDotsLit, damageBody, bodyHit, powered, BODY_HITS, indexBodies, nearBodies } from '../src/drive.js';
+  makeSentries, stepSentries, losClear, stepTracers, buildingAt, bearingTo, lobHeight, LOB_FAMILIES, fireHull, rayStop, damageAt, autopilotInput, makeBodies, stepBodies, bodyAt, BODY_IDS, hitsPerState, shotRangeFor, solidHeightAt, sentryAt, damageSentryAt, SOLID_HEIGHT, stepCrush, stepRam, RAM_IDS, FLAT_IDS, CRUSH_IDS, GANTRY_IDS, damageSplit, ammoDotsLit, damageBody, bodyHit, powered, BODY_HITS, indexBodies, nearBodies } from '../src/drive.js';
 import { check, near, done } from './check.mjs';
 
 check('knob table is sound', driveKnobProblems().length === 0, driveKnobProblems().join('; '));
@@ -450,6 +450,34 @@ for (let seed = 1; seed <= 50; seed++) {
     fast.speed = 12; const r3 = stepRam(p, fast, 1 / 60);
     check('the third full-speed hit is rubble, and the hull drives through', r3.length === 1 && pc.state === 3 && !blockedAt(p, makeGates(p), cx, cz));
     check('rubble takes no more', (fast.speed = 12, stepRam(p, fast, 1 / 60).length === 0));
+  }
+}
+// THE SEAM: a shell between two wall segments wounds both; one at a segment's centre wounds one
+{
+  const p = generatePlate(makePlateParams({ ...PLATE_TUNE, seed: 7 }));
+  // two neighbouring standard walls along the north ring
+  let a = null, b = null;
+  for (const pc of p.pieces) { if (pc.id !== 'wall_standard' || pc.z !== 0) continue; const nb = p.pieces.find((q) => q.id === 'wall_standard' && q.z === 0 && q.x === pc.x + 1); if (nb) { a = pc; b = nb; break; } }
+  check('two neighbouring wall segments exist on the north ring', a && b);
+  if (a && b) {
+    const seamX = (a.x + 1) * CELL_M, z = 0.5 * CELL_M;
+    const hit = damageSplit(p, seamX - 0.3, z);
+    check('a shell 0.3 m from the seam wounds both segments', hit.length === 2 && a.state === 1 && b.state === 1);
+    const one = damageSplit(p, (a.x + 0.5) * CELL_M, z);
+    check('a shell at the centre wounds one', one.length === 1 && a.state === 2 && b.state === 1);
+  }
+}
+// THE GANTRY: the hull drives under the terraformer's span; its rails are solid
+{
+  const p = generatePlate(makePlateParams({ ...PLATE_TUNE, seed: 3 }));
+  const t = p.pieces.find((pc) => pc.id === 'terraformer_3000');
+  check('the default plate has the terraformer', t && GANTRY_IDS.has(t.id));
+  if (t) {
+    const g = makeGates(p);
+    const mid = [(t.x + t.pw / 2) * CELL_M, (t.z + t.ph / 2) * CELL_M];
+    const rail = t.pw < t.ph ? [(t.x + 0.5) * CELL_M, mid[1]] : [mid[0], (t.z + 0.5) * CELL_M];
+    check('the span is open ground to the hull and to a shell', !blockedAt(p, g, mid[0], mid[1]) && solidHeightAt(p, mid[0], mid[1]) < 1 && losClear(p, mid[0] - 30, mid[1], mid[0] + 30, mid[1]));
+    check('the rail row is solid', blockedAt(p, g, rail[0], rail[1]) && solidHeightAt(p, rail[0], rail[1]) >= 5);
   }
 }
 done();

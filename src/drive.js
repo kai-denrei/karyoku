@@ -11,8 +11,8 @@
 // THE ANTI-AIMBOT NUMBERS are yawRate and the arc: a sentry cannot point
 // outside its arc, and inside it turns at yawRate, so a hull that crosses
 // the arc fast, or stays in the blind sector, is never fired on.
-import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=ef335ef3';
-import { KIND, CELL_M, wrapDeg, dirOfYaw, DIRS, yawOfSide, rotSide } from './plate.js?v=ef335ef3';
+import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=110951bf';
+import { KIND, CELL_M, wrapDeg, dirOfYaw, DIRS, yawOfSide, rotSide } from './plate.js?v=110951bf';
 
 export const DRIVE_TUNE = {
   speed: 30,        // m/s forward: the knob's maximum by default (operator, 2026-09-07)
@@ -336,6 +336,10 @@ export const GATE_LANE_HALF_M = 4;
 // it hides nothing. CRUSH pieces are small things a hull at crushSpeed
 // flattens by driving into them (state 3, rubble, driveable after).
 export const FLAT_IDS = new Set(['air_launchpad', 'air_drone_pad']);
+// A GANTRY the hull drives UNDER: only its two rail rows (the edges along
+// its longer side, where the legs run) are solid; the span is 36 m up.
+export const GANTRY_IDS = new Set(['terraformer_3000']);
+export const onRail = (pc, cx, cz) => (pc.pw < pc.ph ? (cx === pc.x || cx === pc.x + pc.pw - 1) : (cz === pc.z || cz === pc.z + pc.ph - 1));
 export const CRUSH_IDS = new Set(['field_signal', 'research_specimen_crate', 'assembly_pallet', 'defense_radar', 'utility_conduit',
   'prop_antenna', 'prop_lamp', 'prop_banner', 'defense_searchlight', 'field_sensor', 'fence_sensor']);
 const pieceAt = (plate, cx, cz) => plate.pieces[plate.owner[cz * plate.w + cx]] || null;
@@ -346,6 +350,7 @@ export function blockedAt(plate, gates, x, z) {
   if (k === KIND.WALL || k === KIND.BUILDING || k === KIND.PROP) {
     // a wall or building shot down to D3 is rubble: driveable; a pad is a floor
     const pc = pieceAt(plate, cx, cz);
+    if (pc && GANTRY_IDS.has(pc.id)) return onRail(pc, cx, cz);
     if (pc && (pc.state >= 3 || FLAT_IDS.has(pc.id))) return false;
     return true;
   }
@@ -369,6 +374,28 @@ export function blockedAt(plate, gates, x, z) {
 // state; a building takes one per six cells of footprint, at least one.
 export const defaultDestructible = (pc) => pc.id === 'wall_standard';
 export const hitsPerState = (pc) => pc.kind === KIND.WALL ? 1 : Math.max(1, Math.round(pc.pw * pc.ph / 6));
+// A SHELL ON THE SEAM between two wall segments damages BOTH (operator:
+// reward the aim). Within seamM of the shared edge the neighbour along the
+// wall's run takes the same round. Returns every piece whose state changed.
+export function damageSplit(plate, x, z, destructible = defaultDestructible, seamM = 0.7) {
+  const out = [];
+  const first = damageAt(plate, x, z, destructible);
+  if (first) out.push(first);
+  const cx = toCell(x), cz = toCell(z);
+  if (cellKind(plate, cx, cz) !== KIND.WALL) return out;
+  const me = plate.owner[cz * plate.w + cx];
+  const tries = [
+    [cx + 1, cz, Math.abs(x - (cx + 1) * CELL_M)], [cx - 1, cz, Math.abs(x - cx * CELL_M)],
+    [cx, cz + 1, Math.abs(z - (cz + 1) * CELL_M)], [cx, cz - 1, Math.abs(z - cz * CELL_M)],
+  ];
+  for (const [nx, nz, d] of tries) {
+    if (d > seamM || cellKind(plate, nx, nz) !== KIND.WALL || plate.owner[nz * plate.w + nx] === me) continue;
+    const other = damageAt(plate, (nx + 0.5) * CELL_M, (nz + 0.5) * CELL_M, destructible);
+    if (other) out.push(other);
+  }
+  return out;
+}
+
 export function damageAt(plate, x, z, destructible = defaultDestructible) {
   const cx = toCell(x), cz = toCell(z);
   const k = cellKind(plate, cx, cz);
@@ -507,7 +534,7 @@ export function losClear(plate, ax, az, bx, bz) {
     const cx = toCell(ax + (bx - ax) * t), cz = toCell(az + (bz - az) * t);
     if (cellKind(plate, cx, cz) !== KIND.BUILDING) continue;
     const pc = plate.pieces[plate.owner[cz * plate.w + cx]];
-    if (!pc || (pc.state < 3 && !FLAT_IDS.has(pc.id))) return false; // rubble and pads hide nothing
+    if (!pc || (pc.state < 3 && !FLAT_IDS.has(pc.id) && !GANTRY_IDS.has(pc.id))) return false; // rubble, pads and a gantry's span hide nothing
   }
   return true;
 }
@@ -622,13 +649,13 @@ export const buildingAt = (plate, x, z) => {
 // what a hull shot stops on: anything that is not ground, road or an open lane
 export const solidAt = (plate, gates, x, z) => blockedAt(plate, gates, x, z);
 // how tall what stands on a cell is, metres: a shell above it flies on
-export const SOLID_HEIGHT = { wall: 3.2, gate: 5.5, building: 7.0, sentry: 5.0, wreck: 1.6, prop: 1.5, body: 4.2 };
+export const SOLID_HEIGHT = { wall: 3.2, gate: 5.5, building: 7.0, sentry: 5.0, wreck: 1.6, prop: 1.5, body: 4.2, rail: 6.0 };
 // `sentries` lets a broken sentry's cell be as low as its wreck
 export function solidHeightAt(plate, x, z, sentries = null) {
   const k = cellKind(plate, toCell(x), toCell(z));
   if (k === KIND.WALL) return SOLID_HEIGHT.wall;
   if (k === KIND.GATE) return SOLID_HEIGHT.gate;
-  if (k === KIND.BUILDING) { const pc = pieceAt(plate, toCell(x), toCell(z)); return pc && FLAT_IDS.has(pc.id) ? 0.3 : SOLID_HEIGHT.building; }
+  if (k === KIND.BUILDING) { const pc = pieceAt(plate, toCell(x), toCell(z)); if (pc && GANTRY_IDS.has(pc.id)) return onRail(pc, toCell(x), toCell(z)) ? SOLID_HEIGHT.rail : 0.5; return pc && FLAT_IDS.has(pc.id) ? 0.3 : SOLID_HEIGHT.building; }
   if (k === KIND.SENTRY) { const s = sentries && sentryAt(plate, sentries, x, z); return s && !s.alive ? SOLID_HEIGHT.wreck : SOLID_HEIGHT.sentry; }
   if (k === KIND.PROP) return SOLID_HEIGHT.prop;
   return 0;
