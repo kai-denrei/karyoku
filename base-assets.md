@@ -99,7 +99,11 @@ All footprints below are **reserved plots in 4 m cells**, written X × Z. A 4 ×
 | `logistics_warehouse` | Modular warehouse | 5 × 4 | Storage hall with one loading dock and side personnel door. |
 | `logistics_loading_dock` | Loading dock extension | 3 × 2 | Snap to warehouse service face; keep forklift approach clear. |
 | `logistics_crane` | Cargo handling crane | 2 × 2 | Base, mast and boom are separate damage components; reserve swept volume. |
-| `logistics_container` | Sealed cargo container | 3 × 1 | Stack only on rated container supports; front-door access required. |
+| `logistics_container` | Armored expedition container | 2 × 1 | A 5 m container in an 8 x 4 m plot; a pushable body the tank shoves and shells break. |
+| `cargo_crate` | Cargo crate | 1 × 1 | Stackable parts crate; pushable, breaks in four states. |
+| `secure_case` | Reinforced secure case | 1 × 1 | Armoured case; pushable, breaks in four states. |
+| `fuel_barrel` | Fuel barrel | 1 × 1 | Hazard barrel; pushable, breaks in four states, spills when crushed. |
+| `pallet_stack` | Cargo pallet stack | 1 × 1 | Pallet with wrapped load; pushable, breaks in four states. |
 | `crate_general` | Stackable supply crate | 1 × 1 | Small mesh inside one placement cell; stack-keyed top and bottom. |
 | `crate_medical` | Medical supply crate | 1 × 1 | White/teal identity; spawn at infirmary or logistics sockets. |
 | `crate_energy` | Power-cell transport crate | 1 × 1 | Insulated casing with charge indicator; abstract game resource. |
@@ -125,6 +129,8 @@ All footprints below are **reserved plots in 4 m cells**, written X × Z. A 4 ×
 | ID | Individual asset | Plot | Function and placement logic |
 | --- | --- | --- | --- |
 | `utility_reactor` | Compact fusion power module | 4 × 4 | Fictional power source; authored disabled core, no physical reactor simulation. |
+| `solar_power_station` | Solar power station | 2 × 2 | The base's power: inverter cabinet, transformer, batteries. Every sentry hangs off it; at D3 they all go down. Stands in the walled power compound at the centre. |
+| `solar_panel_rack` | Solar panel rack | 2 × 2 | Four tracking panels on an axle; fills the power compound around the station. |
 | `utility_battery` | Battery reserve bank | 3 × 2 | Backup power store with separate rack damage zones. |
 | `utility_solar` | Deployable solar canopy | 3 × 3 | Power supplement and shaded apron; articulated panel wings. |
 | `utility_substation` | Power distribution substation | 2 × 2 | Routes power to zones; reserves maintenance access. |

@@ -1,6 +1,6 @@
 import { generatePlate, makePlateParams, PLATE_TUNE, KIND, CELL_M, blindCells } from '../src/plate.js';
 import { DRIVE_TUNE, driveKnobProblems, makeHull, stepHull, blockedAt, makeGates, stepGates, spawnFor,
-  makeSentries, stepSentries, losClear, stepTracers, buildingAt, bearingTo, lobHeight, LOB_FAMILIES, fireHull, rayStop, damageAt, autopilotInput, makeBodies, stepBodies, bodyAt, BODY_IDS, hitsPerState, shotRangeFor, solidHeightAt, sentryAt, damageSentryAt, SOLID_HEIGHT, stepCrush, FLAT_IDS, CRUSH_IDS, ammoDotsLit } from '../src/drive.js';
+  makeSentries, stepSentries, losClear, stepTracers, buildingAt, bearingTo, lobHeight, LOB_FAMILIES, fireHull, rayStop, damageAt, autopilotInput, makeBodies, stepBodies, bodyAt, BODY_IDS, hitsPerState, shotRangeFor, solidHeightAt, sentryAt, damageSentryAt, SOLID_HEIGHT, stepCrush, FLAT_IDS, CRUSH_IDS, ammoDotsLit, damageBody, bodyHit, powered, BODY_HITS } from '../src/drive.js';
 import { check, near, done } from './check.mjs';
 
 check('knob table is sound', driveKnobProblems().length === 0, driveKnobProblems().join('; '));
@@ -272,7 +272,7 @@ for (let seed = 1; seed <= 50; seed++) {
   let steps = 0;
   while (shots.length && steps < 400) { stepTracers(shots, h, DT, rayStop(p3, g3, lone)); steps++; }
   check('a shot stops on a container', steps < 400 && shot.z > lone[0].z - 3, `z ${shot.z.toFixed(1)} body z ${lone[0].z.toFixed(1)}`);
-  check('containers are the only bodies', BODY_IDS.has('logistics_container') && BODY_IDS.size === 1);
+  check('the warehouse props are the bodies', BODY_IDS.has('logistics_container') && BODY_IDS.has('cargo_crate') && BODY_IDS.has('fuel_barrel') && BODY_IDS.size === 5);
 }
 // --- destructible buildings ----------------------------------------------------
 {
@@ -366,5 +366,37 @@ for (let seed = 1; seed <= 50; seed++) {
   check('dots: 27 lights nine, 25 lights nine, 24 lights eight, 1 lights one, 0 lights none', ammoDotsLit(27) === 9 && ammoDotsLit(25) === 9 && ammoDotsLit(24) === 8 && ammoDotsLit(1) === 1 && ammoDotsLit(0) === 0);
   const k = makeHull(0, 0, 0); k.ammo = 2; k.cool = 0;
   check('a live shot clears the empty flag', fireHull(k) !== null && k.empty === false && k.ammo === 1);
+}
+// BODIES BREAK, and the plate's power holds its sentries up
+{
+  const p = generatePlate(makePlateParams({ ...PLATE_TUNE, seed: 7 }));
+  const bs = makeBodies(p, 0, 0, { logistics_container: { w: 5.2, d: 2.5 }, cargo_crate: { w: 2.2, d: 2.2 } });
+  const ids = new Set(bs.map((b) => b.id));
+  check('the yards hold more than containers now', ids.size >= 3 && bs.some((b) => b.id === 'cargo_crate'), [...ids].join(' '));
+  const c = bs.find((b) => b.id === 'logistics_container');
+  check('a container box comes from its collider, not its plot', c && near(c.hw, 2.6) && near(c.hd, 1.25));
+  check('a container takes two rounds a state', damageBody(c).stepped === false && damageBody(c).stepped === true && c.state === 1 && BODY_HITS.logistics_container === 2);
+  const k = bs.find((b) => b.id === 'cargo_crate');
+  check('a crate takes one', damageBody(k).stepped === true && k.state === 1);
+  damageBody(k); const dead = damageBody(k);
+  check('the third state is death: debris, not solid, and the piece knows', dead.destroyed && k.dead && !bodyHit([k], k.x, k.z) && p.pieces[k.pieceIndex].state === 3);
+  check('a dead body takes no more', damageBody(k) === null);
+  // a ram at speed marks the body once per touch
+  const h = makeHull(c.x, c.z, 270); h.speed = 6; // on the body's centre: contact whatever its rot
+  stepBodies([c], h, () => false, DRIVE_TUNE, 1 / 60);
+  check('a ram at speed flags the body, once', c.rammed === true && (stepBodies([c], h, () => false, DRIVE_TUNE, 1 / 60), c.rammed === false));
+  // power
+  check('the plate is powered while its station stands', p.power && powered(p));
+  const st = p.pieces[p.power.pieceIndex];
+  const ss = makeSentries(p);
+  const s0 = ss[0];
+  const [dx, dz] = [Math.sin(s0.home * Math.PI / 180), -Math.cos(s0.home * Math.PI / 180)];
+  const target = makeHull(s0.cx + dx * 4 * CELL_M, s0.cz + dz * 4 * CELL_M, (s0.home + 180) % 360);
+  let live = 0; for (let i = 0; i < 300; i++) live += stepSentries([s0], target, 1 / 60, () => true, DRIVE_TUNE, powered(p)).length;
+  st.state = 3;
+  check('the station at D3 cuts the power', !powered(p));
+  const s1 = makeSentries(p)[0];
+  let dark = 0; for (let i = 0; i < 300; i++) dark += stepSentries([s1], target, 1 / 60, () => true, DRIVE_TUNE, powered(p)).length;
+  check('a dark sentry never tracks or fires where a powered one did', live > 0 && dark === 0 && !s1.tracking);
 }
 done();

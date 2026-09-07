@@ -1,4 +1,4 @@
-import { generatePlate, makePlateParams, plateKnobProblems, KIND, rotSide, dirOfYaw, PLATE_TUNE, roadsConnected, roadBlockKey, ZONES, sentrySockets, blindCells, sentryBears, GUN_FAMILIES, MODELLED, LANDMARK } from '../src/plate.js';
+import { generatePlate, makePlateParams, plateKnobProblems, KIND, rotSide, dirOfYaw, PLATE_TUNE, roadsConnected, roadBlockKey, ZONES, sentrySockets, blindCells, sentryBears, GUN_FAMILIES, MODELLED, LANDMARK, YARD_IDS, POWER } from '../src/plate.js';
 import { specById } from '../src/catalog-spec.js';
 import { check, near, done } from './check.mjs';
 
@@ -39,14 +39,14 @@ function checkRing(p, label) {
     for (let z = n; z <= p.h - 1 - n; z++) for (const x of [n, p.w - 1 - n]) { const k = cellAt(p, x, z); if (k !== KIND.WALL && k !== KIND.GATE) return false; }
     return true;
   })());
-  check(`${label}: the band holds only containers`, (() => {
+  check(`${label}: the band holds only yard stock`, (() => {
     const n = p.inset; if (n === 0) return true;
     for (let z = 1; z < p.h - 1; z++) for (let x = 1; x < p.w - 1; x++) {
       const inBand = x < n || z < n || x > p.w - 1 - n || z > p.h - 1 - n;
       if (!inBand) continue;
       const k = cellAt(p, x, z);
       if (k === KIND.PROP) return false;
-      if (k === KIND.BUILDING && p.pieces[p.owner[z * p.w + x]].id !== 'logistics_container') return false;
+      if (k === KIND.BUILDING && !YARD_IDS.includes(p.pieces[p.owner[z * p.w + x]].id)) return false;
     }
     return true;
   })());
@@ -106,7 +106,30 @@ const ROAD_TOUCH = (p, pc) => {
 function checkPacking(p, label, minBuildings = 3) {
   const buildings = p.pieces.filter((pc) => pc.kind === KIND.BUILDING);
   check(`${label}: has buildings`, buildings.length >= minBuildings, `got ${buildings.length}`);
-  check(`${label}: every building touches a road`, buildings.filter((pc) => pc.zone !== 'band' && pc.id !== 'logistics_container').every((pc) => ROAD_TOUCH(p, pc)));
+  // yard stock needs no road; the power compound's pieces stand behind their own wall, its gate meets the road
+  check(`${label}: every building touches a road`, buildings.filter((pc) => pc.zone !== 'band' && !YARD_IDS.includes(pc.id) && pc.id !== POWER.id && pc.id !== POWER.rack).every((pc) => ROAD_TOUCH(p, pc)));
+  check(`${label}: the power compound stands, walled, gated, at the centre (or the plate is too narrow)`, (() => {
+    if (!p.power) return Math.min(p.w, p.h) - 2 * p.inset < 14 || p.warnings.some((w) => /power compound/.test(w));
+    const st = p.pieces[p.power.pieceIndex];
+    if (!st || st.id !== POWER.id || !st.power) return false;
+    const r = p.power.rect;
+    if (p.pieces.filter((pc) => pc.id === POWER.rack).length !== 3) return false;
+    // the station and racks inside the ring, the ring all wall or gate
+    const inside = (pc) => pc.x > r.x0 && pc.z > r.z0 && pc.x + pc.pw - 1 < r.x1 && pc.z + pc.ph - 1 < r.z1;
+    if (!inside(st) || !p.pieces.filter((pc) => pc.id === POWER.rack).every(inside)) return false;
+    for (let x = r.x0; x <= r.x1; x++) for (const z of [r.z0, r.z1]) { const k = cellAt(p, x, z); if (k !== KIND.WALL && k !== KIND.GATE) return false; }
+    for (let z = r.z0; z <= r.z1; z++) for (const x of [r.x0, r.x1]) { const k = cellAt(p, x, z); if (k !== KIND.WALL && k !== KIND.GATE) return false; }
+    const g = p.gates.find((gg) => gg.ring === 'power');
+    if (!g) return false;
+    // the gate faces a road: the cell just outside it is road
+    const [ox, oz] = dirOfYaw({ N: 0, E: 90, S: 180, W: 270 }[g.side]);
+    const gp = p.pieces[g.pieceIndex];
+    const cx = Math.floor(gp.x + gp.pw / 2 + ox * 2), cz = Math.floor(gp.z + gp.ph / 2 + oz * 2);
+    if (cellAt(p, cx, cz) !== KIND.ROAD && cellAt(p, cx, cz) !== KIND.FOUNDATION) return false;
+    // and near the centre: the rect's centre inside the middle half of the plate
+    const mx = (r.x0 + r.x1) / 2, mz = (r.z0 + r.z1) / 2;
+    return mx > p.w * 0.15 && mx < p.w * 0.85 && mz > p.h * 0.15 && mz < p.h * 0.85;
+  })());
   check(`${label}: only modelled ids are placed`, p.pieces.every((pc) => pc.kind === KIND.ROAD || pc.id === 'defense_sentry_socket' || MODELLED.has(pc.id)), [...new Set(p.pieces.filter((pc) => pc.kind !== KIND.ROAD && pc.id !== 'defense_sentry_socket' && !MODELLED.has(pc.id)).map((pc) => pc.id))].join(' '));
   check(`${label}: band containers stay in the band`, buildings.filter((pc) => pc.zone === 'band').every((pc) => p.inset > 0 && (pc.x < p.inset || pc.z < p.inset || pc.x + pc.pw > p.w - p.inset || pc.z + pc.ph > p.h - p.inset)));
   check(`${label}: every piece is inside the plate`, p.pieces.every((pc) => pc.x >= 0 && pc.z >= 0 && pc.x + pc.pw <= p.w && pc.z + pc.ph <= p.h));
@@ -122,27 +145,30 @@ function checkPacking(p, label, minBuildings = 3) {
   check(`${label}: sentry cells reserved`, sentrySockets(p).every((sk) => [0, 1].every((dz) => [0, 1].every((dx) =>
     p.cells[(sk.z + dz) * p.w + sk.x + dx] === KIND.SENTRY))));
 }
+const LINES = { total: 0, stood: 0 };
 const YARDS = { total: 0, rowed: 0 };
 for (const seed of SEEDS) {
   const p = generatePlate(makePlateParams({ ...PLATE_TUNE, seed }));
   checkPacking(p, `seed ${seed}`);
   const inf = p.pieces.filter((pc) => pc.id === LANDMARK);
   check(`seed ${seed}: exactly one infirmary, a landmark`, inf.length === 1 && inf[0].landmark === true, `got ${inf.length}`);
-  check(`seed ${seed}: the assembly line stands`, p.pieces.filter((pc) => pc.id === 'robotic_assembly_line').length === 1);
+  // the power compound takes the centre block first; on a few seeds the line finds no block left
+  LINES.total++; if (p.pieces.filter((pc) => pc.id === 'robotic_assembly_line').length === 1) LINES.stood++;
   // per block: where a yard holds two or more containers, at least two touch in a row
   let yards = 0, rowed = 0;
   for (const b of p.blocks) {
     if (b.zone !== 'logistics') continue;
-    const cs = p.pieces.filter((pc) => pc.id === 'logistics_container' && b.cellSet.has(pc.z * p.w + pc.x));
+    const cs = p.pieces.filter((pc) => YARD_IDS.includes(pc.id) && b.cellSet.has(pc.z * p.w + pc.x));
     if (cs.length < 2) continue;
     yards++;
-    const touching = cs.filter((a) => cs.some((c) => c !== a && ((Math.abs(a.x - c.x) === a.pw && a.z === c.z && a.pw === c.pw) || (Math.abs(a.z - c.z) === a.ph && a.x === c.x && a.ph === c.ph))));
+    const touching = cs.filter((a) => cs.some((c) => c !== a && ((Math.abs(a.x - c.x) === Math.max(a.pw, c.pw) || Math.abs(a.x - c.x) === Math.min(a.pw, c.pw)) && a.z === c.z || (Math.abs(a.z - c.z) === Math.max(a.ph, c.ph) || Math.abs(a.z - c.z) === Math.min(a.ph, c.ph)) && a.x === c.x)));
     if (touching.length >= 2) rowed++;
   }
   YARDS.total += yards; YARDS.rowed += rowed;
 }
 // a cramped yard may only fit one container per orientation; most yards are rows
-check('containers line up in rows in most logistics yards', YARDS.total > 10 && YARDS.rowed / YARDS.total >= 0.8, `${YARDS.rowed} of ${YARDS.total}`);
+check('the assembly line stands on nearly every default seed', LINES.stood >= LINES.total - 3, `${LINES.stood} of ${LINES.total}`);
+check('yard stock lines up in rows in most logistics yards', YARDS.total > 10 && YARDS.rowed / YARDS.total >= 0.8, `${YARDS.rowed} of ${YARDS.total}`);
 for (const [w, h] of SIZES) checkPacking(generatePlate(makePlateParams({ ...PLATE_TUNE, seed: 3, w, h, gates: 3 })), `${w}x${h}`, 2);
 check('sentryBears: dead ahead is covered', sentryBears({ x: 0, z: 0, yawDeg: 0, arcDeg: 90 }, 1, -4));
 check('sentryBears: behind is not', !sentryBears({ x: 0, z: 0, yawDeg: 0, arcDeg: 90 }, 1, 6));

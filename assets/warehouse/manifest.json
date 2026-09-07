@@ -1,0 +1,1109 @@
+{
+ "version": 1,
+ "units": "meters",
+ "up": "+Y",
+ "forward": "+Z",
+ "source": "jelaludo.github.io/SentryTowers_A6/warehouse-props: the crates, barrels, container, pallet and secure case only; the armored container stands in as logistics_container",
+ "assets": [
+  {
+   "id": "cargo_crate_d0",
+   "name": "Stackable cargo crate",
+   "state": "Intact",
+   "file": "cargo_crate_d0.glb",
+   "plot_m": [
+    2.4,
+    2.4
+   ],
+   "description": "Stackable parts crate with lid, corner posts, tie bands, placard and contents-specific impact deformation.",
+   "sockets": [
+    {
+     "id": "CARGO",
+     "kind": "cargo",
+     "position_m": [
+      0,
+      0,
+      0
+     ],
+     "normal": [
+      0,
+      1,
+      0
+     ],
+     "available": true,
+     "width_m": 1.8
+    }
+   ],
+   "colliders": [
+    {
+     "id": "crate",
+     "center_m": [
+      0,
+      0.7,
+      0
+     ],
+     "size_m": [
+      1.9,
+      1.5,
+      2
+     ],
+     "condition": "always"
+    }
+   ],
+   "clearance": [],
+   "animations": [],
+   "family": "cargo_crate",
+   "damage_level": 0,
+   "zone": "logistics",
+   "functional": true,
+   "collision_quality": "conservative blockout",
+   "damage_signature": "intact panels and fittings",
+   "bytes": 207608,
+   "triangles": 3640
+  },
+  {
+   "id": "cargo_crate_d1",
+   "name": "Stackable cargo crate",
+   "state": "Bent",
+   "file": "cargo_crate_d1.glb",
+   "plot_m": [
+    2.4,
+    2.4
+   ],
+   "description": "Stackable parts crate with lid, corner posts, tie bands, placard and contents-specific impact deformation.",
+   "sockets": [
+    {
+     "id": "CARGO",
+     "kind": "cargo",
+     "position_m": [
+      0,
+      0,
+      0
+     ],
+     "normal": [
+      0,
+      1,
+      0
+     ],
+     "available": true,
+     "width_m": 1.8
+    }
+   ],
+   "colliders": [
+    {
+     "id": "crate",
+     "center_m": [
+      0,
+      0.7,
+      0
+     ],
+     "size_m": [
+      1.9,
+      1.5,
+      2
+     ],
+     "condition": "always"
+    }
+   ],
+   "clearance": [],
+   "animations": [],
+   "family": "cargo_crate",
+   "damage_level": 1,
+   "zone": "logistics",
+   "functional": true,
+   "collision_quality": "conservative blockout",
+   "damage_signature": "specific dents and shifted parts",
+   "bytes": 223416,
+   "triangles": 3856
+  },
+  {
+   "id": "cargo_crate_d2",
+   "name": "Stackable cargo crate",
+   "state": "Crushed",
+   "file": "cargo_crate_d2.glb",
+   "plot_m": [
+    2.4,
+    2.4
+   ],
+   "description": "Stackable parts crate with lid, corner posts, tie bands, placard and contents-specific impact deformation.",
+   "sockets": [
+    {
+     "id": "CARGO",
+     "kind": "cargo",
+     "position_m": [
+      0,
+      0,
+      0
+     ],
+     "normal": [
+      0,
+      1,
+      0
+     ],
+     "available": true,
+     "width_m": 1.8
+    }
+   ],
+   "colliders": [
+    {
+     "id": "crate",
+     "center_m": [
+      0,
+      0.7,
+      0
+     ],
+     "size_m": [
+      1.9,
+      1.5,
+      2
+     ],
+     "condition": "always"
+    }
+   ],
+   "clearance": [],
+   "animations": [],
+   "family": "cargo_crate",
+   "damage_level": 2,
+   "zone": "logistics",
+   "functional": true,
+   "collision_quality": "conservative blockout",
+   "damage_signature": "crushed original pieces",
+   "bytes": 247456,
+   "triangles": 4184
+  },
+  {
+   "id": "cargo_crate_d3",
+   "name": "Stackable cargo crate",
+   "state": "Destroyed",
+   "file": "cargo_crate_d3.glb",
+   "plot_m": [
+    2.4,
+    2.4
+   ],
+   "description": "Stackable parts crate with lid, corner posts, tie bands, placard and contents-specific impact deformation.",
+   "sockets": [
+    {
+     "id": "CARGO",
+     "kind": "cargo",
+     "position_m": [
+      0,
+      0,
+      0
+     ],
+     "normal": [
+      0,
+      1,
+      0
+     ],
+     "available": false,
+     "width_m": 1.8
+    }
+   ],
+   "colliders": [
+    {
+     "id": "crate",
+     "center_m": [
+      0,
+      0.3,
+      0
+     ],
+     "size_m": [
+      1.9,
+      0.8,
+      2
+     ],
+     "condition": "always"
+    }
+   ],
+   "clearance": [],
+   "animations": [],
+   "family": "cargo_crate",
+   "damage_level": 3,
+   "zone": "logistics",
+   "functional": false,
+   "collision_quality": "conservative blockout",
+   "damage_signature": "identifiable original components amid collapse",
+   "bytes": 71840,
+   "triangles": 980
+  },
+  {
+   "id": "secure_case_d0",
+   "name": "Reinforced secure case",
+   "state": "Intact",
+   "file": "secure_case_d0.glb",
+   "plot_m": [
+    2.4,
+    2.4
+   ],
+   "description": "Reinforced secure case with lid, corner posts, tie bands, placard and contents-specific impact deformation.",
+   "sockets": [
+    {
+     "id": "CARGO",
+     "kind": "cargo",
+     "position_m": [
+      0,
+      0,
+      0
+     ],
+     "normal": [
+      0,
+      1,
+      0
+     ],
+     "available": true,
+     "width_m": 1.8
+    }
+   ],
+   "colliders": [
+    {
+     "id": "crate",
+     "center_m": [
+      0,
+      0.7,
+      0
+     ],
+     "size_m": [
+      1.9,
+      1.5,
+      2
+     ],
+     "condition": "always"
+    }
+   ],
+   "clearance": [],
+   "animations": [],
+   "family": "secure_case",
+   "damage_level": 0,
+   "zone": "logistics",
+   "functional": true,
+   "collision_quality": "conservative blockout",
+   "damage_signature": "intact panels and fittings",
+   "bytes": 226684,
+   "triangles": 4128
+  },
+  {
+   "id": "secure_case_d1",
+   "name": "Reinforced secure case",
+   "state": "Bent",
+   "file": "secure_case_d1.glb",
+   "plot_m": [
+    2.4,
+    2.4
+   ],
+   "description": "Reinforced secure case with lid, corner posts, tie bands, placard and contents-specific impact deformation.",
+   "sockets": [
+    {
+     "id": "CARGO",
+     "kind": "cargo",
+     "position_m": [
+      0,
+      0,
+      0
+     ],
+     "normal": [
+      0,
+      1,
+      0
+     ],
+     "available": true,
+     "width_m": 1.8
+    }
+   ],
+   "colliders": [
+    {
+     "id": "crate",
+     "center_m": [
+      0,
+      0.7,
+      0
+     ],
+     "size_m": [
+      1.9,
+      1.5,
+      2
+     ],
+     "condition": "always"
+    }
+   ],
+   "clearance": [],
+   "animations": [],
+   "family": "secure_case",
+   "damage_level": 1,
+   "zone": "logistics",
+   "functional": true,
+   "collision_quality": "conservative blockout",
+   "damage_signature": "specific dents and shifted parts",
+   "bytes": 242676,
+   "triangles": 4344
+  },
+  {
+   "id": "secure_case_d2",
+   "name": "Reinforced secure case",
+   "state": "Crushed",
+   "file": "secure_case_d2.glb",
+   "plot_m": [
+    2.4,
+    2.4
+   ],
+   "description": "Reinforced secure case with lid, corner posts, tie bands, placard and contents-specific impact deformation.",
+   "sockets": [
+    {
+     "id": "CARGO",
+     "kind": "cargo",
+     "position_m": [
+      0,
+      0,
+      0
+     ],
+     "normal": [
+      0,
+      1,
+      0
+     ],
+     "available": true,
+     "width_m": 1.8
+    }
+   ],
+   "colliders": [
+    {
+     "id": "crate",
+     "center_m": [
+      0,
+      0.7,
+      0
+     ],
+     "size_m": [
+      1.9,
+      1.5,
+      2
+     ],
+     "condition": "always"
+    }
+   ],
+   "clearance": [],
+   "animations": [],
+   "family": "secure_case",
+   "damage_level": 2,
+   "zone": "logistics",
+   "functional": true,
+   "collision_quality": "conservative blockout",
+   "damage_signature": "crushed original pieces",
+   "bytes": 266520,
+   "triangles": 4672
+  },
+  {
+   "id": "secure_case_d3",
+   "name": "Reinforced secure case",
+   "state": "Destroyed",
+   "file": "secure_case_d3.glb",
+   "plot_m": [
+    2.4,
+    2.4
+   ],
+   "description": "Reinforced secure case with lid, corner posts, tie bands, placard and contents-specific impact deformation.",
+   "sockets": [
+    {
+     "id": "CARGO",
+     "kind": "cargo",
+     "position_m": [
+      0,
+      0,
+      0
+     ],
+     "normal": [
+      0,
+      1,
+      0
+     ],
+     "available": false,
+     "width_m": 1.8
+    }
+   ],
+   "colliders": [
+    {
+     "id": "crate",
+     "center_m": [
+      0,
+      0.3,
+      0
+     ],
+     "size_m": [
+      1.9,
+      0.8,
+      2
+     ],
+     "condition": "always"
+    }
+   ],
+   "clearance": [],
+   "animations": [],
+   "family": "secure_case",
+   "damage_level": 3,
+   "zone": "logistics",
+   "functional": false,
+   "collision_quality": "conservative blockout",
+   "damage_signature": "identifiable original components amid collapse",
+   "bytes": 71872,
+   "triangles": 980
+  },
+  {
+   "id": "fuel_barrel_d0",
+   "name": "Hazard fuel barrel",
+   "state": "Intact",
+   "file": "fuel_barrel_d0.glb",
+   "plot_m": [
+    2,
+    2
+   ],
+   "description": "Hazard fuel barrel with rims, bands, bung, placard and liquid spill retained through crushing.",
+   "sockets": [
+    {
+     "id": "CARGO",
+     "kind": "cargo",
+     "position_m": [
+      0,
+      0,
+      0
+     ],
+     "normal": [
+      0,
+      1,
+      0
+     ],
+     "available": true,
+     "width_m": 0.65
+    }
+   ],
+   "colliders": [
+    {
+     "id": "barrel",
+     "center_m": [
+      0,
+      0.75,
+      0
+     ],
+     "size_m": [
+      1.4,
+      1.5,
+      1.4
+     ],
+     "condition": "always"
+    }
+   ],
+   "clearance": [],
+   "animations": [],
+   "family": "fuel_barrel",
+   "damage_level": 0,
+   "zone": "logistics",
+   "functional": true,
+   "collision_quality": "conservative blockout",
+   "damage_signature": "intact panels and fittings",
+   "bytes": 142264,
+   "triangles": 2412
+  },
+  {
+   "id": "fuel_barrel_d1",
+   "name": "Hazard fuel barrel",
+   "state": "Bent",
+   "file": "fuel_barrel_d1.glb",
+   "plot_m": [
+    2,
+    2
+   ],
+   "description": "Hazard fuel barrel with rims, bands, bung, placard and liquid spill retained through crushing.",
+   "sockets": [
+    {
+     "id": "CARGO",
+     "kind": "cargo",
+     "position_m": [
+      0,
+      0,
+      0
+     ],
+     "normal": [
+      0,
+      1,
+      0
+     ],
+     "available": true,
+     "width_m": 0.65
+    }
+   ],
+   "colliders": [
+    {
+     "id": "barrel",
+     "center_m": [
+      0,
+      0.75,
+      0
+     ],
+     "size_m": [
+      1.4,
+      1.5,
+      1.4
+     ],
+     "condition": "always"
+    }
+   ],
+   "clearance": [],
+   "animations": [],
+   "family": "fuel_barrel",
+   "damage_level": 1,
+   "zone": "logistics",
+   "functional": true,
+   "collision_quality": "conservative blockout",
+   "damage_signature": "specific dents and shifted parts",
+   "bytes": 159548,
+   "triangles": 2660
+  },
+  {
+   "id": "fuel_barrel_d2",
+   "name": "Hazard fuel barrel",
+   "state": "Crushed",
+   "file": "fuel_barrel_d2.glb",
+   "plot_m": [
+    2,
+    2
+   ],
+   "description": "Hazard fuel barrel with rims, bands, bung, placard and liquid spill retained through crushing.",
+   "sockets": [
+    {
+     "id": "CARGO",
+     "kind": "cargo",
+     "position_m": [
+      0,
+      0,
+      0
+     ],
+     "normal": [
+      0,
+      1,
+      0
+     ],
+     "available": true,
+     "width_m": 0.65
+    }
+   ],
+   "colliders": [
+    {
+     "id": "barrel",
+     "center_m": [
+      0,
+      0.75,
+      0
+     ],
+     "size_m": [
+      1.4,
+      1.5,
+      1.4
+     ],
+     "condition": "always"
+    }
+   ],
+   "clearance": [],
+   "animations": [],
+   "family": "fuel_barrel",
+   "damage_level": 2,
+   "zone": "logistics",
+   "functional": true,
+   "collision_quality": "conservative blockout",
+   "damage_signature": "crushed original pieces",
+   "bytes": 182020,
+   "triangles": 3004
+  },
+  {
+   "id": "fuel_barrel_d3",
+   "name": "Hazard fuel barrel",
+   "state": "Destroyed",
+   "file": "fuel_barrel_d3.glb",
+   "plot_m": [
+    2,
+    2
+   ],
+   "description": "Hazard fuel barrel with rims, bands, bung, placard and liquid spill retained through crushing.",
+   "sockets": [
+    {
+     "id": "CARGO",
+     "kind": "cargo",
+     "position_m": [
+      0,
+      0,
+      0
+     ],
+     "normal": [
+      0,
+      1,
+      0
+     ],
+     "available": false,
+     "width_m": 0.65
+    }
+   ],
+   "colliders": [
+    {
+     "id": "barrel",
+     "center_m": [
+      0,
+      0.3,
+      0
+     ],
+     "size_m": [
+      1.4,
+      0.7,
+      1.4
+     ],
+     "condition": "always"
+    }
+   ],
+   "clearance": [],
+   "animations": [],
+   "family": "fuel_barrel",
+   "damage_level": 3,
+   "zone": "logistics",
+   "functional": false,
+   "collision_quality": "conservative blockout",
+   "damage_signature": "identifiable original components amid collapse",
+   "bytes": 55028,
+   "triangles": 780
+  },
+  {
+   "id": "logistics_container_d0",
+   "name": "Armored expedition container",
+   "state": "Intact",
+   "file": "armored_container_d0.glb",
+   "plot_m": [
+    5.4,
+    3.2
+   ],
+   "description": "5 m armored expedition container with ISO corners, corrugated ribs, doors, latches and identifiable impact deformation.",
+   "sockets": [
+    {
+     "id": "CARGO",
+     "kind": "cargo",
+     "position_m": [
+      0,
+      0,
+      0
+     ],
+     "normal": [
+      0,
+      1,
+      0
+     ],
+     "available": true,
+     "width_m": 5
+    }
+   ],
+   "colliders": [
+    {
+     "id": "container",
+     "center_m": [
+      0,
+      1.25,
+      0
+     ],
+     "size_m": [
+      5.2,
+      2.5,
+      2.5
+     ],
+     "condition": "always"
+    }
+   ],
+   "clearance": [],
+   "animations": [],
+   "family": "armored_container",
+   "damage_level": 0,
+   "zone": "logistics",
+   "functional": true,
+   "collision_quality": "conservative blockout",
+   "damage_signature": "intact panels and fittings",
+   "bytes": 267972,
+   "triangles": 4912
+  },
+  {
+   "id": "logistics_container_d1",
+   "name": "Armored expedition container",
+   "state": "Bent",
+   "file": "armored_container_d1.glb",
+   "plot_m": [
+    5.4,
+    3.2
+   ],
+   "description": "5 m armored expedition container with ISO corners, corrugated ribs, doors, latches and identifiable impact deformation.",
+   "sockets": [
+    {
+     "id": "CARGO",
+     "kind": "cargo",
+     "position_m": [
+      0,
+      0,
+      0
+     ],
+     "normal": [
+      0,
+      1,
+      0
+     ],
+     "available": true,
+     "width_m": 5
+    }
+   ],
+   "colliders": [
+    {
+     "id": "container",
+     "center_m": [
+      0,
+      1.25,
+      0
+     ],
+     "size_m": [
+      5.2,
+      2.5,
+      2.5
+     ],
+     "condition": "always"
+    }
+   ],
+   "clearance": [],
+   "animations": [],
+   "family": "armored_container",
+   "damage_level": 1,
+   "zone": "logistics",
+   "functional": true,
+   "collision_quality": "conservative blockout",
+   "damage_signature": "specific dents and shifted parts",
+   "bytes": 283768,
+   "triangles": 5128
+  },
+  {
+   "id": "logistics_container_d2",
+   "name": "Armored expedition container",
+   "state": "Crushed",
+   "file": "armored_container_d2.glb",
+   "plot_m": [
+    5.4,
+    3.2
+   ],
+   "description": "5 m armored expedition container with ISO corners, corrugated ribs, doors, latches and identifiable impact deformation.",
+   "sockets": [
+    {
+     "id": "CARGO",
+     "kind": "cargo",
+     "position_m": [
+      0,
+      0,
+      0
+     ],
+     "normal": [
+      0,
+      1,
+      0
+     ],
+     "available": true,
+     "width_m": 5
+    }
+   ],
+   "colliders": [
+    {
+     "id": "container",
+     "center_m": [
+      0,
+      1.25,
+      0
+     ],
+     "size_m": [
+      5.2,
+      2.5,
+      2.5
+     ],
+     "condition": "always"
+    }
+   ],
+   "clearance": [],
+   "animations": [],
+   "family": "armored_container",
+   "damage_level": 2,
+   "zone": "logistics",
+   "functional": true,
+   "collision_quality": "conservative blockout",
+   "damage_signature": "crushed original pieces",
+   "bytes": 307440,
+   "triangles": 5456
+  },
+  {
+   "id": "logistics_container_d3",
+   "name": "Armored expedition container",
+   "state": "Destroyed",
+   "file": "armored_container_d3.glb",
+   "plot_m": [
+    5.4,
+    3.2
+   ],
+   "description": "5 m armored expedition container with ISO corners, corrugated ribs, doors, latches and identifiable impact deformation.",
+   "sockets": [
+    {
+     "id": "CARGO",
+     "kind": "cargo",
+     "position_m": [
+      0,
+      0,
+      0
+     ],
+     "normal": [
+      0,
+      1,
+      0
+     ],
+     "available": false,
+     "width_m": 5
+    }
+   ],
+   "colliders": [
+    {
+     "id": "container",
+     "center_m": [
+      0,
+      0.4,
+      0
+     ],
+     "size_m": [
+      5.2,
+      0.8,
+      2.5
+     ],
+     "condition": "always"
+    }
+   ],
+   "clearance": [],
+   "animations": [],
+   "family": "armored_container",
+   "damage_level": 3,
+   "zone": "logistics",
+   "functional": false,
+   "collision_quality": "conservative blockout",
+   "damage_signature": "identifiable original components amid collapse",
+   "bytes": 48496,
+   "triangles": 648
+  },
+  {
+   "id": "pallet_stack_d0",
+   "name": "Loaded cargo pallet",
+   "state": "Intact",
+   "file": "pallet_stack_d0.glb",
+   "plot_m": [
+    2.4,
+    2.4
+   ],
+   "description": "Stackable cargo pallet with deck boards, runners, load wrap and multiple crates that shift and collapse under impact.",
+   "sockets": [
+    {
+     "id": "CARGO",
+     "kind": "cargo",
+     "position_m": [
+      0,
+      0,
+      0
+     ],
+     "normal": [
+      0,
+      1,
+      0
+     ],
+     "available": true,
+     "width_m": 2
+    }
+   ],
+   "colliders": [
+    {
+     "id": "pallet",
+     "center_m": [
+      0,
+      1,
+      0
+     ],
+     "size_m": [
+      2,
+      2,
+      2
+     ],
+     "condition": "always"
+    }
+   ],
+   "clearance": [],
+   "animations": [],
+   "family": "pallet_stack",
+   "damage_level": 0,
+   "zone": "logistics",
+   "functional": true,
+   "collision_quality": "conservative blockout",
+   "damage_signature": "intact panels and fittings",
+   "bytes": 147876,
+   "triangles": 2052
+  },
+  {
+   "id": "pallet_stack_d1",
+   "name": "Loaded cargo pallet",
+   "state": "Bent",
+   "file": "pallet_stack_d1.glb",
+   "plot_m": [
+    2.4,
+    2.4
+   ],
+   "description": "Stackable cargo pallet with deck boards, runners, load wrap and multiple crates that shift and collapse under impact.",
+   "sockets": [
+    {
+     "id": "CARGO",
+     "kind": "cargo",
+     "position_m": [
+      0,
+      0,
+      0
+     ],
+     "normal": [
+      0,
+      1,
+      0
+     ],
+     "available": true,
+     "width_m": 2
+    }
+   ],
+   "colliders": [
+    {
+     "id": "pallet",
+     "center_m": [
+      0,
+      1,
+      0
+     ],
+     "size_m": [
+      2,
+      2,
+      2
+     ],
+     "condition": "always"
+    }
+   ],
+   "clearance": [],
+   "animations": [],
+   "family": "pallet_stack",
+   "damage_level": 1,
+   "zone": "logistics",
+   "functional": true,
+   "collision_quality": "conservative blockout",
+   "damage_signature": "specific dents and shifted parts",
+   "bytes": 163404,
+   "triangles": 2268
+  },
+  {
+   "id": "pallet_stack_d2",
+   "name": "Loaded cargo pallet",
+   "state": "Crushed",
+   "file": "pallet_stack_d2.glb",
+   "plot_m": [
+    2.4,
+    2.4
+   ],
+   "description": "Stackable cargo pallet with deck boards, runners, load wrap and multiple crates that shift and collapse under impact.",
+   "sockets": [
+    {
+     "id": "CARGO",
+     "kind": "cargo",
+     "position_m": [
+      0,
+      0,
+      0
+     ],
+     "normal": [
+      0,
+      1,
+      0
+     ],
+     "available": true,
+     "width_m": 2
+    }
+   ],
+   "colliders": [
+    {
+     "id": "pallet",
+     "center_m": [
+      0,
+      1,
+      0
+     ],
+     "size_m": [
+      2,
+      2,
+      2
+     ],
+     "condition": "always"
+    }
+   ],
+   "clearance": [],
+   "animations": [],
+   "family": "pallet_stack",
+   "damage_level": 2,
+   "zone": "logistics",
+   "functional": true,
+   "collision_quality": "conservative blockout",
+   "damage_signature": "crushed original pieces",
+   "bytes": 178808,
+   "triangles": 2484
+  },
+  {
+   "id": "pallet_stack_d3",
+   "name": "Loaded cargo pallet",
+   "state": "Destroyed",
+   "file": "pallet_stack_d3.glb",
+   "plot_m": [
+    2.4,
+    2.4
+   ],
+   "description": "Stackable cargo pallet with deck boards, runners, load wrap and multiple crates that shift and collapse under impact.",
+   "sockets": [
+    {
+     "id": "CARGO",
+     "kind": "cargo",
+     "position_m": [
+      0,
+      0,
+      0
+     ],
+     "normal": [
+      0,
+      1,
+      0
+     ],
+     "available": false,
+     "width_m": 2
+    }
+   ],
+   "colliders": [
+    {
+     "id": "pallet",
+     "center_m": [
+      0,
+      0.35,
+      0
+     ],
+     "size_m": [
+      2,
+      0.8,
+      2
+     ],
+     "condition": "always"
+    }
+   ],
+   "clearance": [],
+   "animations": [],
+   "family": "pallet_stack",
+   "damage_level": 3,
+   "zone": "logistics",
+   "functional": false,
+   "collision_quality": "conservative blockout",
+   "damage_signature": "identifiable original components amid collapse",
+   "bytes": 87068,
+   "triangles": 1188
+  }
+ ]
+}

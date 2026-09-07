@@ -71,6 +71,20 @@ export const NASA_URL = 'assets/models/nasa/';
 export const HOUSE_URL = 'assets/models/';
 export const OUTPOST_URL = 'assets/outpost/';
 export const ASSEMBLY_URL = 'assets/assembly/';
+export const WAREHOUSE_URL = 'assets/warehouse/';
+export const SOLAR_URL = 'assets/solar/';
+
+// A body's box in metres from its intact model's first collider (the
+// workshop authors one per prop), for the drive: the plot is the cell
+// footprint, the collider is what the tank actually shoves.
+export function bodyDims(cat) {
+  const out = {};
+  for (const [id, e] of cat) {
+    const c = e.states[0] && e.states[0].colliders && e.states[0].colliders[0];
+    if (c && c.size_m) out[id] = { w: c.size_m[0], h: c.size_m[1], d: c.size_m[2] };
+  }
+  return out;
+}
 
 // The fit for an entry's state, or null when the model is trusted as authored.
 export function fitFor(entry, state = 0) {

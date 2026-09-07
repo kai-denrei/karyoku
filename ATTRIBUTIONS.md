@@ -45,3 +45,14 @@
   with their ids in the file names: minigun 36769, minigun ready 244784).
   `assembly_hydraulics.mp3` is built here with
   ffmpeg from that set's hydraulic master (a dial-up build was tried and cut).
+
+## Warehouse props and solar power (2026-09-07)
+
+`assets/warehouse/` and `assets/solar/` are from the operator's workshop at
+jelaludo.github.io/SentryTowers_A6 (warehouse-props: cargo crate, secure
+case, fuel barrel, armored container, pallet stack; solar-power: the power
+station and the panel rack), four damage states each, manifests in the
+workshop's format with the armored container renamed to `logistics_container`.
+
+`assets/audio/container_rumble.mp3` is the operator's clip
+(metal-container-rumble-325675), low-passed, trimmed and quietened here.

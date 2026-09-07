@@ -5,7 +5,19 @@
   "forward": "+Z",
   "source": "karyoku's own casts, shared with spherical-stalberg-grid (blueprint-to-life)",
   "assets": [
-    { "id": "logistics_container_d0", "name": "Sealed cargo container", "file": "container.glb", "plot_m": [12, 4], "fit": { "span": 11.4, "height": 4.2 }, "description": "The reference board's berth container, emptied, doors shut." },
-    { "id": "command_hq_d0", "name": "The Stalheart (terraformer gantry)", "file": "terraformer.glb", "plot_m": [20, 16], "fit": { "span": 19, "height": 30 }, "description": "The colony's heart: the terraformer gantry as the command nexus." }
+    {
+      "id": "command_hq_d0",
+      "name": "The Stalheart (terraformer gantry)",
+      "file": "terraformer.glb",
+      "plot_m": [
+        20,
+        16
+      ],
+      "fit": {
+        "span": 19,
+        "height": 30
+      },
+      "description": "The colony's heart: the terraformer gantry as the command nexus."
+    }
   ]
 }

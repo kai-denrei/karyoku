@@ -21,7 +21,7 @@
           "position_m": [
             0,
             0,
-            6.0
+            6
           ],
           "normal": [
             0,
@@ -37,7 +37,7 @@
           "position_m": [
             0,
             0,
-            -6.0
+            -6
           ],
           "normal": [
             0,
@@ -111,7 +111,7 @@
           "position_m": [
             0,
             0,
-            6.0
+            6
           ],
           "normal": [
             0,
@@ -127,7 +127,7 @@
           "position_m": [
             0,
             0,
-            -6.0
+            -6
           ],
           "normal": [
             0,
@@ -201,7 +201,7 @@
           "position_m": [
             0,
             0,
-            6.0
+            6
           ],
           "normal": [
             0,
@@ -217,7 +217,7 @@
           "position_m": [
             0,
             0,
-            -6.0
+            -6
           ],
           "normal": [
             0,
@@ -291,7 +291,7 @@
           "position_m": [
             0,
             0,
-            6.0
+            6
           ],
           "normal": [
             0,
@@ -307,7 +307,7 @@
           "position_m": [
             0,
             0,
-            -6.0
+            -6
           ],
           "normal": [
             0,
@@ -381,7 +381,7 @@
           "position_m": [
             0,
             0,
-            6.0
+            6
           ],
           "normal": [
             0,
@@ -397,7 +397,7 @@
           "position_m": [
             0,
             0,
-            -6.0
+            -6
           ],
           "normal": [
             0,
@@ -471,7 +471,7 @@
           "position_m": [
             0,
             0,
-            6.0
+            6
           ],
           "normal": [
             0,
@@ -487,7 +487,7 @@
           "position_m": [
             0,
             0,
-            -6.0
+            -6
           ],
           "normal": [
             0,
@@ -561,7 +561,7 @@
           "position_m": [
             0,
             0,
-            6.0
+            6
           ],
           "normal": [
             0,
@@ -577,7 +577,7 @@
           "position_m": [
             0,
             0,
-            -6.0
+            -6
           ],
           "normal": [
             0,
@@ -651,7 +651,7 @@
           "position_m": [
             0,
             0,
-            6.0
+            6
           ],
           "normal": [
             0,
@@ -667,7 +667,7 @@
           "position_m": [
             0,
             0,
-            -6.0
+            -6
           ],
           "normal": [
             0,
@@ -741,7 +741,7 @@
           "position_m": [
             0,
             0,
-            6.0
+            6
           ],
           "normal": [
             0,
@@ -757,7 +757,7 @@
           "position_m": [
             0,
             0,
-            -6.0
+            -6
           ],
           "normal": [
             0,
@@ -831,7 +831,7 @@
           "position_m": [
             0,
             0,
-            6.0
+            6
           ],
           "normal": [
             0,
@@ -847,7 +847,7 @@
           "position_m": [
             0,
             0,
-            -6.0
+            -6
           ],
           "normal": [
             0,
@@ -921,7 +921,7 @@
           "position_m": [
             0,
             0,
-            6.0
+            6
           ],
           "normal": [
             0,
@@ -937,7 +937,7 @@
           "position_m": [
             0,
             0,
-            -6.0
+            -6
           ],
           "normal": [
             0,
@@ -1011,7 +1011,7 @@
           "position_m": [
             0,
             0,
-            6.0
+            6
           ],
           "normal": [
             0,
@@ -1027,7 +1027,7 @@
           "position_m": [
             0,
             0,
-            -6.0
+            -6
           ],
           "normal": [
             0,
@@ -1101,7 +1101,7 @@
           "position_m": [
             0,
             0,
-            6.0
+            6
           ],
           "normal": [
             0,
@@ -1117,7 +1117,7 @@
           "position_m": [
             0,
             0,
-            -6.0
+            -6
           ],
           "normal": [
             0,
@@ -1191,7 +1191,7 @@
           "position_m": [
             0,
             0,
-            6.0
+            6
           ],
           "normal": [
             0,
@@ -1207,7 +1207,7 @@
           "position_m": [
             0,
             0,
-            -6.0
+            -6
           ],
           "normal": [
             0,
@@ -1281,7 +1281,7 @@
           "position_m": [
             0,
             0,
-            6.0
+            6
           ],
           "normal": [
             0,
@@ -1297,7 +1297,7 @@
           "position_m": [
             0,
             0,
-            -6.0
+            -6
           ],
           "normal": [
             0,
@@ -1371,7 +1371,7 @@
           "position_m": [
             0,
             0,
-            6.0
+            6
           ],
           "normal": [
             0,
@@ -1387,7 +1387,7 @@
           "position_m": [
             0,
             0,
-            -6.0
+            -6
           ],
           "normal": [
             0,
@@ -1461,7 +1461,7 @@
           "position_m": [
             0,
             0,
-            8.0
+            8
           ],
           "normal": [
             0,
@@ -1520,7 +1520,7 @@
           "position_m": [
             0,
             0,
-            8.0
+            8
           ],
           "normal": [
             0,
@@ -1579,7 +1579,7 @@
           "position_m": [
             0,
             0,
-            8.0
+            8
           ],
           "normal": [
             0,
@@ -1638,7 +1638,7 @@
           "position_m": [
             0,
             0,
-            8.0
+            8
           ],
           "normal": [
             0,
@@ -1697,7 +1697,7 @@
           "position_m": [
             0,
             0,
-            4.0
+            4
           ],
           "normal": [
             0,
@@ -1756,7 +1756,7 @@
           "position_m": [
             0,
             0,
-            4.0
+            4
           ],
           "normal": [
             0,
@@ -1815,7 +1815,7 @@
           "position_m": [
             0,
             0,
-            4.0
+            4
           ],
           "normal": [
             0,
@@ -1874,7 +1874,7 @@
           "position_m": [
             0,
             0,
-            4.0
+            4
           ],
           "normal": [
             0,
@@ -1933,7 +1933,7 @@
           "position_m": [
             0,
             0,
-            16.0
+            16
           ],
           "normal": [
             0,
@@ -2007,7 +2007,7 @@
           "position_m": [
             0,
             0,
-            16.0
+            16
           ],
           "normal": [
             0,
@@ -2081,7 +2081,7 @@
           "position_m": [
             0,
             0,
-            16.0
+            16
           ],
           "normal": [
             0,
@@ -2156,7 +2156,7 @@
           "position_m": [
             0,
             0,
-            16.0
+            16
           ],
           "normal": [
             0,
@@ -2231,7 +2231,7 @@
           "position_m": [
             0,
             0,
-            8.0
+            8
           ],
           "normal": [
             0,
@@ -2247,7 +2247,7 @@
           "position_m": [
             0,
             0,
-            -8.0
+            -8
           ],
           "normal": [
             0,
@@ -2263,7 +2263,7 @@
           "position_m": [
             0,
             0,
-            -8.0
+            -8
           ],
           "normal": [
             0,
@@ -2337,7 +2337,7 @@
           "position_m": [
             0,
             0,
-            8.0
+            8
           ],
           "normal": [
             0,
@@ -2353,7 +2353,7 @@
           "position_m": [
             0,
             0,
-            -8.0
+            -8
           ],
           "normal": [
             0,
@@ -2369,7 +2369,7 @@
           "position_m": [
             0,
             0,
-            -8.0
+            -8
           ],
           "normal": [
             0,
@@ -2443,7 +2443,7 @@
           "position_m": [
             0,
             0,
-            8.0
+            8
           ],
           "normal": [
             0,
@@ -2459,7 +2459,7 @@
           "position_m": [
             0,
             0,
-            -8.0
+            -8
           ],
           "normal": [
             0,
@@ -2475,7 +2475,7 @@
           "position_m": [
             0,
             0,
-            -8.0
+            -8
           ],
           "normal": [
             0,
@@ -2549,7 +2549,7 @@
           "position_m": [
             0,
             0,
-            8.0
+            8
           ],
           "normal": [
             0,
@@ -2565,7 +2565,7 @@
           "position_m": [
             0,
             0,
-            -8.0
+            -8
           ],
           "normal": [
             0,
@@ -2581,7 +2581,7 @@
           "position_m": [
             0,
             0,
-            -8.0
+            -8
           ],
           "normal": [
             0,
@@ -2637,242 +2637,6 @@
       "services_available": false,
       "triangles": 3284,
       "bytes": 261220
-    },
-    {
-      "id": "logistics_container_d0",
-      "name": "Armored expedition container",
-      "state": "Intact",
-      "file": "logistics_container_d0.glb",
-      "plot_m": [
-        12,
-        4
-      ],
-      "description": "Armored expedition container. Sealed expedition hardware with district accents and modular connections.",
-      "sockets": [
-        {
-          "id": "CARGO",
-          "kind": "cargo",
-          "position_m": [
-            0,
-            0,
-            0
-          ],
-          "normal": [
-            0,
-            1,
-            0
-          ],
-          "available": true,
-          "width_m": null
-        }
-      ],
-      "colliders": [
-        {
-          "id": "cargo",
-          "center_m": [
-            0,
-            1.5,
-            0
-          ],
-          "size_m": [
-            10,
-            3,
-            3
-          ],
-          "condition": "always"
-        }
-      ],
-      "clearance": [],
-      "animations": [],
-      "family": "logistics_container",
-      "zone": "logistics",
-      "damage_level": 0,
-      "functional": true,
-      "collision_quality": "conservative blockout; engine integration required",
-      "debris_envelope_m": [
-        12,
-        4
-      ],
-      "services_available": true,
-      "triangles": 11172,
-      "bytes": 695016
-    },
-    {
-      "id": "logistics_container_d1",
-      "name": "Armored expedition container",
-      "state": "Damaged",
-      "file": "logistics_container_d1.glb",
-      "plot_m": [
-        12,
-        4
-      ],
-      "description": "Armored expedition container. Impact scars and fault indicators; main silhouette retained.",
-      "sockets": [
-        {
-          "id": "CARGO",
-          "kind": "cargo",
-          "position_m": [
-            0,
-            0,
-            0
-          ],
-          "normal": [
-            0,
-            1,
-            0
-          ],
-          "available": true,
-          "width_m": null
-        }
-      ],
-      "colliders": [
-        {
-          "id": "cargo",
-          "center_m": [
-            0,
-            1.5,
-            0
-          ],
-          "size_m": [
-            10,
-            3,
-            3
-          ],
-          "condition": "always"
-        }
-      ],
-      "clearance": [],
-      "animations": [],
-      "family": "logistics_container",
-      "zone": "logistics",
-      "damage_level": 1,
-      "functional": true,
-      "collision_quality": "conservative blockout; engine integration required",
-      "debris_envelope_m": [
-        12,
-        4
-      ],
-      "services_available": true,
-      "triangles": 12036,
-      "bytes": 757600
-    },
-    {
-      "id": "logistics_container_d2",
-      "name": "Armored expedition container",
-      "state": "Critical",
-      "file": "logistics_container_d2.glb",
-      "plot_m": [
-        12,
-        4
-      ],
-      "description": "Armored expedition container. Missing components expose the internal structure; service connections disabled.",
-      "sockets": [
-        {
-          "id": "CARGO",
-          "kind": "cargo",
-          "position_m": [
-            0,
-            0,
-            0
-          ],
-          "normal": [
-            0,
-            1,
-            0
-          ],
-          "available": false,
-          "width_m": null
-        }
-      ],
-      "colliders": [
-        {
-          "id": "cargo",
-          "center_m": [
-            0,
-            1.5,
-            0
-          ],
-          "size_m": [
-            10,
-            3,
-            3
-          ],
-          "condition": "always"
-        }
-      ],
-      "clearance": [],
-      "animations": [],
-      "family": "logistics_container",
-      "zone": "logistics",
-      "damage_level": 2,
-      "functional": false,
-      "collision_quality": "conservative blockout; engine integration required",
-      "debris_envelope_m": [
-        12,
-        4
-      ],
-      "services_available": false,
-      "triangles": 9720,
-      "bytes": 604276
-    },
-    {
-      "id": "logistics_container_d3",
-      "name": "Armored expedition container",
-      "state": "Destroyed",
-      "file": "logistics_container_d3.glb",
-      "plot_m": [
-        12,
-        4
-      ],
-      "description": "Armored expedition container. Inert footing and bounded wreckage; original function removed.",
-      "sockets": [
-        {
-          "id": "CARGO",
-          "kind": "cargo",
-          "position_m": [
-            0,
-            0,
-            0
-          ],
-          "normal": [
-            0,
-            1,
-            0
-          ],
-          "available": false,
-          "width_m": null
-        }
-      ],
-      "colliders": [
-        {
-          "id": "cargo",
-          "center_m": [
-            0,
-            0.55,
-            0
-          ],
-          "size_m": [
-            10,
-            1.1,
-            3
-          ],
-          "condition": "always"
-        }
-      ],
-      "clearance": [],
-      "animations": [],
-      "family": "logistics_container",
-      "zone": "logistics",
-      "damage_level": 3,
-      "functional": false,
-      "collision_quality": "conservative blockout; engine integration required",
-      "debris_envelope_m": [
-        12,
-        4
-      ],
-      "services_available": false,
-      "triangles": 3284,
-      "bytes": 260968
     },
     {
       "id": "research_specimen_crate_d0",

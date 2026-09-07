@@ -5,16 +5,16 @@
 // as clones with their YAW pivot exposed, and everything else as a labelled
 // placeholder box of its footprint.
 import * as THREE from '../vendor/three.module.js';
-import { KIND, CELL_M, ringCoverage, LANDMARK, dirOfYaw } from './plate.js?v=b8f040a2';
-import { fileFor, fitFor, SECTION_COLOR, PLACEHOLDER_HEIGHT_M } from './catalog.js?v=b8f040a2';
-import { LOB_FAMILIES, LOB_ELEV_DEG } from './drive.js?v=b8f040a2';
-import { PALETTE, neonBox, BZ, styleForLook, bakeEdges } from './looks.js?v=b8f040a2';
-import { prepFor, ladderTint, dressMetal } from './casts.js?v=b8f040a2';
-import { tintModel } from './glbmodels.js?v=b8f040a2';
-import { BODY_IDS } from './drive.js?v=b8f040a2';
+import { KIND, CELL_M, ringCoverage, LANDMARK, dirOfYaw } from './plate.js?v=c43c648b';
+import { fileFor, fitFor, SECTION_COLOR, PLACEHOLDER_HEIGHT_M } from './catalog.js?v=c43c648b';
+import { LOB_FAMILIES, LOB_ELEV_DEG } from './drive.js?v=c43c648b';
+import { PALETTE, neonBox, BZ, styleForLook, bakeEdges } from './looks.js?v=c43c648b';
+import { prepFor, ladderTint, dressMetal } from './casts.js?v=c43c648b';
+import { tintModel } from './glbmodels.js?v=c43c648b';
+import { BODY_IDS } from './drive.js?v=c43c648b';
 // pieces whose model carries a looping clip: the assembly kit's machines
 export const LOOP_IDS = new Set(['robotic_assembly_line', 'robotic_arm', 'conveyor_module']);
-import { loadGlb, loadGlbWithClips, mergeByMaterial, fitModel } from './glbmodels.js?v=b8f040a2';
+import { loadGlb, loadGlbWithClips, mergeByMaterial, fitModel } from './glbmodels.js?v=c43c648b';
 
 const labelCache = new Map();
 function labelTexture(text) {
@@ -52,7 +52,7 @@ export function proto(url, pivots = [], fit = null, tint = null) {
     // painted over all of them. A faint emissive wash by side is all it gets.
     if (tint !== null && !BZ) {
       // ...and so does the research-outpost kit, from the same workshop
-      if (url.startsWith('assets/base-kit/') || url.startsWith('assets/outpost/')) tintModel(fitted, tint, { wash: 0.10 });
+      if (url.startsWith('assets/base-kit/') || url.startsWith('assets/outpost/') || url.startsWith('assets/warehouse/') || url.startsWith('assets/solar/')) tintModel(fitted, tint, { wash: 0.10 });
       else { ladderTint(fitted, tint); dressMetal(fitted); }
     }
     return styleForLook(fitted, url);
@@ -144,6 +144,16 @@ export function placePiece(obj, piece) {
   obj.position.set((piece.x + piece.pw / 2 + piece.offset[0]) * CELL_M, piece.kind === KIND.ROAD ? ROAD_LIFT : 0, (piece.z + piece.ph / 2 + piece.offset[1]) * CELL_M);
   obj.rotation.y = -piece.rot * Math.PI / 2;
 }
+// CHUNKS: the static and body layers are instanced per 128 m tile as well
+// as per model, so `cull` can hide whole tiles by distance from the camera.
+// Three culls each object by its bounding sphere already; a tile's sphere
+// is small enough to fall outside the frustum, and the distance rule is
+// what keeps the far half of a 480 m plate off the GPU at ground level.
+export const CHUNK_M = 128;
+const chunkOf = (x, z) => `${Math.floor(x / CHUNK_M)},${Math.floor(z / CHUNK_M)}`;
+const chunkCentre = (key) => { const [i, j] = key.split(',').map(Number); return { cx: (i + 0.5) * CHUNK_M, cz: (j + 0.5) * CHUNK_M }; };
+const pieceCentre = (piece) => [(piece.x + piece.pw / 2) * CELL_M, (piece.z + piece.ph / 2) * CELL_M];
+
 const pieceMatrix = (piece) => {
   const o = new THREE.Object3D();
   placePiece(o, piece);
@@ -211,6 +221,7 @@ export function setGateOpen(gr, open) {
 
 export function buildPlateGroup({ plate, catalog, wallState = 0, showArcs = true, showBlind = true, animatedGates = false, tint = PALETTE.home }) {
   const group = new THREE.Group();
+  const cullables = [];           // { obj, cx, cz } in plate metres: hidden past the cull distance
   const sentryYaws = new Map();   // sentry index -> the node to turn
   const sentryRigs = new Map();   // sentry index -> { inst, yaw, pitch }
   const brokenSentries = new Set(); // indices broken before or after their model arrived
@@ -259,15 +270,17 @@ export function buildPlateGroup({ plate, catalog, wallState = 0, showArcs = true
       const fit = fitOf(entry, state);
       const sectionTint = piece.kind === KIND.WALL ? tint : (PALETTE.section[entry.section] || tint);
       const flat = state >= 3 && !entry.states[3];
-      const key = url + (fit ? JSON.stringify(fit) : '') + '#' + sectionTint + (flat ? '#flat' : '');
-      if (!byKey.has(key)) byKey.set(key, { url, fit, tint: sectionTint, flat, pieces: [] });
+      const chunk = chunkOf(...pieceCentre(piece));
+      const key = url + (fit ? JSON.stringify(fit) : '') + '#' + sectionTint + (flat ? '#flat' : '') + '@' + chunk;
+      if (!byKey.has(key)) byKey.set(key, { url, fit, tint: sectionTint, flat, chunk, pieces: [] });
       byKey.get(key).pieces.push(piece);
     }
     staticModels = byKey.size;
-    const loads = [...byKey.values()].map(({ url, fit, tint: t, flat, pieces }) => proto(url, [], fit, t).then((root) => {
+    const loads = [...byKey.values()].map(({ url, fit, tint: t, flat, chunk, pieces }) => proto(url, [], fit, t).then((root) => {
       if (!root) return;
       const im = instanced(root, pieces, flat ? (piece) => crushedMatrix(piece, plate.pieces.indexOf(piece)) : pieceMatrix);
       im.name = 'static';
+      im.userData.chunk = chunkCentre(chunk);
       next.push(im);
       if (pieces[0].id === LANDMARK) {
         // the Isolation Infirmary wears a cross on its roof, sized to the plot
@@ -282,9 +295,9 @@ export function buildPlateGroup({ plate, catalog, wallState = 0, showArcs = true
     }));
     const swap = Promise.all(loads).then(() => {
       if (gen !== staticGen) return; // a newer rebuild superseded this one
-      for (const o of staticObjs) group.remove(o);
+      for (const o of staticObjs) { group.remove(o); const i = cullables.findIndex((c) => c.obj === o); if (i >= 0) cullables.splice(i, 1); }
       staticObjs = next;
-      for (const o of next) group.add(o);
+      for (const o of next) { group.add(o); if (o.userData.chunk) cullables.push({ obj: o, ...o.userData.chunk }); }
     });
     pending.push(swap);
     return swap;
@@ -315,23 +328,12 @@ export function buildPlateGroup({ plate, catalog, wallState = 0, showArcs = true
           action.play();
           obj.name = 'loop';
           loopRigs.push({ obj, mixer });
+          cullables.push({ obj, cx: obj.position.x, cz: obj.position.z });
         }
       }));
       continue;
     }
-    if (BODY_IDS.has(piece.id)) {
-      // a body is one object of its own, never an instance: the drive moves it
-      const pi = plate.pieces.indexOf(piece);
-      pending.push(proto(url, [], fit, tint).then((root) => {
-        if (!root) { fallback(piece); return; }
-        const obj = root.clone();
-        placePiece(obj, piece);
-        group.add(obj);
-        obj.name = 'body';
-        dynamic.set(pi, obj);
-      }));
-      continue;
-    }
+    if (BODY_IDS.has(piece.id)) continue; // bodies are drawn by syncBodies, instanced per model and state
     if (animatedGates) {
       const gi = plate.gates.findIndex((g) => g.pieceIndex === plate.pieces.indexOf(piece));
       pending.push(animProto(url).then((res) => {
@@ -381,6 +383,7 @@ export function buildPlateGroup({ plate, catalog, wallState = 0, showArcs = true
       group.add(inst);
       sentryYaws.set(index, yaw);
       sentryRigs.set(index, { inst, yaw, pitch, home: st.yawDeg, broken: false });
+      cullables.push({ obj: inst, cx: inst.position.x, cz: inst.position.z });
       // a probe (or a fast player) can break it before the model has loaded
       if (brokenSentries.has(index)) wreck(index);
     }));
@@ -390,6 +393,133 @@ export function buildPlateGroup({ plate, catalog, wallState = 0, showArcs = true
   // base on its side, barrel drooped, and the whole thing goes dark. The
   // tab stops turning the yaw node once it is broken.
   group.name = 'plate';
+  // THE BODIES, instanced: one InstancedMesh per part per (model, state),
+  // the matrices rewritten for the bodies that moved this frame, the whole
+  // set rebuilt when a body changes state. 430 separate corrugated
+  // containers were most of a 120-cell plate's 50 M triangles a frame.
+  const bodyLayer = new THREE.Group(); bodyLayer.name = 'bodies'; group.add(bodyLayer);
+  let bodySets = [], bodyGen = 0, bodyKeys = '';
+  const bodyMatrix = (b, ox, oz) => { const o = new THREE.Object3D(); o.position.set(b.x - ox, 0, b.z - oz); o.rotation.y = -b.rot * Math.PI / 2; o.updateMatrix(); return o.matrix.clone(); };
+  const tmpM = new THREE.Matrix4();
+  function drawBodies(bodies, ox, oz) {
+    const gen = ++bodyGen;
+    const byKey = new Map();
+    for (const b of bodies) {
+      const entry = catalog.get(b.id);
+      if (!entry) continue;
+      const url = entry.placeholder ? null : fileFor(entry, b.state);
+      if (!url) continue;
+      const fit = fitOf(entry, b.state);
+      const chunk = chunkOf(b.x - ox, b.z - oz);
+      const key = url + (fit ? JSON.stringify(fit) : '') + '#' + tint + '@' + chunk;
+      if (!byKey.has(key)) byKey.set(key, { url, fit, chunk, bodies: [] });
+      byKey.get(key).bodies.push(b);
+    }
+    const sets = [];
+    const loads = [...byKey.values()].map(({ url, fit, chunk, bodies: bs }) => proto(url, [], fit, tint).then((root) => {
+      if (!root) return;
+      const parts = meshesOf(root);
+      const matrices = bs.map((b) => bodyMatrix(b, ox, oz));
+      const g = new THREE.Group(); g.name = 'bodyset';
+      g.userData.chunk = chunkCentre(chunk);
+      const meshes = [];
+      for (const part of parts) {
+        const im = new THREE.InstancedMesh(part.geometry, part.material, bs.length);
+        matrices.forEach((M, i) => im.setMatrixAt(i, tmpM.multiplyMatrices(M, part.local)));
+        im.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+        im.instanceMatrix.needsUpdate = true;
+        g.add(im); meshes.push(im);
+      }
+      const style = root.userData.bzStyle || null;
+      let edges = null;
+      if (BZ) { edges = bakeEdges(parts, matrices, style); g.add(edges); }
+      sets.push({ group: g, bodies: bs, parts, matrices, meshes, edges, style });
+    }));
+    const swap = Promise.all(loads).then(() => {
+      if (gen !== bodyGen) return;
+      for (const s of bodySets) { bodyLayer.remove(s.group); if (s.edges) s.edges.geometry.dispose(); const i = cullables.findIndex((c) => c.obj === s.group); if (i >= 0) cullables.splice(i, 1); }
+      bodySets = sets;
+      for (const s of sets) { bodyLayer.add(s.group); cullables.push({ obj: s.group, ...s.group.userData.chunk }); }
+    });
+    pending.push(swap);
+    return swap;
+  }
+  // called every frame by the tab with the drive's bodies (world metres;
+  // ox, oz shift them into this plate's frame)
+  function syncBodies(bodies, ox = 0, oz = 0) {
+    const keys = bodies.map((b) => b.id + b.state).join(',');
+    if (keys !== bodyKeys) { bodyKeys = keys; drawBodies(bodies, ox, oz); return; }
+    for (const s of bodySets) {
+      let dirty = false;
+      s.bodies.forEach((b, i) => {
+        if (!b.moved) return;
+        const M = bodyMatrix(b, ox, oz);
+        s.matrices[i] = M;
+        for (let k = 0; k < s.meshes.length; k++) s.meshes[k].setMatrixAt(i, tmpM.multiplyMatrices(M, s.parts[k].local));
+        dirty = true;
+      });
+      if (!dirty) continue;
+      for (const im of s.meshes) im.instanceMatrix.needsUpdate = true;
+      if (BZ && s.edges) {
+        s.group.remove(s.edges); s.edges.geometry.dispose();
+        s.edges = bakeEdges(s.parts, s.matrices, s.style);
+        s.group.add(s.edges);
+      }
+    }
+  }
+
+  // THE CABLES: from the station's roof to every sentry's head, a sagging
+  // line each, one line set. Dark when the power is out.
+  const cables = new THREE.Group(); cables.name = 'cables'; group.add(cables);
+  let cableMat = null;
+  if (plate.power) {
+    const st = plate.pieces[plate.power.pieceIndex];
+    const sx = (st.x + 1) * CELL_M, sz = (st.z + 1) * CELL_M, sy = 3.6;
+    const pos = [];
+    for (const sn of plate.sentries) {
+      const ex = (sn.x + 1) * CELL_M, ez = (sn.z + 1) * CELL_M, ey = 4.4;
+      const n = 12, sag = Math.min(2.5, 0.06 * Math.hypot(ex - sx, ez - sz));
+      let prev = null;
+      for (let i = 0; i <= n; i++) {
+        const t = i / n;
+        const p = [sx + (ex - sx) * t, sy + (ey - sy) * t - sag * 4 * t * (1 - t), sz + (ez - sz) * t];
+        if (prev) pos.push(...prev, ...p);
+        prev = p;
+      }
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    cableMat = new THREE.LineBasicMaterial({ color: BZ ? 0x3fbf5a : PALETTE.wire, transparent: true, opacity: 0.55 });
+    const ls = new THREE.LineSegments(geo, cableMat);
+    ls.name = 'cable';
+    cables.add(ls);
+  }
+  // darken a rig's paint: scorched in the colony look, dim lines in battlezone
+  const darken = (inst) => inst.traverse((o) => {
+    if (o.isLineSegments) { o.material = o.material.clone(); o.material.color.multiplyScalar(0.4); return; }
+    if (!o.isMesh || BZ) return;
+    const mats = Array.isArray(o.material) ? o.material : [o.material];
+    const dark = mats.map((m) => { const c = m.clone(); if (c.color) c.color.multiplyScalar(0.3); if (c.emissive) c.emissive.setScalar(0); return c; });
+    o.material = Array.isArray(o.material) ? dark : dark[0];
+  });
+  let poweredNow = true;
+  // power lost: the cables go dark, every standing sentry droops and dims
+  const setPowered = (on) => {
+    if (on === poweredNow) return;
+    poweredNow = on;
+    if (cableMat) { cableMat.color.setHex(on ? (BZ ? 0x3fbf5a : PALETTE.wire) : 0x2a2f38); cableMat.opacity = on ? 0.55 : 0.35; }
+    for (const r of sentryRigs.values()) {
+      if (r.broken) continue;
+      if (r.pitch) r.pitch.rotation.x = on ? (LOB_FAMILIES.has(plate.sentries[[...sentryRigs.entries()].find(([, v]) => v === r)[0]].family) ? -LOB_ELEV_DEG * Math.PI / 180 : 0) : 0.35;
+      if (!on) darken(r.inst);
+    }
+  };
+  // hide everything cullable farther than maxDist from (x, z), plate metres;
+  // Infinity shows all (the overview camera)
+  const cull = (x, z, maxDist) => {
+    const r2 = maxDist * maxDist;
+    for (const c of cullables) { const dx = c.cx - x, dz = c.cz - z; c.obj.visible = !(dx * dx + dz * dz > r2); }
+  };
   const breakSentry = (index) => { brokenSentries.add(index); wreck(index); };
   const wreck = (index) => {
     const r = sentryRigs.get(index);
@@ -420,13 +550,7 @@ export function buildPlateGroup({ plate, catalog, wallState = 0, showArcs = true
     yaw.getWorldPosition(wp);
     console.log(`[wreck] sentry ${index} ground=${groundY.toFixed(2)} head at ${wp.x.toFixed(1)},${wp.y.toFixed(2)},${wp.z.toFixed(1)} box y ${after.min.y.toFixed(2)}..${after.max.y.toFixed(2)} x ${after.min.x.toFixed(1)}..${after.max.x.toFixed(1)} z ${after.min.z.toFixed(1)}..${after.max.z.toFixed(1)} meshes ${(() => { let n = 0; yaw.traverse((o) => { if (o.isMesh || o.isLineSegments) n++; }); return n; })()}`);
     // and dark: scorched paint in the colony look, dimmed lines in battlezone
-    inst.traverse((o) => {
-      if (o.isLineSegments) { o.material = o.material.clone(); o.material.color.multiplyScalar(0.4); return; }
-      if (!o.isMesh || BZ) return;
-      const mats = Array.isArray(o.material) ? o.material : [o.material];
-      const dark = mats.map((m) => { const c = m.clone(); if (c.color) c.color.multiplyScalar(0.3); if (c.emissive) c.emissive.setScalar(0); return c; });
-      o.material = Array.isArray(o.material) ? dark : dark[0];
-    });
+    darken(inst);
   };
   if (showBlind) {
     for (const c of ringCoverage(plate)) {
@@ -437,5 +561,5 @@ export function buildPlateGroup({ plate, catalog, wallState = 0, showArcs = true
     }
   }
   console.log('[plate] models', byModel.size + staticModels, 'pieces', plate.pieces.length, 'sentries', plate.sentries.length, 'warnings', plate.warnings.length);
-  return { group, sentryYaws, sentryRigs, breakSentry, gateRigs, dynamic, loopRigs, ready: Promise.all(pending), rebuildWalls: drawStatic, rebuild: drawStatic };
+  return { group, sentryYaws, sentryRigs, breakSentry, setPowered, syncBodies, cull, gateRigs, dynamic, loopRigs, ready: Promise.all(pending), rebuildWalls: drawStatic, rebuild: drawStatic };
 }

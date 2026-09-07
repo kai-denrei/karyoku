@@ -13,9 +13,9 @@
 // `rotation.y = -rot * PI/2`. Yaw is compass degrees, 0 = N, 90 = E.
 // Plate width and depth are EVEN, because roads are 2 x 2 pieces laid on
 // even coordinates and a gate's road port has to land on one.
-import { mulberry32 } from './rng.js?v=b8f040a2';
-import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=b8f040a2';
-import { specById } from './catalog-spec.js?v=b8f040a2';
+import { mulberry32 } from './rng.js?v=c43c648b';
+import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=c43c648b';
+import { specById } from './catalog-spec.js?v=c43c648b';
 
 export const CELL_M = 4;
 
@@ -78,7 +78,7 @@ function makeState(p) {
     w, h, inset, seed: p.seed, params: { ...p, w, h },
     cells: new Uint8Array(w * h),
     owner: new Int16Array(w * h).fill(-1),
-    pieces: [], roads: { nodes: [], edges: [], blocks: new Map() }, gates: [], sentries: [], blocks: [],
+    pieces: [], roads: { nodes: [], edges: [], blocks: new Map() }, gates: [], sentries: [], blocks: [], power: null,
     warnings: [],
     ascii() { return asciiOf(this); },
   };
@@ -430,6 +430,8 @@ export const MODELLED = new Set([
   // the research-outpost kit
   'command_operations', 'personnel_barracks', 'personnel_infirmary', 'research_xenobiology', 'utility_reactor',
   'command_comms', 'air_launchpad', 'industry_garage', 'logistics_container', 'research_specimen_crate', 'road_straight', 'utility_conduit',
+  // the warehouse props (the armored container stands in as logistics_container) and the solar kit
+  'cargo_crate', 'secure_case', 'fuel_barrel', 'pallet_stack', 'solar_power_station', 'solar_panel_rack',
   // the assembly-line kit
   'robotic_assembly_line', 'robotic_arm', 'conveyor_module', 'control_platform', 'gantry_module', 'assembly_pallet',
   // house casts and NASA stand-ins
@@ -443,18 +445,18 @@ export const SOCKET_ID = 'defense_sentry_socket';
 export const ZONES = {
   command:   { buildings: ['command_hq', 'command_operations', 'command_uplink', 'command_comms'],
                props: ['field_signal', 'utility_conduit'] },
-  logistics: { buildings: ['logistics_crane', 'logistics_container', 'gantry_module'],
-               props: ['assembly_pallet', 'research_specimen_crate'] },
+  logistics: { buildings: ['logistics_crane', 'logistics_container', 'gantry_module', 'cargo_crate', 'pallet_stack', 'secure_case', 'fuel_barrel'],
+               props: ['cargo_crate', 'fuel_barrel'] },
   defense:   { buildings: ['defense_radar', 'command_comms'],
                props: ['field_signal'] },
-  utility:   { buildings: ['utility_reactor', 'logistics_container'],
-               props: ['utility_conduit'] },
+  utility:   { buildings: ['utility_reactor', 'logistics_container', 'fuel_barrel'],
+               props: ['utility_conduit', 'fuel_barrel'] },
   air:       { buildings: ['air_launchpad', 'air_drone_pad', 'command_comms'],
                props: ['field_signal'] },
   personnel: { buildings: ['personnel_barracks', 'research_xenobiology', 'personnel_recreation', 'personnel_shelter'],
-               props: ['research_specimen_crate', 'utility_conduit'] },
-  industry:  { buildings: ['robotic_assembly_line', 'industry_garage', 'control_platform', 'research_xenobiology', 'robotic_arm', 'gantry_module', 'logistics_crane', 'logistics_container'],
-               props: ['assembly_pallet', 'conveyor_module', 'research_specimen_crate', 'utility_conduit'] },
+               props: ['cargo_crate', 'utility_conduit'] },
+  industry:  { buildings: ['robotic_assembly_line', 'industry_garage', 'control_platform', 'research_xenobiology', 'robotic_arm', 'gantry_module', 'logistics_crane', 'logistics_container', 'pallet_stack'],
+               props: ['pallet_stack', 'conveyor_module', 'cargo_crate', 'utility_conduit'] },
 };
 // THE LANDMARK: the Isolation Infirmary takes a prime block of its own before
 // any zone packs — the largest block that is not the command block — and
@@ -465,12 +467,17 @@ export const LANDMARK = 'personnel_infirmary';
 // largest block left with a one-cell lane
 export const LANDMARKS = [{ id: 'personnel_infirmary', gap: null, landmark: true }, { id: 'robotic_assembly_line', gap: 1, landmark: false }];
 // Buildings a block may hold more than once. Everything else is one per block.
-const REPEATABLE = new Set(['personnel_barracks', 'logistics_container', 'command_comms', 'personnel_shelter']);
+// THE WAREHOUSE PROPS: the container, crate, case, barrel and pallet are
+// the yard's stock and the drive's BODIES (pushable, breakable). They pack
+// in rows, touching, and need no road of their own.
+export const YARD_IDS = ['logistics_container', 'cargo_crate', 'secure_case', 'fuel_barrel', 'pallet_stack'];
+const REPEATABLE = new Set(['personnel_barracks', 'command_comms', 'personnel_shelter', ...YARD_IDS]);
 // Containers pack in ROWS, touching, and need no road of their own: the
 // warehouse feeling is a yard of containers, not a hall.
-const NO_LANE = new Set(['logistics_container']);
-const NO_ROAD = new Set(['logistics_container']);
-const PROP_RATE = 0.12;
+const NO_LANE = new Set(YARD_IDS);
+const NO_ROAD = new Set(YARD_IDS);
+const PROP_RATE = 0.08;
+const PROPS_PER_BLOCK = 6; // a 120-cell plate grew 486 antennas at the old rate
 
 function floodBlocks(s) {
   const seen = new Uint8Array(s.w * s.h);
@@ -668,7 +675,9 @@ function packBlock(s, rng, block) {
       placedAny = true;
     }
   }
+  let nProps = 0;
   for (const [x, z] of block.cells) {
+    if (nProps >= PROPS_PER_BLOCK) break;
     const i = idx(s, x, z);
     if (s.cells[i] !== KIND.FOUNDATION || s.owner[i] !== -1) continue;
     if (rng() >= PROP_RATE) continue;
@@ -676,6 +685,7 @@ function packBlock(s, rng, block) {
     if (!props.length) break;
     const id = props[Math.floor(rng() * props.length)];
     place(s, id, x, z, 1, 1, Math.floor(rng() * 4), KIND.PROP, { zone: block.zone });
+    nProps++;
   }
 }
 
@@ -699,7 +709,69 @@ function stepLandmark(s, rng) {
   }
 }
 
+// --- THE POWER COMPOUND ---------------------------------------------------------
+// The base's power at its centre, behind its own wall: a solar power
+// station and three panel racks inside an 8 x 6 ring of wall with one
+// vehicle gate toward the block's road. Every sentry hangs off the
+// station (the scene strings the cables; the drive drops the sentries when
+// the station reaches D3). Laid FIRST, into the block nearest the plate's
+// centre that has room, so the rest of the plate packs around it.
+//
+// Local frame: u along the gate wall (0..7), v from the back wall (0) to
+// the gate wall (5); `rot` from findSpot turns it so the authored S face
+// (the gate) meets the road.
+export const POWER = { id: 'solar_power_station', rack: 'solar_panel_rack', w: 8, h: 6 };
+function stepPower(s, rng) {
+  if (!s.allowed.has(POWER.id) || !s.allowed.has(POWER.rack)) return;
+  const def = { id: 'power_compound', plot: [POWER.w, POWER.h], gapOverride: 1 };
+  const cx = s.w / 2, cz = s.h / 2;
+  const blocks = s.blocks.filter((b) => b.zone !== 'command')
+    .sort((a, b) => Math.hypot((a.x0 + a.x1) / 2 - cx, (a.z0 + a.z1) / 2 - cz) - Math.hypot((b.x0 + b.x1) / 2 - cx, (b.z0 + b.z1) / 2 - cz));
+  for (const block of blocks.length ? blocks : s.blocks) {
+    const spot = findSpot(s, rng, block, def);
+    if (!spot) continue;
+    layCompound(s, spot, block);
+    return;
+  }
+  // a plate whose interior cannot hold the compound and its lanes is not at fault
+  if (Math.min(s.w, s.h) - 2 * s.inset >= 14 && (s.w - 2 * s.inset) * (s.h - 2 * s.inset) >= 700) s.warnings.push('no room for the power compound');
+}
+function layCompound(s, spot, block) {
+  const { x, z, pw, ph, rot } = spot;
+  const r = { x0: x, z0: z, x1: x + pw - 1, z1: z + ph - 1 };
+  // local (u, v) to world cells, by rot: the gate wall is v = h-1
+  const W = POWER.w, H = POWER.h;
+  const cell = (u, v) => rot === 0 ? [r.x0 + u, r.z0 + v] : rot === 2 ? [r.x1 - u, r.z1 - v] : rot === 1 ? [r.x1 - v, r.z0 + u] : [r.x0 + v, r.z1 - u];
+  const side = rotSide('S', rot);
+  const at = side === 'N' || side === 'S' ? cell(4, 0)[0] : cell(4, 0)[1];
+  const gate = { side, at };
+  // the ring, then the gate through it (the same layer the plate's rings use)
+  layRing(s, r, [gate], 'power');
+  // a placed 2 x 2 in local terms: its world origin is the min corner of its four cells
+  const put = (id, u, v, extra) => {
+    const cs = [cell(u, v), cell(u + 1, v), cell(u, v + 1), cell(u + 1, v + 1)];
+    const x0 = Math.min(...cs.map((c) => c[0])), z0 = Math.min(...cs.map((c) => c[1]));
+    return place(s, id, x0, z0, 2, 2, rot, KIND.BUILDING, { zone: block.zone, ...extra });
+  };
+  const station = put(POWER.id, 3, 1, { landmark: false, power: true });
+  put(POWER.rack, 1, 1, {}); put(POWER.rack, 5, 1, {}); put(POWER.rack, 1, 3, {});
+  s.power = { pieceIndex: station, rect: r, rot, gate };
+  // RESERVE THE APPROACH to the gate: yard stock packs with no gap and
+  // would box it in. RESERVED foundation (owner -2, no piece) reads as
+  // taken to the packer and as ground to the drive and the crew.
+  const [ox, oz] = DIRS[side];
+  const [gx, gz] = cell(4, H - 1);
+  for (let d = 1; d <= 3; d++) for (let t = -2; t <= 2; t++) {
+    const x = gx + ox * d + (ox === 0 ? t : 0), z = gz + oz * d + (oz === 0 ? t : 0);
+    if (!inside(s, x, z)) continue;
+    const i = idx(s, x, z);
+    if (s.cells[i] === KIND.FOUNDATION && s.owner[i] === -1) s.owner[i] = RESERVED;
+  }
+}
+export const RESERVED = -2;
+
 function stepPacking(s, rng) {
+  stepPower(s, rng);
   stepLandmark(s, rng);
   for (const block of s.blocks) packBlock(s, rng, block);
   stepBand(s, rng);
@@ -712,19 +784,24 @@ function stepPacking(s, rng) {
 // drive frees their cells and pushes them about. One cell clear of roads,
 // gates and sockets so nothing is boxed in at birth.
 export const BAND_PROP = 'logistics_container';
+// the band's stock, weighted: containers and crates mostly, a barrel, a
+// pallet, now and then a secure case
+const BAND_STOCK = ['logistics_container', 'logistics_container', 'logistics_container', 'cargo_crate', 'cargo_crate', 'cargo_crate', 'fuel_barrel', 'fuel_barrel', 'pallet_stack', 'pallet_stack', 'secure_case'];
 function stepBand(s, rng) {
   if (s.inset === 0) return;
   const R = innerRect(s);
   const inBand = (x, z) => x > 0 && z > 0 && x < s.w - 1 && z < s.h - 1 && (x < R.x0 || z < R.z0 || x > R.x1 || z > R.z1);
-  if (!s.allowed.has(BAND_PROP)) return;
-  const spec = specById(BAND_PROP);
-  const want = Math.round((s.w + s.h) / 8);
+  const stock = BAND_STOCK.filter((id) => s.allowed.has(id));
+  if (!stock.length) return;
+  const want = Math.round((s.w + s.h) / 6);
   const spots = [];
   for (let z = 1; z < s.h - 1; z++) for (let x = 1; x < s.w - 1; x++) if (inBand(x, z)) spots.push([x, z]);
   const order = shuffled(rng, spots);
   let placed = 0;
   for (const [x, z] of order) {
     if (placed >= want) break;
+    const id = stock[Math.floor(rng() * stock.length)];
+    const spec = specById(id);
     const swap = rng() < 0.5;
     const pw = swap ? spec.plot[1] : spec.plot[0], ph = swap ? spec.plot[0] : spec.plot[1];
     let ok = true;
@@ -739,7 +816,7 @@ function stepBand(s, rng) {
       }
     }
     if (!ok) continue;
-    place(s, BAND_PROP, x, z, pw, ph, swap ? 1 : 0, KIND.BUILDING, { zone: 'band' });
+    place(s, id, x, z, pw, ph, swap ? 1 : 0, KIND.BUILDING, { zone: 'band' });
     placed++;
   }
 }

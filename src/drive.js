@@ -11,8 +11,8 @@
 // THE ANTI-AIMBOT NUMBERS are yawRate and the arc: a sentry cannot point
 // outside its arc, and inside it turns at yawRate, so a hull that crosses
 // the arc fast, or stays in the blind sector, is never fired on.
-import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=b8f040a2';
-import { KIND, CELL_M, wrapDeg, dirOfYaw, DIRS, yawOfSide, rotSide } from './plate.js?v=b8f040a2';
+import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=c43c648b';
+import { KIND, CELL_M, wrapDeg, dirOfYaw, DIRS, yawOfSide, rotSide } from './plate.js?v=c43c648b';
 
 export const DRIVE_TUNE = {
   speed: 12,        // m/s forward
@@ -185,8 +185,24 @@ export function autopilotInput(hull, points, idx, reach = 8, tune = DRIVE_TUNE) 
 // It is not part of the cells: makeBodies frees the cells its piece claimed
 // so blockedAt lets the hull reach it, and stepBodies settles the contact —
 // the container gives way if it can, and the hull stops if it cannot.
-export const BODY_IDS = new Set(['logistics_container']);
-export function makeBodies(plate, ox = 0, oz = 0) {
+// THE BODIES: the warehouse props. Pushable, and BREAKABLE: a shell or a
+// ram at crushSpeed steps a body one state (the container takes two rounds
+// a state, the rest one); at state 3 it is dead: debris, not solid.
+export const BODY_IDS = new Set(['logistics_container', 'cargo_crate', 'secure_case', 'fuel_barrel', 'pallet_stack']);
+export const BODY_HITS = { logistics_container: 2 };
+export function damageBody(b) {
+  if (b.dead) return null;
+  b.hits = (b.hits || 0) + 1;
+  if (b.hits < (BODY_HITS[b.id] || 1)) return { body: b, destroyed: false, stepped: false };
+  b.hits = 0;
+  b.state++;
+  if (b.plate && b.plate.pieces[b.pieceIndex]) b.plate.pieces[b.pieceIndex].state = b.state;
+  if (b.state >= 3) { b.dead = true; return { body: b, destroyed: true, stepped: true }; }
+  return { body: b, destroyed: false, stepped: true };
+}
+// `dims` (id -> { w, d } metres, from the catalog's colliders) sizes the box
+// the hull shoves; without it the plot's cells do, a little inset
+export function makeBodies(plate, ox = 0, oz = 0, dims = null) {
   const out = [];
   plate.pieces.forEach((pc, pieceIndex) => {
     if (!BODY_IDS.has(pc.id)) return;
@@ -196,10 +212,11 @@ export function makeBodies(plate, ox = 0, oz = 0) {
     }
     // half extents in the piece's own frame; rot 1 and 3 swap the placed dims back
     const swap = pc.rot % 2 === 1;
+    const d = dims && dims[pc.id];
     out.push({
-      pieceIndex, plate,
+      pieceIndex, plate, id: pc.id, state: pc.state || 0, hits: 0, dead: (pc.state || 0) >= 3, moved: false, rammed: false, ramCool: 0,
       x: ox + (pc.x + pc.pw / 2 + pc.offset[0]) * CELL_M, z: oz + (pc.z + pc.ph / 2 + pc.offset[1]) * CELL_M,
-      hw: (swap ? pc.ph : pc.pw) * CELL_M / 2 - 0.2, hd: (swap ? pc.pw : pc.ph) * CELL_M / 2 - 0.2,
+      hw: d ? d.w / 2 : (swap ? pc.ph : pc.pw) * CELL_M / 2 - 0.2, hd: d ? d.d / 2 : (swap ? pc.pw : pc.ph) * CELL_M / 2 - 0.2,
       rot: pc.rot,
     });
   });
@@ -216,10 +233,12 @@ function toWorld(b, lx, lz) {
   return [b.x + lx * Math.cos(t) + lz * Math.sin(t), b.z - lx * Math.sin(t) + lz * Math.cos(t)];
 }
 export function bodyContains(b, x, z) {
+  if (b.dead) return false; // debris is not solid
   const [lx, lz] = toLocal(b, x, z);
   return Math.abs(lx) <= b.hw && Math.abs(lz) <= b.hd;
 }
 export const bodyAt = (bodies, x, z) => bodies.some((b) => bodyContains(b, x, z));
+export const bodyHit = (bodies, x, z) => bodies.find((b) => bodyContains(b, x, z)) || null;
 function bodySamples(b, x, z) {
   const pts = [];
   for (const lx of [-b.hw, 0, b.hw]) for (const lz of [-b.hd, 0, b.hd]) { if (lx === 0 && lz === 0) continue; const [wx, wz] = toWorld({ ...b, x, z }, lx, lz); pts.push([wx, wz]); }
@@ -238,10 +257,12 @@ function bodyFits(b, x, z, bodies, blocked) {
   return true;
 }
 // Settle the hull against every body. Returns how many bodies moved.
-export function stepBodies(bodies, hull, blocked, tune = DRIVE_TUNE) {
+export function stepBodies(bodies, hull, blocked, tune = DRIVE_TUNE, dt = 1 / 60) {
   let moved = 0;
   for (const b of bodies) {
-    b.moved = false;
+    b.moved = false; b.rammed = false;
+    if (b.ramCool > 0) b.ramCool -= dt;
+    if (b.dead) continue;
     const [lx, lz] = toLocal(b, hull.x, hull.z);
     const cx = Math.max(-b.hw, Math.min(b.hw, lx)), cz = Math.max(-b.hd, Math.min(b.hd, lz));
     const [px, pz] = toWorld(b, cx, cz);
@@ -254,6 +275,8 @@ export function stepBodies(bodies, hull, blocked, tune = DRIVE_TUNE) {
       nx = -dx * Math.sign(hull.speed || 1); nz = -dz * Math.sign(hull.speed || 1); d = 0;
     } else { nx /= d; nz /= d; }
     const pen = tune.hullR - d + 0.02;
+    // a RAM: contact at crushSpeed is a hit on the body, once per touch
+    if (Math.abs(hull.speed || 0) >= tune.crushSpeed && b.ramCool <= 0) { b.rammed = true; b.ramCool = 0.8; }
     if (bodyFits(b, b.x - nx * pen, b.z - nz * pen, bodies, blocked)) { b.x -= nx * pen; b.z -= nz * pen; b.moved = true; moved++; }
     else { hull.x += nx * pen; hull.z += nz * pen; hull.vx = 0; hull.vz = 0; }
   }
@@ -341,6 +364,10 @@ export function stepCrush(plate, hull, tune = DRIVE_TUNE) {
   return out;
 }
 
+// THE POWER: every sentry hangs off the station in the compound; at D3
+// they all go down. A plate without a compound is powered by fiat.
+export const powered = (plate) => !plate.power || (plate.pieces[plate.power.pieceIndex] || { state: 0 }).state < 3;
+
 // --- gates -------------------------------------------------------------------
 export function gateCentre(plate, g) {
   const pc = plate.pieces[g.pieceIndex];
@@ -414,10 +441,10 @@ export function losClear(plate, ax, az, bx, bz) {
   return true;
 }
 
-export function stepSentries(sentries, hull, dt, los, tune = DRIVE_TUNE) {
+export function stepSentries(sentries, hull, dt, los, tune = DRIVE_TUNE, isPowered = true) {
   const fired = [];
   for (const s of sentries) {
-    if (s.alive === false) { s.tracking = false; continue; } // a wreck sees nothing
+    if (s.alive === false || !isPowered) { s.tracking = false; continue; } // a wreck, or a dark one, sees nothing
     if (s.cool > 0) s.cool = Math.max(0, s.cool - dt);
     const bearing = bearingTo(s.cx, s.cz, hull.x, hull.z);
     const dist = Math.hypot(hull.x - s.cx, hull.z - s.cz);

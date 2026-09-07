@@ -144,6 +144,44 @@ no build step, Node invariant suites).
   120 x 90 cells: ~430 band containers as separate unmerged corrugated
   models were 5.5k objects and most of 50 M triangles a frame. Pixel
   ratio capped at 1.5. Bodies want instancing and a lighter container.
+
+## Power, warehouse bodies, chunks (operator, 2026-09-07)
+- THE POWER COMPOUND (`stepPower`, first in `stepPacking`): an 8 x 6 ring
+  of wall with one `gate_vehicle` (ring 'power') toward the block's road,
+  in the block nearest the plate centre; inside, `solar_power_station`
+  (2 x 2, `power: true`) at the back and three `solar_panel_rack`s.
+  `plate.power = { pieceIndex, rect, rot, gate }`; the gate's approach is
+  RESERVED foundation (`owner === RESERVED` (-2)), else yard stock boxed
+  it in. `powered(plate)` is the station under D3; `stepSentries(...,
+  isPowered)` drops every sentry when it falls; the scene strings CABLES
+  from the station to every sentry head and `setPowered(false)` darkens
+  them and droops the heads. A narrow plate (interior under 14 cells)
+  skips the compound silently. The line landmark loses its block on a few
+  seeds now (test allows 3 of 50). Probe: `?aim=power&elev=8&fire=1&hold=1
+  &tick=8` ends `power=off`.
+- WAREHOUSE PROPS: `assets/warehouse/` (crate, case, barrel, pallet, and
+  the armored container remapped to `logistics_container`, plot 2 x 1),
+  four states each; the solar kit's station and rack in `assets/solar/`
+  (the complex and the array were 50 MB and were not vendored). The house
+  container and the outpost container are gone. `YARD_IDS` pack like the
+  old containers (rows, no lane, no road) and stock the band
+  (`BAND_STOCK`); the specimen crate and assembly pallet left the zone lists.
+- BODIES BREAK: `BODY_IDS` = the five; `damageBody` steps a state per
+  `BODY_HITS` (container 2, else 1); state 3 is `dead`: not solid,
+  drawn as its d3 model. Shells (`bodyHit` in the tabs' ray) and RAMS at
+  `crushSpeed` (`b.rammed`, 0.8 s per touch, from `stepBodies(..., dt)`)
+  damage them; `sfx.bodyHit` picks the cue (a barrel dies like a sentry).
+  `makeBodies(plate, ox, oz, bodyDims(catalog))` sizes boxes from the
+  kit's colliders.
+- RENDER ONLY WHAT IS CLOSER: static and body layers are instanced per
+  model AND per 128 m tile (`CHUNK_M`, `chunkOf`); `rig.cull(x, z, maxDist)`
+  hides tiles, sentries and loop rigs past `CULL_M` (260 m, `?cull=`), the
+  crew scene takes a `near` predicate; the overview camera (y > 150) sees
+  all. Bodies are `syncBodies` sets (InstancedMesh per part, matrices
+  rewritten for moved bodies, edges rebaked in BZ), rebuilt when a state
+  changes. Props capped at 6 per block. At 120 x 90: 11.2k -> ~3k objects,
+  61 M -> 35 M tris (colony), the composer still renders the scene twice
+  (bloom pass + final); the compact astronaut is 95k tris, skinned.
 - World: plate A is HOME (gates open, sentries silent), plate B is HOSTILE
   (gates shut, sentries live) — you breach B through its wall.
 - Probes: `#drive?seed=7&tick=4&fire=1&hold=1&aim=wall` shoots the wall

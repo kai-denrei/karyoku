@@ -66,9 +66,17 @@ export const ELEMENTS = [
     { event: 'flee from the enemy tank', key: null, want: 'a muffled shout through the suit radio' },
     { event: 'footsteps', key: null, want: 'probably none: too many walkers, too faint at camera range' },
   ] },
-  { id: 'containers', label: 'Containers', events: [
+  { id: 'power', label: 'Power compound', events: [
+    { event: 'station takes a round (a building hit)', key: 'impact_shell', wired: true },
+    { event: 'station destroyed: every sentry goes down', key: 'impact_rubble', wired: true },
+    { event: 'the power-down itself', key: null, want: 'a falling whine and a relay clack as the cables go dark' },
+  ] },
+  { id: 'containers', label: 'Warehouse props (bodies)', events: [
+    { event: 'a state breaks off a crate, case, pallet or container', key: 'impact_rubble', wired: true },
+    { event: 'a barrel dies', key: 'sentry_destroyed', wired: true },
+    { event: 'a round on a body that still stands', key: 'impact_shell', wired: true },
     { event: 'shoved and sliding (random start point, loops, fades when still)', key: 'container_rumble', wired: true, loop: true },
-    { event: 'hit by a shell (no damage)', key: null, want: 'hollow steel ring' },
+    { event: 'a ram at speed (same as a round today)', key: null, want: 'a dull steel boom, lower than the crunch' },
   ] },
   { id: 'ui', label: 'Interface', events: [
     { event: 'camera switch', key: null, want: 'small click, ui bus' },

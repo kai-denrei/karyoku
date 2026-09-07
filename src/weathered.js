@@ -26,7 +26,7 @@
 // of three. The bytes are RGBA (alpha 255): three r160 has no RGBFormat for
 // a DataTexture, so stride 4 is what the GPU takes and the baker says so
 // rather than making the wrapper repack.
-import { mulberry32 } from './rng.js?v=b8f040a2';
+import { mulberry32 } from './rng.js?v=c43c648b';
 
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const lerp = (a, b, t) => a + (b - a) * t;

@@ -7,9 +7,9 @@
 import * as THREE from '../vendor/three.module.js';
 import { GLTFLoader } from '../vendor/GLTFLoader.js';
 import { MeshoptDecoder } from '../vendor/meshopt_decoder.module.js';
-import { fitModel, bustToken } from './glbmodels.js?v=b8f040a2';
-import { SUIT } from './crew.js?v=b8f040a2';
-import { BZ } from './looks.js?v=b8f040a2';
+import { fitModel, bustToken } from './glbmodels.js?v=c43c648b';
+import { SUIT } from './crew.js?v=c43c648b';
+import { BZ } from './looks.js?v=c43c648b';
 
 const ASTRO_URL = 'assets/models/astronaut-compact.glb';
 const PERSON_M = 1.8;
@@ -100,7 +100,8 @@ export function makeCrewScene(group, crew) {
   })();
   return {
     group,
-    sync(dt, groundY = () => 0) {
+    // `near(x, z)` says whether a walker is close enough to draw
+    sync(dt, groundY = () => 0, near = null) {
       crew.walkers.forEach((w, i) => {
         const rig = rigs[i];
         if (!w.alive) {
@@ -109,6 +110,9 @@ export function makeCrewScene(group, crew) {
           return;
         }
         if (!rig) return;
+        const show = !near || near(w.x, w.z);
+        rig.obj.visible = show;
+        if (!show) return;
         rig.setPose(w.x, groundY(w.x, w.z), w.z, w.heading, w.moving, w.running);
         rig.tick(dt);
       });

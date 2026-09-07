@@ -51,8 +51,8 @@ for line in SRC.read_text(encoding='utf-8').splitlines():
         rid, name, px, pz, note = m.groups()
         rows.append((rid, name.strip(), section, int(px), int(pz), ports_for(section, rid), note.strip()))
 
-if len(rows) != 117:
-    sys.exit(f'expected 117 rows, parsed {len(rows)}')
+if len(rows) != 123:
+    sys.exit(f'expected 123 rows, parsed {len(rows)}')
 
 def js_str(s):
     return "'" + s.replace('\\', '\\\\').replace("'", "\\'") + "'"
