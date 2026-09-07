@@ -269,6 +269,27 @@ no build step, Node invariant suites).
   splash counts the hit. Cooldown 4.5 s. A home guard only hovers. Sounds:
   `minigun_ready` as the lock warning, `tower_aoe` for the shell. Probe:
   `guard=state:shots` (drive), `guards=` (world). Not damageable yet.
+- FEAR RULES (operator): `threat = { x, z, moving }` is passed for EVERY
+  crew now. A moving tank scares everyone inside `fleeM`: the enemy's
+  crew runs or cowers (coin), ours always runs and never cowers, and ours
+  stops fearing the moment the tank stops (`moving: false`); a walker on
+  a mission (`goal`) or already `boarding` ignores it. Stranded crews
+  board a STOPPED friendly tank (rescue.js); rescued ones go into the
+  infirmary and stay.
+- CAPTURE THE FLAG (`ctf.js`, `test/ctf.mjs`; kit `assets/flags/`, all
+  six banners, three poles and the socket vendored): the generator's
+  `stepFlags` places a 3 x 1 `ctf_stand` PROP beside a road near the
+  centre (`plate.flags.poles`, slot 1 then slot 2, a cell apart; the
+  scene draws nothing for it, the tab stands the kit's units). Slot 1 is
+  FIRE (`flag_ember`, the kit's 火), slot 2 POWER (`flag_vanguard`, 力).
+  Home holds fire, its power pole empty; the enemy the reverse. A hull
+  STOPPED within `captureM` 7 m of the enemy's full pole takes the flag
+  (carried on the hull: `makeCarriedFlag`); stopped by our empty pole it
+  plants it (`Raise` clip): `ctf.won`, `winBonus` 1000. `makeFlagStand`
+  draws a banner unit (Flutter looping) or a bare pole per slot. HUD
+  leads with the flag state; probe `flag=theirs|carried|won`;
+  `?ctfprobe=1&tick=8` ends `flag=won score=1000`. The drive tab has the
+  enemy stand only (capture, no home to plant).
 - World: plate A is HOME (gates open, sentries silent), plate B is HOSTILE
   (gates shut, sentries live) — you breach B through its wall.
 - Probes: `#drive?seed=7&tick=4&fire=1&hold=1&aim=wall` shoots the wall

@@ -1,4 +1,4 @@
-import { generatePlate, makePlateParams, plateKnobProblems, KIND, rotSide, dirOfYaw, PLATE_TUNE, roadsConnected, roadBlockKey, ZONES, sentrySockets, blindCells, sentryBears, GUN_FAMILIES, MODELLED, LANDMARK, YARD_IDS, POWER } from '../src/plate.js';
+import { generatePlate, makePlateParams, plateKnobProblems, KIND, rotSide, dirOfYaw, PLATE_TUNE, roadsConnected, roadBlockKey, ZONES, sentrySockets, blindCells, sentryBears, GUN_FAMILIES, MODELLED, LANDMARK, YARD_IDS, POWER, CELL_M } from '../src/plate.js';
 import { specById } from '../src/catalog-spec.js';
 import { check, near, done } from './check.mjs';
 
@@ -108,6 +108,13 @@ function checkPacking(p, label, minBuildings = 3) {
   check(`${label}: has buildings`, buildings.length >= minBuildings, `got ${buildings.length}`);
   // yard stock needs no road; the power compound's pieces stand behind their own wall, its gate meets the road
   check(`${label}: every building touches a road`, buildings.filter((pc) => pc.zone !== 'band' && !YARD_IDS.includes(pc.id) && pc.id !== POWER.id && pc.id !== POWER.rack).every((pc) => ROAD_TOUCH(p, pc)));
+  check(`${label}: the flag stand: two poles a cell apart on a strip a road touches (or the plate is too narrow)`, (() => {
+    if (!p.flags) return Math.min(p.w, p.h) - 2 * p.inset < 14 || p.warnings.some((w) => /flag stand/.test(w));
+    const f = p.flags, pc = p.pieces[f.pieceIndex];
+    if (!pc || pc.kind !== KIND.PROP || f.poles.length !== 2) return false;
+    if (Math.abs(Math.hypot(f.poles[0].x - f.poles[1].x, f.poles[0].z - f.poles[1].z) - 2 * CELL_M) > 0.01) return false;
+    return ROAD_TOUCH(p, pc);
+  })());
   check(`${label}: the power compound stands, walled, gated, at the centre (or the plate is too narrow)`, (() => {
     if (!p.power) return Math.min(p.w, p.h) - 2 * p.inset < 14 || p.warnings.some((w) => /power compound/.test(w));
     const st = p.pieces[p.power.pieceIndex];
@@ -130,7 +137,9 @@ function checkPacking(p, label, minBuildings = 3) {
     const mx = (r.x0 + r.x1) / 2, mz = (r.z0 + r.z1) / 2;
     return mx > p.w * 0.15 && mx < p.w * 0.85 && mz > p.h * 0.15 && mz < p.h * 0.85;
   })());
-  check(`${label}: only modelled ids are placed`, p.pieces.every((pc) => pc.kind === KIND.ROAD || pc.id === 'defense_sentry_socket' || MODELLED.has(pc.id)), [...new Set(p.pieces.filter((pc) => pc.kind !== KIND.ROAD && pc.id !== 'defense_sentry_socket' && !MODELLED.has(pc.id)).map((pc) => pc.id))].join(' '));
+  // structural exemptions: roads, the sentry socket (its plinth is the placeholder) and the flag stand (the tab stands the kit's poles on it)
+  const STRUCTURAL = new Set(['defense_sentry_socket', 'ctf_stand']);
+  check(`${label}: only modelled ids are placed`, p.pieces.every((pc) => pc.kind === KIND.ROAD || STRUCTURAL.has(pc.id) || MODELLED.has(pc.id)), [...new Set(p.pieces.filter((pc) => pc.kind !== KIND.ROAD && !STRUCTURAL.has(pc.id) && !MODELLED.has(pc.id)).map((pc) => pc.id))].join(' '));
   check(`${label}: band containers stay in the band`, buildings.filter((pc) => pc.zone === 'band').every((pc) => p.inset > 0 && (pc.x < p.inset || pc.z < p.inset || pc.x + pc.pw > p.w - p.inset || pc.z + pc.ph > p.h - p.inset)));
   check(`${label}: every piece is inside the plate`, p.pieces.every((pc) => pc.x >= 0 && pc.z >= 0 && pc.x + pc.pw <= p.w && pc.z + pc.ph <= p.h));
   const claimed = new Map();

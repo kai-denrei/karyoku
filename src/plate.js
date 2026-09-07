@@ -13,9 +13,9 @@
 // `rotation.y = -rot * PI/2`. Yaw is compass degrees, 0 = N, 90 = E.
 // Plate width and depth are EVEN, because roads are 2 x 2 pieces laid on
 // even coordinates and a gate's road port has to land on one.
-import { mulberry32 } from './rng.js?v=8e468128';
-import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=8e468128';
-import { specById } from './catalog-spec.js?v=8e468128';
+import { mulberry32 } from './rng.js?v=4cf41af5';
+import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=4cf41af5';
+import { specById } from './catalog-spec.js?v=4cf41af5';
 
 export const CELL_M = 4;
 
@@ -78,7 +78,7 @@ function makeState(p) {
     w, h, inset, seed: p.seed, params: { ...p, w, h },
     cells: new Uint8Array(w * h),
     owner: new Int16Array(w * h).fill(-1),
-    pieces: [], roads: { nodes: [], edges: [], blocks: new Map() }, gates: [], sentries: [], blocks: [], power: null,
+    pieces: [], roads: { nodes: [], edges: [], blocks: new Map() }, gates: [], sentries: [], blocks: [], power: null, flags: null,
     warnings: [],
     ascii() { return asciiOf(this); },
   };
@@ -770,8 +770,31 @@ function layCompound(s, spot, block) {
 }
 export const RESERVED = -2;
 
+// THE FLAG STAND: two poles, a cell apart, on a 3 x 1 strip beside a road
+// so the hull can drive up to them; nearest the compound (the base's
+// heart). Slot 1 is the fire flag, slot 2 the power flag; each base keeps
+// one and wants the other (ctf.js). Placed as a PROP the scene draws
+// nothing for: the tab stands the kit's poles on `plate.flags.poles`.
+export const FLAG_STAND = 'ctf_stand';
+function stepFlags(s, rng) {
+  const def = { id: FLAG_STAND, plot: [3, 1], gapOverride: 1 };
+  const cx = s.w / 2, cz = s.h / 2;
+  const blocks = [...s.blocks].sort((a, b) => Math.hypot((a.x0 + a.x1) / 2 - cx, (a.z0 + a.z1) / 2 - cz) - Math.hypot((b.x0 + b.x1) / 2 - cx, (b.z0 + b.z1) / 2 - cz));
+  for (const block of blocks) {
+    const spot = findSpot(s, rng, block, def);
+    if (!spot) continue;
+    const pieceIndex = place(s, FLAG_STAND, spot.x, spot.z, spot.pw, spot.ph, spot.rot, KIND.PROP, { zone: block.zone });
+    const along = spot.pw === 3;
+    const poles = [0, 2].map((u) => ({ x: (spot.x + (along ? u : 0) + 0.5) * CELL_M, z: (spot.z + (along ? 0 : u) + 0.5) * CELL_M }));
+    s.flags = { pieceIndex, x: spot.x, z: spot.z, pw: spot.pw, ph: spot.ph, rot: spot.rot, poles };
+    return;
+  }
+  if (Math.min(s.w, s.h) - 2 * s.inset >= 14) s.warnings.push('no room for the flag stand');
+}
+
 function stepPacking(s, rng) {
   stepPower(s, rng);
+  stepFlags(s, rng);
   stepLandmark(s, rng);
   for (const block of s.blocks) packBlock(s, rng, block);
   stepBand(s, rng);

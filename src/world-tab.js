@@ -5,24 +5,25 @@
 import * as THREE from '../vendor/three.module.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { bodyDims } from './catalog.js?v=8e468128';
-import { makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M } from './plate.js?v=8e468128';
-import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, stepGates, stepSentries, stepTracers, fireHull, damageAt, autopilotInput, makeBodies, stepBodies, bodyAt, shotRangeFor, solidHeightAt, SOLID_HEIGHT, damageSentryAt, stepCrush, ammoDotsLit, bodyHit, damageBody, powered } from './drive.js?v=8e468128';
-import { WORLD_KNOBS, makeWorldParams, clampWorldParams, makeWorld, worldBlocked, worldBuildingAt, worldLosFor, worldSentries, worldGates, terrainNormal, splitQuad, groundAt, outpostGround } from './world.js?v=8e468128';
-import { PALETTE, terrainMeshes, floraMeshes, LOOK, LOOKS } from './looks.js?v=8e468128';
-import { withParam } from './url.js?v=8e468128';
-import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=8e468128';
-import { query, loadCatalog } from './plate-tab.js?v=8e468128';
-import { modelledIds } from './catalog.js?v=8e468128';
-import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS, makeMobileShell, mobileShell, makeGuardObject } from './drive-rig.js?v=8e468128';
-import { makeSfx } from './sfx.js?v=8e468128';
-import { makeCrew, stepCrew, stepSquash, shotHits, splashHits, hullCovers, crewFreeAt, keyAreas, CREW_TUNE } from './crew.js?v=8e468128';
-import { makeCrewScene } from './crew-scene.js?v=8e468128';
-import { makeGuard, stepGuard, GUARD_TUNE } from './guard.js?v=8e468128';
-import { makeRescue, stepBoarding, stepUnloading, makeRescued, stepEntered, RESCUE_TUNE } from './rescue.js?v=8e468128';
-import { proto } from './plate-scene.js?v=8e468128';
-import { fileFor } from './catalog.js?v=8e468128';
-import { mulberry32 } from './rng.js?v=8e468128';
+import { bodyDims } from './catalog.js?v=4cf41af5';
+import { makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M } from './plate.js?v=4cf41af5';
+import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, stepGates, stepSentries, stepTracers, fireHull, damageAt, autopilotInput, makeBodies, stepBodies, bodyAt, shotRangeFor, solidHeightAt, SOLID_HEIGHT, damageSentryAt, stepCrush, ammoDotsLit, bodyHit, damageBody, powered } from './drive.js?v=4cf41af5';
+import { WORLD_KNOBS, makeWorldParams, clampWorldParams, makeWorld, worldBlocked, worldBuildingAt, worldLosFor, worldSentries, worldGates, terrainNormal, splitQuad, groundAt, outpostGround } from './world.js?v=4cf41af5';
+import { PALETTE, terrainMeshes, floraMeshes, LOOK, LOOKS } from './looks.js?v=4cf41af5';
+import { withParam } from './url.js?v=4cf41af5';
+import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=4cf41af5';
+import { query, loadCatalog } from './plate-tab.js?v=4cf41af5';
+import { modelledIds } from './catalog.js?v=4cf41af5';
+import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS, makeMobileShell, mobileShell, makeGuardObject, makeFlagStand, makeCarriedFlag } from './drive-rig.js?v=4cf41af5';
+import { makeSfx } from './sfx.js?v=4cf41af5';
+import { makeCrew, stepCrew, stepSquash, shotHits, splashHits, hullCovers, crewFreeAt, keyAreas, CREW_TUNE } from './crew.js?v=4cf41af5';
+import { makeCrewScene } from './crew-scene.js?v=4cf41af5';
+import { makeGuard, stepGuard, GUARD_TUNE } from './guard.js?v=4cf41af5';
+import { makeCtf, stepCtf, poleState, SLOTS, CTF_TUNE } from './ctf.js?v=4cf41af5';
+import { makeRescue, stepBoarding, stepUnloading, makeRescued, stepEntered, RESCUE_TUNE } from './rescue.js?v=4cf41af5';
+import { proto } from './plate-scene.js?v=4cf41af5';
+import { fileFor } from './catalog.js?v=4cf41af5';
+import { mulberry32 } from './rng.js?v=4cf41af5';
 
 const ARRIVE_M = 8;
 
@@ -49,6 +50,7 @@ export function initWorldTab(root) {
   let camps = [], rescue = makeRescue(), drop = null, campGroup = null;
   let guards = [];
   const guardObjs = [];
+  let ctf = null, stands = [], carried = null;
   // what a shot can damage: anything the catalog has damaged models for
   const destructible = (pc) => { const e = catalog && catalog.get(pc.id); return !!(e && e.states[1] && e.states[3]); };
   const CREW_N = Number(q.get('crew') || 12);
@@ -118,6 +120,20 @@ export function initWorldTab(root) {
     // THE GUARDS: one per base over its compound; only the hostile one fires
     guards = world.plates.map((p) => { const st = p.plate.power ? p.plate.pieces[p.plate.power.pieceIndex] : null; return makeGuard((st ? (st.x + 1) * CELL_M : p.wM / 2) + p.ox, (st ? (st.z + 1) * CELL_M : p.hM / 2) + p.oz, p.hostile); });
     while (guardObjs.length < guards.length) { const go = makeGuardObject(scene); scene.add(go.obj); guardObjs.push(go); }
+    // CAPTURE THE FLAG: each plate's stand in world metres; home keeps fire, the enemy power
+    for (const st of stands) scene.remove(st.group);
+    if (carried) { carried.remove(); carried = null; }
+    const standOf = (p) => (p.plate.flags ? p.plate.flags.poles.map((q) => ({ x: q.x + p.ox, z: q.z + p.oz })) : null);
+    const homeStand = standOf(world.plates[0]), hostileStand = standOf(world.plates[1]);
+    ctf = makeCtf({ home: homeStand, hostile: hostileStand });
+    stands = world.plates.map((p, pi) => {
+      const poles = standOf(p);
+      if (!poles) return null;
+      const side = p.hostile ? 'hostile' : 'home';
+      const st = makeFlagStand(scene, poles, side, SLOTS, (x, z) => groundAt(world, x, z).y);
+      st.set(0, poleState(ctf, side, 0)); st.set(1, poleState(ctf, side, 1));
+      return st;
+    }).filter(Boolean);
     rescue = makeRescue();
     // the drop: the home plate's infirmary front, else the inside of its facing gate
     {
@@ -140,6 +156,11 @@ export function initWorldTab(root) {
 
   let probeStage = 0;
   function step(dt, input) {
+    if (ctfProbeOn && ctf && ctf.stands.home && ctf.stands.hostile) {
+      if (probeStage === 0 && simT >= 1) { hull.x = ctf.stands.hostile[1].x + 3; hull.z = ctf.stands.hostile[1].z; hull.speed = 0; probeStage = 1; }
+      if (probeStage === 1 && simT >= 4) { hull.x = ctf.stands.home[1].x + 3; hull.z = ctf.stands.home[1].z; hull.speed = 0; probeStage = 2; }
+      input = { ...input, fwd: false, rev: false, throttle: 0 };
+    }
     if (rescueProbeOn && camps.length && drop) {
       const cam0 = camps.find((c) => !c.crew.hostile);
       if (probeStage === 0 && simT >= 1 && cam0) { hull.x = cam0.o.x + 16; hull.z = cam0.o.z; hull.speed = 0; probeStage = 1; console.log('[rescue] parked at camp'); }
@@ -174,7 +195,7 @@ export function initWorldTab(root) {
     // a crew fears the hull only on the hostile plate; a hull squashes anyone, anywhere
     // the camps: their crews work, fear the hull if hostile, board it if ours
     for (const c of camps) {
-      stepCrew(c.crew, c.ground, dt, crewRng, c.crew.hostile ? hull : null, CREW_TUNE, c.solid, (x, z) => hullCovers(hull, x, z));
+      stepCrew(c.crew, c.ground, dt, crewRng, { x: hull.x, z: hull.z, moving: Math.abs(hull.speed) >= 1.5 }, CREW_TUNE, c.solid, (x, z) => hullCovers(hull, x, z));
       for (const w of stepSquash(c.crew, hull, P.hullR)) { squashed++; sfx.softHit([w.x, groundAt(world, w.x, w.z).y + 0.6, w.z], 0); }
     }
     stepBoarding(rescue, camps.filter((c) => !c.crew.hostile).map((c) => c.crew), hull, RESCUE_TUNE);
@@ -186,9 +207,14 @@ export function initWorldTab(root) {
       crews[0].crew.walkers.push(w);
     }
     stepEntered(rescue, crews[0].crew, RESCUE_TUNE);
+    // the flags: a stop by the enemy's full pole takes its flag, a stop by our empty pole plants it
+    if (ctf) for (const ev of stepCtf(ctf, hull, CTF_TUNE)) {
+      if (ev === 'capture') { const f = ctf.carrying; const st = stands[1]; if (st) st.set(f.slot, 'empty', null); carried = makeCarriedFlag(hullObj, SLOTS[f.slot].banner); sfx.flagTaken(); console.log(`[ctf] captured the ${f.glyph} flag`); }
+      if (ev === 'plant') { const st = stands[0]; const slot = ctf.flags.find((f) => f.at === 'home' && f.owner === 'hostile').slot; if (st) st.set(slot, 'flag', 'Raise'); if (carried) { carried.remove(); carried = null; } rescue.score += CTF_TUNE.winBonus; sfx.flagPlanted(); console.log('[ctf] the set is complete: VICTORY'); }
+    }
     for (const c of crews) {
       const local = { x: hull.x - c.p.ox, z: hull.z - c.p.oz, heading: hull.heading, speed: hull.speed };
-      stepCrew(c.crew, c.plate, dt, crewRng, c.p.hostile ? local : null, CREW_TUNE, c.solid, (x, z) => hullCovers(local, x, z));
+      stepCrew(c.crew, c.plate, dt, crewRng, { ...local, moving: Math.abs(hull.speed) >= 1.5 }, CREW_TUNE, c.solid, (x, z) => hullCovers(local, x, z));
       for (const w of stepSquash(c.crew, local, P.hullR)) { squashed++; sfx.softHit([w.x + c.p.ox, groundAt(world, w.x + c.p.ox, w.z + c.p.oz).y + 0.6, w.z + c.p.oz], 0); }
     }
     if (input.fire) { const shot = fireHull(hull, P); if (shot) { tracers.push(shot); sfx.fire(); } else if (hull.empty) sfx.empty(); }
@@ -264,7 +290,7 @@ export function initWorldTab(root) {
     if (arrivedAt < 0 && goalDist() <= ARRIVE_M) arrivedAt = simT;
   }
 
-  const logLine = () => `[world] t=${simT.toFixed(1)} hull=${hull.x.toFixed(1)},${hull.z.toFixed(1)} y=${world.heightAt(hull.x, hull.z).toFixed(2)} heading=${hull.heading.toFixed(0)} goal=${goalDist().toFixed(1)} tracking=${sentries.filter((s) => s.tracking).length} lobs=${tracers.filter((t) => t.kind === 'lob').length} hits=${hits} ammo=${hull.ammo} down=${squashed} sentriesDown=${sentries.filter((s) => !s.alive).length} crushed=${crushed} bodiesBroken=${bodiesBroken} power=${world.plates.map((p) => (powered(p.plate) ? 'on' : 'off')).join('/')} aboard=${rescue.aboard} rescued=${rescue.rescued} score=${rescue.score} camps=${camps.length} guards=${guards.map((g) => g.state + ':' + g.shots).join('/')} crewIn=${crews.reduce((n, c) => n + c.crew.walkers.filter((w) => w.alive && !crewFreeAt(c.plate, w.x, w.z, c.solid)).length, 0)}${arrivedAt >= 0 ? ' ARRIVED' : ''}`;
+  const logLine = () => `[world] t=${simT.toFixed(1)} hull=${hull.x.toFixed(1)},${hull.z.toFixed(1)} y=${world.heightAt(hull.x, hull.z).toFixed(2)} heading=${hull.heading.toFixed(0)} goal=${goalDist().toFixed(1)} tracking=${sentries.filter((s) => s.tracking).length} lobs=${tracers.filter((t) => t.kind === 'lob').length} hits=${hits} ammo=${hull.ammo} down=${squashed} sentriesDown=${sentries.filter((s) => !s.alive).length} crushed=${crushed} bodiesBroken=${bodiesBroken} power=${world.plates.map((p) => (powered(p.plate) ? 'on' : 'off')).join('/')} aboard=${rescue.aboard} rescued=${rescue.rescued} score=${rescue.score} camps=${camps.length} guards=${guards.map((g) => g.state + ':' + g.shots).join('/')} flag=${ctf ? (ctf.won ? 'won' : ctf.carrying ? 'carried' : 'theirs') : '-'} crewIn=${crews.reduce((n, c) => n + c.crew.walkers.filter((w) => w.alive && !crewFreeAt(c.plate, w.x, w.z, c.solid)).length, 0)}${arrivedAt >= 0 ? ' ARRIVED' : ''}`;
 
   function sync() {
     const g = groundAt(world, hull.x, hull.z);
@@ -281,6 +307,8 @@ export function initWorldTab(root) {
     });
     for (const c of crews) c.scene.sync(lastDt, () => 0, (x, z) => camera.position.y - y > 150 || Math.hypot(x + c.p.ox - camera.position.x, z + c.p.oz - camera.position.z) < CULL_M);
     guards.forEach((g, i) => guardObjs[i].setPose(g, (x, z) => groundAt(world, x, z).y, lastDt));
+    for (const st of stands) st.tick(lastDt);
+    if (carried) carried.tick(lastDt);
     for (const c of camps) {
       const near = camera.position.y - y > 150 || Math.hypot(c.o.x - camera.position.x, c.o.z - camera.position.z) < CULL_M + c.o.r;
       c.group.visible = near;
@@ -296,6 +324,7 @@ export function initWorldTab(root) {
       const side = p.hostile ? 'hostile' : 'home';
       for (const s of p.sentries) if (s.alive) contacts.push({ x: s.cx, z: s.cz, side, kind: 'static' });
       if (guards[pi]) contacts.push({ x: guards[pi].x, z: guards[pi].z, side, kind: 'static' });
+      if (p.plate.flags) for (const q of p.plate.flags.poles) contacts.push({ x: q.x + p.ox, z: q.z + p.oz, side, kind: 'static' });
       if (p.plate.power && powered(p.plate)) { const st = p.plate.pieces[p.plate.power.pieceIndex]; contacts.push({ x: (st.x + 1) * CELL_M + p.ox, z: (st.z + 1) * CELL_M + p.oz, side, kind: 'static' }); }
       for (const w of crews[pi].crew.walkers) if (w.alive) contacts.push({ x: w.x + p.ox, z: w.z + p.oz, side, kind: 'unit' });
     });
@@ -305,8 +334,8 @@ export function initWorldTab(root) {
     }
     radar.paint(simT, hull, contacts);
     hud.textContent = mobileShell
-      ? `goal ${goalDist().toFixed(0)} m${arrivedAt >= 0 ? ' · ARRIVED' : ''} · shells ${hull.ammo} · aboard ${rescue.aboard}/${RESCUE_TUNE.capacity} · rescued ${rescue.rescued} · score ${rescue.score} · hits ${hits} · crew down ${squashed}`
-      : `goal ${goalDist().toFixed(0)} m${arrivedAt >= 0 ? ` · ARRIVED at ${arrivedAt.toFixed(1)} s` : ''} · muzzle ${hull.elev.toFixed(0)} deg · range ${shotRangeFor(hull, P).toFixed(0)} m · hits ${hits} · shots ${hull.shots} · shells ${hull.ammo}/${P.ammoMax} · aboard ${rescue.aboard}/${RESCUE_TUNE.capacity} · rescued ${rescue.rescued} · score ${rescue.score} · breached ${breached} · crew down ${squashed} · sentries ${sentries.filter((s) => s.alive).length}/${sentries.length} · cam ${view.camera} · WASD drive · SPACE fire · SHIFT+W/S muzzle · 1-4 cameras · R regenerate`;
+      ? `${ctf && ctf.won ? 'VICTORY · ' : ctf && ctf.carrying ? 'FLAG: bring it home · ' : ''}goal ${goalDist().toFixed(0)} m${arrivedAt >= 0 ? ' · ARRIVED' : ''} · shells ${hull.ammo} · aboard ${rescue.aboard}/${RESCUE_TUNE.capacity} · rescued ${rescue.rescued} · score ${rescue.score} · hits ${hits} · crew down ${squashed}`
+      : `${ctf && ctf.won ? 'VICTORY: the set is complete · ' : ctf && ctf.carrying ? `carrying the ${ctf.carrying.glyph} flag: bring it to our empty pole · ` : 'flags: take theirs, plant it on our empty pole · '}goal ${goalDist().toFixed(0)} m${arrivedAt >= 0 ? ` · ARRIVED at ${arrivedAt.toFixed(1)} s` : ''} · muzzle ${hull.elev.toFixed(0)} deg · range ${shotRangeFor(hull, P).toFixed(0)} m · hits ${hits} · shots ${hull.shots} · shells ${hull.ammo}/${P.ammoMax} · aboard ${rescue.aboard}/${RESCUE_TUNE.capacity} · rescued ${rescue.rescued} · score ${rescue.score} · breached ${breached} · crew down ${squashed} · sentries ${sentries.filter((s) => s.alive).length}/${sentries.length} · cam ${view.camera} · WASD drive · SPACE fire · SHIFT+W/S muzzle · 1-4 cameras · R regenerate`;
   }
 
   const regenerate = () => { plateParams.seed = (plateParams.seed + 1) % 1000000; gui.controllersRecursive().forEach((c) => c.updateDisplay()); build(); };
@@ -347,6 +376,7 @@ export function initWorldTab(root) {
   const probe = q.get('probe') === '1';
   const CULL_M = q.get('cull') !== null ? Number(q.get('cull')) : 260;
   const rescueProbeOn = q.get('rescueprobe') === '1';
+  const ctfProbeOn = q.get('ctfprobe') === '1';
   loadCatalog().then(({ catalog: c, error }) => {
     catalog = c;
     if (error) { notice.textContent = `base-kit manifest unavailable, placeholders only (${error})`; notice.hidden = false; }

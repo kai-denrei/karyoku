@@ -1,0 +1,331 @@
+{
+  "units": "meters",
+  "up": "+Y",
+  "forward": "+Z",
+  "assets": [
+    {
+      "id": "flag_ember",
+      "name": "Ember / \u706b",
+      "state": "Intact",
+      "file": "flag_ember.glb",
+      "plot_m": [
+        2.5,
+        1
+      ],
+      "description": "Texture-free animated faction banner",
+      "sockets": [],
+      "colliders": [],
+      "clearance": [],
+      "animations": [],
+      "kind": "flag",
+      "faction": "ember",
+      "pole_style": "beacon",
+      "clips": [
+        {
+          "name": "Flutter",
+          "duration_s": 2,
+          "loop": true
+        },
+        {
+          "name": "Gust",
+          "duration_s": 2,
+          "loop": true
+        },
+        {
+          "name": "Raise",
+          "duration_s": 2,
+          "loop": false
+        },
+        {
+          "name": "Lower",
+          "duration_s": 2,
+          "loop": false
+        }
+      ],
+      "bytes": 218420,
+      "triangles": 2696
+    },
+    {
+      "id": "flag_vanguard",
+      "name": "Vanguard / \u529b",
+      "state": "Intact",
+      "file": "flag_vanguard.glb",
+      "plot_m": [
+        2.5,
+        1
+      ],
+      "description": "Texture-free animated faction banner",
+      "sockets": [],
+      "colliders": [],
+      "clearance": [],
+      "animations": [],
+      "kind": "flag",
+      "faction": "vanguard",
+      "pole_style": "tactical",
+      "clips": [
+        {
+          "name": "Flutter",
+          "duration_s": 2,
+          "loop": true
+        },
+        {
+          "name": "Gust",
+          "duration_s": 2,
+          "loop": true
+        },
+        {
+          "name": "Raise",
+          "duration_s": 2,
+          "loop": false
+        },
+        {
+          "name": "Lower",
+          "duration_s": 2,
+          "loop": false
+        }
+      ],
+      "bytes": 193140,
+      "triangles": 2292
+    },
+    {
+      "id": "flag_eclipse",
+      "name": "Eclipse",
+      "state": "Intact",
+      "file": "flag_eclipse.glb",
+      "plot_m": [
+        2.5,
+        1
+      ],
+      "description": "Texture-free animated faction banner",
+      "sockets": [],
+      "colliders": [],
+      "clearance": [],
+      "animations": [],
+      "kind": "flag",
+      "faction": "eclipse",
+      "pole_style": "spire",
+      "clips": [
+        {
+          "name": "Flutter",
+          "duration_s": 2,
+          "loop": true
+        },
+        {
+          "name": "Gust",
+          "duration_s": 2,
+          "loop": true
+        },
+        {
+          "name": "Raise",
+          "duration_s": 2,
+          "loop": false
+        },
+        {
+          "name": "Lower",
+          "duration_s": 2,
+          "loop": false
+        }
+      ],
+      "bytes": 211096,
+      "triangles": 2454
+    },
+    {
+      "id": "flag_helix",
+      "name": "Helix",
+      "state": "Intact",
+      "file": "flag_helix.glb",
+      "plot_m": [
+        2.5,
+        1
+      ],
+      "description": "Texture-free animated faction banner",
+      "sockets": [],
+      "colliders": [],
+      "clearance": [],
+      "animations": [],
+      "kind": "flag",
+      "faction": "helix",
+      "pole_style": "beacon",
+      "clips": [
+        {
+          "name": "Flutter",
+          "duration_s": 2,
+          "loop": true
+        },
+        {
+          "name": "Gust",
+          "duration_s": 2,
+          "loop": true
+        },
+        {
+          "name": "Raise",
+          "duration_s": 2,
+          "loop": false
+        },
+        {
+          "name": "Lower",
+          "duration_s": 2,
+          "loop": false
+        }
+      ],
+      "bytes": 230692,
+      "triangles": 2828
+    },
+    {
+      "id": "flag_horizon",
+      "name": "Horizon",
+      "state": "Intact",
+      "file": "flag_horizon.glb",
+      "plot_m": [
+        2.5,
+        1
+      ],
+      "description": "Texture-free animated faction banner",
+      "sockets": [],
+      "colliders": [],
+      "clearance": [],
+      "animations": [],
+      "kind": "flag",
+      "faction": "horizon",
+      "pole_style": "tactical",
+      "clips": [
+        {
+          "name": "Flutter",
+          "duration_s": 2,
+          "loop": true
+        },
+        {
+          "name": "Gust",
+          "duration_s": 2,
+          "loop": true
+        },
+        {
+          "name": "Raise",
+          "duration_s": 2,
+          "loop": false
+        },
+        {
+          "name": "Lower",
+          "duration_s": 2,
+          "loop": false
+        }
+      ],
+      "bytes": 191100,
+      "triangles": 2276
+    },
+    {
+      "id": "flag_void",
+      "name": "Void",
+      "state": "Intact",
+      "file": "flag_void.glb",
+      "plot_m": [
+        2.5,
+        1
+      ],
+      "description": "Texture-free animated faction banner",
+      "sockets": [],
+      "colliders": [],
+      "clearance": [],
+      "animations": [],
+      "kind": "flag",
+      "faction": "void",
+      "pole_style": "spire",
+      "clips": [
+        {
+          "name": "Flutter",
+          "duration_s": 2,
+          "loop": true
+        },
+        {
+          "name": "Gust",
+          "duration_s": 2,
+          "loop": true
+        },
+        {
+          "name": "Raise",
+          "duration_s": 2,
+          "loop": false
+        },
+        {
+          "name": "Lower",
+          "duration_s": 2,
+          "loop": false
+        }
+      ],
+      "bytes": 194164,
+      "triangles": 2302
+    },
+    {
+      "id": "pole_beacon",
+      "name": "Beacon pole",
+      "state": "Intact",
+      "file": "pole_beacon.glb",
+      "plot_m": [
+        1,
+        1
+      ],
+      "description": "Reusable pole without banner or base",
+      "sockets": [],
+      "colliders": [],
+      "clearance": [],
+      "animations": [],
+      "kind": "pole",
+      "bytes": 107912,
+      "triangles": 1540
+    },
+    {
+      "id": "pole_tactical",
+      "name": "Tactical pole",
+      "state": "Intact",
+      "file": "pole_tactical.glb",
+      "plot_m": [
+        1,
+        1
+      ],
+      "description": "Reusable pole without banner or base",
+      "sockets": [],
+      "colliders": [],
+      "clearance": [],
+      "animations": [],
+      "kind": "pole",
+      "bytes": 81776,
+      "triangles": 1124
+    },
+    {
+      "id": "pole_spire",
+      "name": "Spire pole",
+      "state": "Intact",
+      "file": "pole_spire.glb",
+      "plot_m": [
+        1,
+        1
+      ],
+      "description": "Reusable pole without banner or base",
+      "sockets": [],
+      "colliders": [],
+      "clearance": [],
+      "animations": [],
+      "kind": "pole",
+      "bytes": 79564,
+      "triangles": 1106
+    },
+    {
+      "id": "capture_socket",
+      "name": "Capture socket",
+      "state": "Intact",
+      "file": "capture_socket.glb",
+      "plot_m": [
+        1,
+        1
+      ],
+      "description": "Reusable capture-zone flag socket",
+      "sockets": [],
+      "colliders": [],
+      "clearance": [],
+      "animations": [],
+      "kind": "base",
+      "bytes": 38108,
+      "triangles": 488
+    }
+  ]
+}

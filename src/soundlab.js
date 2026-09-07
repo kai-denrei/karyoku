@@ -82,6 +82,12 @@ export const ELEMENTS = [
     { event: 'shoved and sliding (random start point, loops, fades when still)', key: 'container_rumble', wired: true, loop: true },
     { event: 'a ram at speed that breaks a state', key: 'crush_slam', wired: true },
   ] },
+  { id: 'flags', label: 'Capture the flag', events: [
+    { event: 'the enemy flag is taken (the click, for now)', key: 'ui_click', wired: true },
+    { event: 'the flag goes up on our pole: the win (the spool-up, for now)', key: 'tank_spool_up', wired: true },
+    { event: 'a proper capture sting', key: null, want: 'a short two-note rising sting, ui bus' },
+    { event: 'a proper victory fanfare', key: null, want: 'four bars, bright, ui bus, once' },
+  ] },
   { id: 'ui', label: 'Interface', events: [
     { event: 'camera switch', key: 'ui_click', wired: true },
     { event: 'regenerate base', key: null, want: 'none, or a soft chime' },

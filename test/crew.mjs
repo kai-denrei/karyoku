@@ -30,6 +30,7 @@ check('sometimes they run', ran > 0 && ran < movingFrames * 0.6, `ran ${ran} of 
   let fled = 0, cowered = 0, fledFar = 0;
   for (let k = 0; k < 6; k++) {
     const c2 = makeCrew(plate, 6, mulberry32(5));
+    c2.hostile = true; // the enemy's crew: the ones who may cower
     const w = c2.walkers[k];
     // the threat comes from the west: several walkers share a key area at
     // the road's western end, with the base wall at their backs
@@ -141,5 +142,24 @@ check('sometimes they run', ran > 0 && ran < movingFrames * 0.6, `ran ${ran} of 
   stepSquash(c7, { x: w0.x, z: w0.z, speed: 6 }, 2);
   stepCrew(c7, plate, 1 / 60, r7);
   check('the dead lie', !w0.alive && w0.act === 'lie');
+}
+// THE OPERATOR'S FEAR RULES: a moving tank scares everyone; ours never cower and relax when it stops
+{
+  const home = makeCrew(plate, 8, mulberry32(41));
+  const w = home.walkers[0];
+  const moving = { x: w.x - 10, z: w.z, moving: true };
+  let fled = 0, cowered = 0;
+  for (let i = 0; i < 3 * 60; i++) { stepCrew(home, plate, 1 / 60, mulberry32(42 + i), moving); for (const x of home.walkers) { if (x.fleeing) fled++; if (x.cowering) cowered++; } }
+  check('our crew runs from a moving tank and never cowers', fled > 0 && cowered === 0, `fled ${fled} cowered ${cowered}`);
+  const stopped = { x: w.x - 10, z: w.z, moving: false };
+  for (let i = 0; i < 60; i++) stepCrew(home, plate, 1 / 60, mulberry32(7), stopped);
+  check('and stops running the moment it stops', home.walkers.every((x) => !x.fleeing && !x.cowering));
+  const calm = makeCrew(plate, 4, mulberry32(43));
+  for (let i = 0; i < 2 * 60; i++) stepCrew(calm, plate, 1 / 60, mulberry32(9), { x: calm.walkers[0].x - 8, z: calm.walkers[0].z, moving: false });
+  check('a parked friendly tank frightens nobody', calm.walkers.every((x) => !x.fleeing && !x.cowering));
+  const enemy = makeCrew(plate, 6, mulberry32(44)); enemy.hostile = true;
+  let ef = 0, ec = 0;
+  for (let k = 0; k < 6; k++) { const e = makeCrew(plate, 6, mulberry32(50 + k)); e.hostile = true; const t = { x: e.walkers[k].x - 10, z: e.walkers[k].z, moving: true }; for (let i = 0; i < 2 * 60; i++) stepCrew(e, plate, 1 / 60, mulberry32(60 + i), t); if (e.walkers[k].fleeing || e.walkers[k].wasFleeing) ef++; if (e.walkers[k].cowering) ec++; }
+  check('the enemy\'s crew runs or cowers', ef + ec >= 4 && ec >= 1, `ran ${ef} cowered ${ec}`);
 }
 done();

@@ -14,7 +14,7 @@
 // asks it too, with the walker's own radius, so nobody walks through a
 // container or the tank. Something that rolls onto a walker slowly shoves
 // them out (`escape`); fast, it squashes them (stepSquash).
-import { KIND, CELL_M, rotSide, DIRS } from './plate.js?v=8e468128';
+import { KIND, CELL_M, rotSide, DIRS } from './plate.js?v=4cf41af5';
 
 export const CREW_TUNE = {
   walk: 1.4, run: 4.6,      // m/s
@@ -209,11 +209,18 @@ export function stepCrew(crew, plate, dt, rng, threat = null, tune = CREW_TUNE, 
       const e = escape(plate, w, solid, tune);
       if (e) { w.x = e.x; w.z = e.z; w.target = null; w.wait = 0.3; w.moving = false; }
     }
+    // THE TANK (operator's rules): everyone fears a MOVING tank. The enemy's
+    // crew runs, or cowers on a coin; ours always runs, never cowers, and
+    // stops fearing the moment the tank stops. A walker on a mission (a
+    // rescued one heading for the door) or already boarding ignores it.
     const near = threat ? Math.hypot(threat.x - w.x, threat.z - w.z) : Infinity;
-    if (threat && near < tune.fleeM && !w.fleeing && !w.cowering) {
+    const moving = threat ? threat.moving !== false : false;
+    const friendly = !crew.hostile;
+    if (threat && friendly && !moving && w.fleeing) { w.fleeing = false; w.target = null; w.wait = 0.3; }
+    if (threat && near < tune.fleeM && !w.fleeing && !w.cowering && !w.goal && !w.boarding && (moving || !friendly)) {
       // the coin: run, or freeze and cower facing it
-      if (rng() < tune.cowerChance) { w.cowering = true; w.target = null; w.moving = false; w.actT = 0; w.act = 'scared'; }
-      else { w.fleeing = true; w.running = true; w.target = pickArea(plate, w, areas, rng, threat, solid); w.wait = 0; w.actT = 0; }
+      if (!friendly && rng() < tune.cowerChance) { w.cowering = true; w.target = null; w.moving = false; w.actT = 0; w.act = 'scared'; }
+      else if (moving) { w.fleeing = true; w.running = true; w.target = pickArea(plate, w, areas, rng, threat, solid); w.wait = 0; w.actT = 0; }
     }
     if (w.cowering) {
       faceTo(w, threat ? threat.x : w.x, threat ? threat.z : w.z);
