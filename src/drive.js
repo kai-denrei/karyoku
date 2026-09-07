@@ -11,8 +11,8 @@
 // THE ANTI-AIMBOT NUMBERS are yawRate and the arc: a sentry cannot point
 // outside its arc, and inside it turns at yawRate, so a hull that crosses
 // the arc fast, or stays in the blind sector, is never fired on.
-import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=6c60467a';
-import { KIND, CELL_M, wrapDeg, dirOfYaw, DIRS, yawOfSide, rotSide } from './plate.js?v=6c60467a';
+import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=2c3e4bb9';
+import { KIND, CELL_M, wrapDeg, dirOfYaw, DIRS, yawOfSide, rotSide } from './plate.js?v=2c3e4bb9';
 
 export const DRIVE_TUNE = {
   speed: 30,        // m/s forward: the knob's maximum by default (operator, 2026-09-07)
@@ -51,7 +51,7 @@ export const DRIVE_TUNE = {
   elevMin: -5, elevMax: 45, elevRate: 25, elevDefault: 6,
   muzzleY: 2.2,     // m above the hull's ground
   ammoMax: 27,      // shells racked: nine sockets on the deck, three shells each
-  hullHp: 12,       // points before the hull is destroyed (a sentry round 1, a shell 2, a lob 3)
+  hullHp: 20,       // points before the hull is destroyed (a sentry round 1, a shell 2, a lob 3): ten sentry rounds, ten shells, six lobs and a bit
   shellsPerDot: 3,
 };
 export const LOB_FAMILIES = new Set(['mortar', 'howitzer']);

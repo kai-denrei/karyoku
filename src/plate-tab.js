@@ -4,16 +4,16 @@
 import * as THREE from '../vendor/three.module.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { generatePlate, PLATE_KNOBS, makePlateParams, clampPlateParams, CELL_M } from './plate.js?v=6c60467a';
-import { CATALOG_SPEC } from './catalog-spec.js?v=6c60467a';
-import { buildCatalog, modelledIds, BASE_KIT_URL, OUTPOST_URL, ASSEMBLY_URL, WAREHOUSE_URL, SOLAR_URL, GAME_URL } from './catalog.js?v=6c60467a';
-import { bustToken } from './glbmodels.js?v=6c60467a';
-import { applySpaceScene, makeStars, makeComposer, LOOK, LOOKS } from './looks.js?v=6c60467a';
-import { withParam } from './url.js?v=6c60467a';
-import { tickFps } from './fps.js?v=6c60467a';
-import { buildPlateGroup } from './plate-scene.js?v=6c60467a';
+import { generatePlate, PLATE_KNOBS, makePlateParams, clampPlateParams, CELL_M } from './plate.js?v=2c3e4bb9';
+import { CATALOG_SPEC } from './catalog-spec.js?v=2c3e4bb9';
+import { buildCatalog, modelledIds, BASE_KIT_URL, OUTPOST_URL, ASSEMBLY_URL, WAREHOUSE_URL, SOLAR_URL, GAME_URL } from './catalog.js?v=2c3e4bb9';
+import { bustToken } from './glbmodels.js?v=2c3e4bb9';
+import { applySpaceScene, makeStars, makeComposer, LOOK, LOOKS } from './looks.js?v=2c3e4bb9';
+import { withParam } from './url.js?v=2c3e4bb9';
+import { tickFps } from './fps.js?v=2c3e4bb9';
+import { buildPlateGroup } from './plate-scene.js?v=2c3e4bb9';
 
-import { query } from './url.js?v=6c60467a';
+import { query } from './url.js?v=2c3e4bb9';
 export { query };
 
 // The catalog, once: the manifest fetched and merged, or placeholders only

@@ -10,12 +10,12 @@
 // and the hull samples it where it stands, so the two cannot disagree
 // beyond the mesh's own faceting, and a plate sits on ground that is
 // exactly zero because the mask says so, not because a vertex was edited.
-import { mulberry32 } from './rng.js?v=6c60467a';
-import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=6c60467a';
-import { generateMesh, relax } from './organic-grid.js?v=6c60467a';
-import { valueNoise2D } from './noise.js?v=6c60467a';
-import { generatePlate, makePlateParams, CELL_M, DIRS, yawOfSide, KIND, shuffled } from './plate.js?v=6c60467a';
-import { makeGates, makeSentries, blockedAt, losClear, buildingAt, gateCentre } from './drive.js?v=6c60467a';
+import { mulberry32 } from './rng.js?v=2c3e4bb9';
+import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=2c3e4bb9';
+import { generateMesh, relax } from './organic-grid.js?v=2c3e4bb9';
+import { valueNoise2D } from './noise.js?v=2c3e4bb9';
+import { generatePlate, makePlateParams, CELL_M, DIRS, yawOfSide, KIND, shuffled } from './plate.js?v=2c3e4bb9';
+import { makeGates, makeSentries, blockedAt, losClear, buildingAt, gateCentre } from './drive.js?v=2c3e4bb9';
 
 export const ROAD_CLEAR_M = 7;
 export const SPAWN_CLEAR_M = 30; // m of cover-free ground around each gate's outside point

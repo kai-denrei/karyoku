@@ -7,9 +7,9 @@
 // crossfade so a change of mind does not snap. The dead lie where they
 // fell, on the red splash — the Amiga moment with a body in it.
 import * as THREE from '../vendor/three.module.js';
-import { loadGlbWithClips } from './glbmodels.js?v=6c60467a';
-import { CREW_KINDS, CREW_PAINT, TEAM_PAINT } from './crew.js?v=6c60467a';
-import { BZ, styleForLook } from './looks.js?v=6c60467a';
+import { loadGlbWithClips } from './glbmodels.js?v=2c3e4bb9';
+import { CREW_KINDS, CREW_PAINT, TEAM_PAINT } from './crew.js?v=2c3e4bb9';
+import { BZ, styleForLook } from './looks.js?v=2c3e4bb9';
 
 export const CREW_URLS = CREW_KINDS.map((k) => `assets/crew/${k}_station.glb`);
 const AUTHORED_M = 2.1, PERSON_M = 1.8;

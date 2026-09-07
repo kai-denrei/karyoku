@@ -19,6 +19,7 @@ export const ELEMENTS = [
     { event: 'secondary guns fire', key: 'tank_secondary', wired: false },
     { event: 'shell casings ejected', key: 'tank_shells', wired: false },
     { event: 'hit by a sentry round', key: 'impact_hit', wired: true },
+    { event: 'hull under half points: sparks; under a quarter: embers (effects only)', key: null, want: 'a crackle under half, a low burning hiss under a quarter, on the tank bus' },
     { event: 'destroyed', key: 'tank_destroyed', wired: false },
     { event: 'idle bed (engine running, not moving)', key: 'tank_engine', wired: false, loop: true },
     { event: 'pushing a container (the container itself rumbles)', key: 'container_rumble', wired: true, loop: true },

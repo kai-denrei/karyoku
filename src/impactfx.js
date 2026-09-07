@@ -19,7 +19,7 @@
 // Deterministic: a hashed pseudo-stream per effect, seeded by the caller.
 // House rule — no Math.random in anything the game can replay.
 import * as THREE from '../vendor/three.module.js';
-import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=6c60467a';
+import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=2c3e4bb9';
 
 export const IMPACT_TUNE = {
   // SPARK SHOWER — hot chips thrown off the surface, falling under gravity
@@ -104,6 +104,8 @@ export const IMPACT_RECIPES = {
   laser:  ['flash', 'spark', 'splash', 'ember', 'scorch'],
   plasma: ['flash', 'splash', 'ember', 'ring'],
   light:  ['flash', 'spark'],          // a small-arms tick: cheap, still reads
+  damage: ['spark'],                   // a hurt hull: sparks off the deck now and then
+  burning: ['ember', 'spark'],         // a hull near death: embers drifting up, sparks under them
   crush:  ['debris'],                  // a thing run over: chunks fly, nothing burns
 };
 

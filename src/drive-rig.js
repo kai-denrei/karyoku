@@ -2,15 +2,15 @@
 // the hull model with a stand-in until it lands, the key state, the tracer
 // meshes, and the two cameras. Rendering only; the rules are drive.js.
 import * as THREE from '../vendor/three.module.js';
-import { applySpaceScene, makeStars, makeComposer, PALETTE } from './looks.js?v=6c60467a';
-import { tickFps } from './fps.js?v=6c60467a';
-import { radarProject, radarBearing, sweepAngle, radarPhosphor, radarColor, RADAR_RANGE_M } from './radar.js?v=6c60467a';
-import { castHull } from './casts.js?v=6c60467a';
-import { styleForLook, BZ } from './looks.js?v=6c60467a';
-import { STICK, stickVector, knobOffset } from './stick.js?v=6c60467a';
-import { query } from './url.js?v=6c60467a';
-import { loadGlb, mergeByMaterial, makeShellRack } from './glbmodels.js?v=6c60467a';
-import { animProto } from './plate-scene.js?v=6c60467a';
+import { applySpaceScene, makeStars, makeComposer, PALETTE } from './looks.js?v=2c3e4bb9';
+import { tickFps } from './fps.js?v=2c3e4bb9';
+import { radarProject, radarBearing, sweepAngle, radarPhosphor, radarColor, RADAR_RANGE_M } from './radar.js?v=2c3e4bb9';
+import { castHull } from './casts.js?v=2c3e4bb9';
+import { styleForLook, BZ } from './looks.js?v=2c3e4bb9';
+import { STICK, stickVector, knobOffset } from './stick.js?v=2c3e4bb9';
+import { query } from './url.js?v=2c3e4bb9';
+import { loadGlb, mergeByMaterial, makeShellRack } from './glbmodels.js?v=2c3e4bb9';
+import { animProto } from './plate-scene.js?v=2c3e4bb9';
 
 const HULL_URL = 'assets/models/mkcx2.glb';
 // The nodes that must keep moving through the merge, and the ones that
@@ -28,6 +28,34 @@ const HULL_PIVOTS = ['Turret_Pivot', 'Barrel_Pivot', 'Secondary_L_Pivot', 'Secon
 // (27 racked), lit while any of its three are left. Bright dots bloom a
 // little, which is the read from the chase camera.
 const RACK_LIT = BZ ? 0x9dffb0 : 0xdff6ff, RACK_DARK = 0x1a2028;
+// THE HEALTH LAMPS: six along the turret's rear edge, one per sixth of the
+// hull's points, green while whole, amber past half gone, red past three
+// quarters; dark as they go out. In battlezone the palette is green, so
+// the lamps are green and dim and the count is the read.
+const LAMP_GREEN = BZ ? 0x9dffb0 : 0x3cf27a, LAMP_AMBER = BZ ? 0x9dffb0 : 0xffb347, LAMP_RED = BZ ? 0x7dffa0 : 0xff3b3b, LAMP_DARK = BZ ? 0x1c4a2c : 0x1a2028;
+function buildHealth(merged, holder) {
+  const turret = merged.getObjectByName('Turret_Pivot');
+  if (!turret) return;
+  turret.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(turret);
+  const inv = new THREE.Matrix4().copy(turret.matrixWorld).invert();
+  // the rear edge of the turret roof, in the turret's own frame
+  const rear = new THREE.Vector3(0, box.max.y + 0.08, box.min.z + 0.25).applyMatrix4(inv);
+  const lamps = [];
+  const geo = new THREE.SphereGeometry(0.11, 8, 8);
+  for (let i = 0; i < 6; i++) {
+    const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: LAMP_GREEN }));
+    m.position.set(rear.x + (i - 2.5) * 0.24, rear.y, rear.z);
+    m.name = 'lamp';
+    turret.add(m); lamps.push(m);
+  }
+  holder.userData.lamps = lamps;
+  holder.userData.setHealth = (frac) => {
+    const lit = Math.max(0, Math.min(6, Math.ceil(frac * 6)));
+    const tint = frac > 0.5 ? LAMP_GREEN : frac > 0.25 ? LAMP_AMBER : LAMP_RED;
+    lamps.forEach((l, i) => l.material.color.setHex(i < lit ? tint : LAMP_DARK));
+  };
+}
 function buildRack(merged, holder) {
   const mount = merged.getObjectByName('ShellRack_Mount');
   if (!mount) return;
@@ -86,6 +114,7 @@ export function makeHullObject(colour = PALETTE.hull) {
     const merged = mergeByMaterial(copy, HULL_PIVOTS, HULL_DROP);
     obj.add(BZ ? styleForLook(merged) : castHull(merged, colour));
     buildRack(merged, obj);
+    buildHealth(merged, obj);
     buildHoverSplit(merged, obj);
     console.log('[drive] hull model loaded');
   });

@@ -4,11 +4,11 @@
 // which round, how the engine bed follows the throttle, where a shell's
 // impact goes and which way it faces, how far a machine's hum carries.
 import * as THREE from '../vendor/three.module.js';
-import { makeAudio } from './audio.js?v=6c60467a';
-import { SENTRY_FIRE, DEATH_KEYS, THUD_SLICES } from './audiomanifest.js?v=6c60467a';
-import { makeImpactBurst, IMPACT_TUNE, orientImpact } from './impactfx.js?v=6c60467a';
-import { PALETTE, BZ } from './looks.js?v=6c60467a';
-import { makeTankFeel, stepTankFeel, landTankFeel, fireTankFeel, applyTankFeel } from './tankfeel.js?v=6c60467a';
+import { makeAudio } from './audio.js?v=2c3e4bb9';
+import { SENTRY_FIRE, DEATH_KEYS, THUD_SLICES } from './audiomanifest.js?v=2c3e4bb9';
+import { makeImpactBurst, IMPACT_TUNE, orientImpact } from './impactfx.js?v=2c3e4bb9';
+import { PALETTE, BZ } from './looks.js?v=2c3e4bb9';
+import { makeTankFeel, stepTankFeel, landTankFeel, fireTankFeel, applyTankFeel } from './tankfeel.js?v=2c3e4bb9';
 
 // the impact set is authored for a 4-unit wall; a shell on a 4 m cell
 // wants about this much of it
@@ -168,6 +168,13 @@ export function makeSfx(scene) {
     },
     // a small thing run over: chunks, no fire, the slam
     crush(point, dist) { this.impact('crush', point, [0, 1, 0], dist, 2.4, 'crush_slam'); },
+    // a hurt hull: sparks under half, embers and sparks under a quarter;
+    // the tab calls this every DAMAGE_EVERY seconds while it lasts
+    hullDamage(point, frac, dist = 0) {
+      if (frac > 0.5) return;
+      // sized to be SEEN from the chase camera: a hurt tank should look hurt
+      this.impact(frac > 0.25 ? 'damage' : 'burning', point, [0, 1, 0], dist, frac > 0.25 ? 2.4 : 3.6, null);
+    },
     // a sentry breaking: the full shell recipe twice over, big, at the head
     // and at the plinth (the second one lays the scorch), and the blast
     sentryDestroyed(point, dist) {

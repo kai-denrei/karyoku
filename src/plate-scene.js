@@ -5,16 +5,16 @@
 // as clones with their YAW pivot exposed, and everything else as a labelled
 // placeholder box of its footprint.
 import * as THREE from '../vendor/three.module.js';
-import { KIND, CELL_M, ringCoverage, LANDMARK, dirOfYaw } from './plate.js?v=6c60467a';
-import { fileFor, fitFor, SECTION_COLOR, PLACEHOLDER_HEIGHT_M } from './catalog.js?v=6c60467a';
-import { LOB_FAMILIES, LOB_ELEV_DEG } from './drive.js?v=6c60467a';
-import { PALETTE, neonBox, BZ, styleForLook, bakeEdges } from './looks.js?v=6c60467a';
-import { prepFor, ladderTint, dressMetal } from './casts.js?v=6c60467a';
-import { tintModel } from './glbmodels.js?v=6c60467a';
-import { BODY_IDS } from './drive.js?v=6c60467a';
+import { KIND, CELL_M, ringCoverage, LANDMARK, dirOfYaw } from './plate.js?v=2c3e4bb9';
+import { fileFor, fitFor, SECTION_COLOR, PLACEHOLDER_HEIGHT_M } from './catalog.js?v=2c3e4bb9';
+import { LOB_FAMILIES, LOB_ELEV_DEG } from './drive.js?v=2c3e4bb9';
+import { PALETTE, neonBox, BZ, styleForLook, bakeEdges } from './looks.js?v=2c3e4bb9';
+import { prepFor, ladderTint, dressMetal } from './casts.js?v=2c3e4bb9';
+import { tintModel } from './glbmodels.js?v=2c3e4bb9';
+import { BODY_IDS } from './drive.js?v=2c3e4bb9';
 // pieces whose model carries a looping clip: the assembly kit's machines
 export const LOOP_IDS = new Set(['robotic_assembly_line', 'robotic_arm', 'conveyor_module', 'terraformer_3000', 'hugin_launchpad']);
-import { loadGlb, loadGlbWithClips, mergeByMaterial, fitModel } from './glbmodels.js?v=6c60467a';
+import { loadGlb, loadGlbWithClips, mergeByMaterial, fitModel } from './glbmodels.js?v=2c3e4bb9';
 
 const labelCache = new Map();
 function labelTexture(text) {

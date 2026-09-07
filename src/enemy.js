@@ -6,9 +6,9 @@
 // the player's shells kill it, and it respawns at its base after a
 // while. While it is INSIDE our base the flag hold does not count down.
 // Pure; test/enemy.mjs. World metres.
-import { makeHull, stepHull, autopilotInput, bearingTo, DRIVE_TUNE } from './drive.js?v=6c60467a';
-import { CELL_M, wrapDeg, roadBlockKey, roadNodeCentre, roadPath } from './plate.js?v=6c60467a';
-import { gateCentre } from './drive.js?v=6c60467a';
+import { makeHull, stepHull, autopilotInput, bearingTo, DRIVE_TUNE } from './drive.js?v=2c3e4bb9';
+import { CELL_M, wrapDeg, roadBlockKey, roadNodeCentre, roadPath } from './plate.js?v=2c3e4bb9';
+import { gateCentre } from './drive.js?v=2c3e4bb9';
 
 export const ENEMY_TUNE = {
   hp: 6,            // player shells to kill it (a shell is 2 points; sentry rounds chip too): twelve points, as the player

@@ -350,6 +350,16 @@ no build step, Node invariant suites).
   d)`); before, it ramped from the plate's edge and the spawn 12 m out sat
   on a slope. Nothing stands within `SPAWN_CLEAR_M` 30 m of either gate's
   outside point (a trunk 13 m ahead stopped the hull dead).
+- HEALTH, DIEGETIC (operator, 2026-09-08): `hullHp` 20 for the player
+  (ten sentry rounds, ten shells, six lobs and change), the enemy 12. Two
+  channels, both validated by screenshot in both looks: THE LAMPS
+  (`buildHealth`: six spheres along the turret's rear roof edge, measured
+  from the Turret_Pivot's box; `setHealth(frac)` lights ceil(frac * 6),
+  green over half, amber over a quarter, red below; battlezone keeps them
+  green and dim so the count is the read) and THE DAMAGE (`sfx.hullDamage`
+  every 0.2 s: recipe `damage` = sparks under half, `burning` = embers +
+  sparks under a quarter, sized 2.4 / 3.6 so the chase camera sees them;
+  points survive the wireframe). `?hp=N` sets a probe's points.
 - THE RAM: `RAM_IDS` (the comms tower) take a round per hit at
   `ramSpeed` 10 m/s, once per touch (0.8 s, `pc.ramCool`), down the same
   D0..D3 ladder as shells (`stepRam(plate, hull, dt, tune)`, called
