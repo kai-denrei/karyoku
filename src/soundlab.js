@@ -24,6 +24,7 @@ export const ELEMENTS = [
     { event: 'pushing a container (the container itself rumbles)', key: 'container_rumble', wired: true, loop: true },
     { event: 'hitting a wall at speed (gain follows the speed)', key: 'hull_wall', wired: true },
     { event: 'bumping a crate, barrel, case, pallet or container: one of twelve thuds', key: 'thud', wired: true },
+    { event: 'running over a small thing, or ramming a body apart: the slam (chunks, no fire)', key: 'crush_slam', wired: true },
     { event: 'muzzle elevation changing (loops while the key is held)', key: 'muzzle_gears', wired: true, loop: true },
   ] },
   { id: 'sentries', label: 'Sentries', events: [
@@ -77,7 +78,7 @@ export const ELEMENTS = [
     { event: 'a barrel dies', key: 'sentry_destroyed', wired: true },
     { event: 'a round on a body that still stands', key: 'impact_shell', wired: true },
     { event: 'shoved and sliding (random start point, loops, fades when still)', key: 'container_rumble', wired: true, loop: true },
-    { event: 'a ram at speed (same as a round today)', key: null, want: 'a dull steel boom, lower than the crunch' },
+    { event: 'a ram at speed that breaks a state', key: 'crush_slam', wired: true },
   ] },
   { id: 'ui', label: 'Interface', events: [
     { event: 'camera switch', key: 'ui_click', wired: true },

@@ -4,9 +4,9 @@
 // glow bleed. Everything visual that is not a model lives here, so a tab
 // asks for the look rather than owning a palette.
 import * as THREE from '../vendor/three.module.js';
-import { makeBloom } from './postfx.js?v=7dcea21e';
-import { tintModel, addEdgeOutlines } from './glbmodels.js?v=7dcea21e';
-import { query } from './url.js?v=7dcea21e';
+import { makeBloom } from './postfx.js?v=de240947';
+import { tintModel, addEdgeOutlines } from './glbmodels.js?v=de240947';
+import { query } from './url.js?v=de240947';
 
 // TWO LOOKS. 'colony' is the Tron-and-TD-board look; 'battlezone' is the
 // 1980 vector display: black, one green, every shape an edge. `?look=`

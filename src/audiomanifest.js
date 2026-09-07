@@ -47,6 +47,8 @@ export const SOUNDS = {
   // pallet or container at any speed (one of THUD_SLICES, a slice each)
   hull_wall:     { file: `${A}/hull_wall.mp3`,      bus: 'tank', gain: 0.60, maxVoices: 2, minInterval: 0.35, rateJitter: 0.05 },
   thud:          { file: `${A}/thuds.mp3`,          bus: 'tank', gain: 0.55, maxVoices: 3, minInterval: 0.12, rateJitter: 0.06 },
+  // something small run over or rammed apart: the operator's door slam
+  crush_slam:    { file: `${A}/crush_slam.mp3`,     bus: 'tank', gain: 0.60, maxVoices: 2, minInterval: 0.15, rateJitter: 0.08 },
   // the muzzle's gears while the elevation changes (a loop, muffled)
   muzzle_gears:  { file: `${A}/muzzle_gears.mp3`,   bus: 'tank', gain: 0.35, maxVoices: 1, minInterval: 0, rateJitter: 0 },
   // the interface: a cassette deck's stop button for a camera change

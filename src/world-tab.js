@@ -5,20 +5,20 @@
 import * as THREE from '../vendor/three.module.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { bodyDims } from './catalog.js?v=7dcea21e';
-import { makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M } from './plate.js?v=7dcea21e';
-import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, stepGates, stepSentries, stepTracers, fireHull, damageAt, autopilotInput, makeBodies, stepBodies, bodyAt, shotRangeFor, solidHeightAt, SOLID_HEIGHT, damageSentryAt, stepCrush, ammoDotsLit, bodyHit, damageBody, powered } from './drive.js?v=7dcea21e';
-import { WORLD_KNOBS, makeWorldParams, clampWorldParams, makeWorld, worldBlocked, worldBuildingAt, worldLosFor, worldSentries, worldGates, terrainNormal, splitQuad, groundAt } from './world.js?v=7dcea21e';
-import { PALETTE, terrainMeshes, floraMeshes, LOOK, LOOKS } from './looks.js?v=7dcea21e';
-import { withParam } from './url.js?v=7dcea21e';
-import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=7dcea21e';
-import { query, loadCatalog } from './plate-tab.js?v=7dcea21e';
-import { modelledIds } from './catalog.js?v=7dcea21e';
-import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS, makeMobileShell, mobileShell } from './drive-rig.js?v=7dcea21e';
-import { makeSfx } from './sfx.js?v=7dcea21e';
-import { makeCrew, stepCrew, stepSquash, shotHits, splashHits, hullCovers, crewFreeAt, CREW_TUNE } from './crew.js?v=7dcea21e';
-import { makeCrewScene } from './crew-scene.js?v=7dcea21e';
-import { mulberry32 } from './rng.js?v=7dcea21e';
+import { bodyDims } from './catalog.js?v=de240947';
+import { makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M } from './plate.js?v=de240947';
+import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, stepGates, stepSentries, stepTracers, fireHull, damageAt, autopilotInput, makeBodies, stepBodies, bodyAt, shotRangeFor, solidHeightAt, SOLID_HEIGHT, damageSentryAt, stepCrush, ammoDotsLit, bodyHit, damageBody, powered } from './drive.js?v=de240947';
+import { WORLD_KNOBS, makeWorldParams, clampWorldParams, makeWorld, worldBlocked, worldBuildingAt, worldLosFor, worldSentries, worldGates, terrainNormal, splitQuad, groundAt } from './world.js?v=de240947';
+import { PALETTE, terrainMeshes, floraMeshes, LOOK, LOOKS } from './looks.js?v=de240947';
+import { withParam } from './url.js?v=de240947';
+import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=de240947';
+import { query, loadCatalog } from './plate-tab.js?v=de240947';
+import { modelledIds } from './catalog.js?v=de240947';
+import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS, makeMobileShell, mobileShell } from './drive-rig.js?v=de240947';
+import { makeSfx } from './sfx.js?v=de240947';
+import { makeCrew, stepCrew, stepSquash, shotHits, splashHits, hullCovers, crewFreeAt, CREW_TUNE } from './crew.js?v=de240947';
+import { makeCrewScene } from './crew-scene.js?v=de240947';
+import { mulberry32 } from './rng.js?v=de240947';
 
 const ARRIVE_M = 8;
 
@@ -99,7 +99,7 @@ export function initWorldTab(root) {
       for (const pc of stepCrush(p.plate, local, P)) {
         hull.speed = local.speed; crushed++;
         const cx = (pc.x + pc.pw / 2) * CELL_M + p.ox, cz = (pc.z + pc.ph / 2) * CELL_M + p.oz;
-        sfx.impact('shell', [cx, groundAt(world, cx, cz).y + 0.6, cz], [0, 1, 0], 0, 2.4, 'impact_rubble');
+        sfx.crush([cx, groundAt(world, cx, cz).y + 0.6, cz], 0);
         rigs[pi].rebuild();
       }
     });
@@ -110,7 +110,7 @@ export function initWorldTab(root) {
     bodies.forEach((b, i) => {
       sfx.body(i, b.moved, Math.hypot(b.x - hull.x, b.z - hull.z), dt);
       if (b.touched) sfx.thud(0);
-      if (b.rammed) { const r = damageBody(b); if (r && r.stepped) bodiesBroken++; sfx.bodyHit(b, [b.x, groundAt(world, b.x, b.z).y + 1.2, b.z], 0, r); }
+      if (b.rammed) { const r = damageBody(b); if (r && r.stepped) bodiesBroken++; sfx.bodyHit(b, [b.x, groundAt(world, b.x, b.z).y + 1.2, b.z], 0, r, true); }
     });
     // THE POWER, per plate: a station at D3 drops that plate's sentries
     world.plates.forEach((p, pi) => {

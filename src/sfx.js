@@ -4,11 +4,11 @@
 // which round, how the engine bed follows the throttle, where a shell's
 // impact goes and which way it faces, how far a machine's hum carries.
 import * as THREE from '../vendor/three.module.js';
-import { makeAudio } from './audio.js?v=7dcea21e';
-import { SENTRY_FIRE, DEATH_KEYS, THUD_SLICES } from './audiomanifest.js?v=7dcea21e';
-import { makeImpactBurst, IMPACT_TUNE, orientImpact } from './impactfx.js?v=7dcea21e';
-import { PALETTE, BZ } from './looks.js?v=7dcea21e';
-import { makeTankFeel, stepTankFeel, landTankFeel, fireTankFeel, applyTankFeel } from './tankfeel.js?v=7dcea21e';
+import { makeAudio } from './audio.js?v=de240947';
+import { SENTRY_FIRE, DEATH_KEYS, THUD_SLICES } from './audiomanifest.js?v=de240947';
+import { makeImpactBurst, IMPACT_TUNE, orientImpact } from './impactfx.js?v=de240947';
+import { PALETTE, BZ } from './looks.js?v=de240947';
+import { makeTankFeel, stepTankFeel, landTankFeel, fireTankFeel, applyTankFeel } from './tankfeel.js?v=de240947';
 
 // the impact set is authored for a 4-unit wall; a shell on a 4 m cell
 // wants about this much of it
@@ -151,12 +151,17 @@ export function makeSfx(scene) {
     },
     // a body hit: a light tick while it stands, the rubble crunch when a
     // state breaks off, and a barrel that dies goes up like a sentry
-    bodyHit(b, point, dist, result) {
+    // `rammed`: the hull did it, not a shell. Nothing burns when a crate
+    // is driven over: chunks and the slam. A barrel still goes up.
+    bodyHit(b, point, dist, result, rammed = false) {
       if (!result) return;
       if (result.destroyed && b.id === 'fuel_barrel') { this.impact('shell', point, [0, 1, 0], dist, 4.2, 'sentry_destroyed'); return; }
+      if (rammed) { this.impact('crush', point, [0, 1, 0], dist, b.id === 'logistics_container' ? 3.0 : 2.2, 'crush_slam'); return; }
       if (result.destroyed || result.stepped) { this.impact('shell', point, [0, 1, 0], dist, b.id === 'logistics_container' ? 3.2 : 2.2, 'impact_rubble'); return; }
       this.impact('light', point, [0, 1, 0], dist, 1.6, 'impact_shell');
     },
+    // a small thing run over: chunks, no fire, the slam
+    crush(point, dist) { this.impact('crush', point, [0, 1, 0], dist, 2.4, 'crush_slam'); },
     // a sentry breaking: the full shell recipe twice over, big, at the head
     // and at the plinth (the second one lays the scorch), and the blast
     sentryDestroyed(point, dist) {
