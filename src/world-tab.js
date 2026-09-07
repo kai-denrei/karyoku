@@ -5,25 +5,26 @@
 import * as THREE from '../vendor/three.module.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { bodyDims } from './catalog.js?v=23bfe440';
-import { makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M } from './plate.js?v=23bfe440';
-import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, stepGates, stepSentries, stepTracers, fireHull, damageAt, autopilotInput, makeBodies, stepBodies, bodyAt, shotRangeFor, solidHeightAt, SOLID_HEIGHT, damageSentryAt, stepCrush, ammoDotsLit, bodyHit, damageBody, powered } from './drive.js?v=23bfe440';
-import { WORLD_KNOBS, makeWorldParams, clampWorldParams, makeWorld, worldBlocked, worldBuildingAt, worldLosFor, worldSentries, worldGates, terrainNormal, splitQuad, groundAt, outpostGround } from './world.js?v=23bfe440';
-import { PALETTE, terrainMeshes, floraMeshes, LOOK, LOOKS } from './looks.js?v=23bfe440';
-import { withParam } from './url.js?v=23bfe440';
-import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=23bfe440';
-import { query, loadCatalog } from './plate-tab.js?v=23bfe440';
-import { modelledIds } from './catalog.js?v=23bfe440';
-import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS, makeMobileShell, mobileShell, makeGuardObject, makeFlagStand, makeCarriedFlag } from './drive-rig.js?v=23bfe440';
-import { makeSfx } from './sfx.js?v=23bfe440';
-import { makeCrew, stepCrew, stepSquash, shotHits, splashHits, hullCovers, crewFreeAt, keyAreas, CREW_TUNE } from './crew.js?v=23bfe440';
-import { makeCrewScene } from './crew-scene.js?v=23bfe440';
-import { makeGuard, stepGuard, GUARD_TUNE } from './guard.js?v=23bfe440';
-import { makeCtf, stepCtf, poleState, SLOTS, CTF_TUNE } from './ctf.js?v=23bfe440';
-import { makeRescue, stepBoarding, stepUnloading, makeRescued, stepEntered, RESCUE_TUNE } from './rescue.js?v=23bfe440';
-import { proto } from './plate-scene.js?v=23bfe440';
-import { fileFor } from './catalog.js?v=23bfe440';
-import { mulberry32 } from './rng.js?v=23bfe440';
+import { noteStep } from './fps.js?v=3e6a547f';
+import { bodyDims } from './catalog.js?v=3e6a547f';
+import { makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M, reservedAt } from './plate.js?v=3e6a547f';
+import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, stepGates, stepSentries, stepTracers, fireHull, damageAt, autopilotInput, makeBodies, stepBodies, bodyAt, shotRangeFor, solidHeightAt, SOLID_HEIGHT, damageSentryAt, stepCrush, ammoDotsLit, bodyHit, damageBody, powered } from './drive.js?v=3e6a547f';
+import { WORLD_KNOBS, makeWorldParams, clampWorldParams, makeWorld, worldBlocked, worldBuildingAt, worldLosFor, worldSentries, worldGates, terrainNormal, splitQuad, groundAt, outpostGround } from './world.js?v=3e6a547f';
+import { PALETTE, terrainMeshes, floraMeshes, LOOK, LOOKS } from './looks.js?v=3e6a547f';
+import { withParam } from './url.js?v=3e6a547f';
+import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=3e6a547f';
+import { query, loadCatalog } from './plate-tab.js?v=3e6a547f';
+import { modelledIds } from './catalog.js?v=3e6a547f';
+import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS, makeMobileShell, mobileShell, makeGuardObject, makeFlagStand, makeCarriedFlag } from './drive-rig.js?v=3e6a547f';
+import { makeSfx } from './sfx.js?v=3e6a547f';
+import { makeCrew, stepCrew, stepSquash, shotHits, splashHits, hullCovers, crewFreeAt, keyAreas, CREW_TUNE } from './crew.js?v=3e6a547f';
+import { makeCrewScene } from './crew-scene.js?v=3e6a547f';
+import { makeGuard, stepGuard, GUARD_TUNE } from './guard.js?v=3e6a547f';
+import { makeCtf, stepCtf, poleState, SLOTS, CTF_TUNE } from './ctf.js?v=3e6a547f';
+import { makeRescue, stepBoarding, stepUnloading, makeRescued, stepEntered, RESCUE_TUNE } from './rescue.js?v=3e6a547f';
+import { proto } from './plate-scene.js?v=3e6a547f';
+import { fileFor } from './catalog.js?v=3e6a547f';
+import { mulberry32 } from './rng.js?v=3e6a547f';
 
 const ARRIVE_M = 8;
 
@@ -180,7 +181,7 @@ export function initWorldTab(root) {
     stepHull(hull, input, dt, (x, z) => worldBlocked(world, x, z), P);
     if (hull.bump) sfx.wallHit(hull.bump);
     sfx.elevating(Boolean(hull.elevating));
-    stepBodies(bodies, hull, (x, z) => worldBlocked(world, x, z), P, dt);
+    stepBodies(bodies, hull, (x, z) => worldBlocked(world, x, z) || world.plates.some((p) => reservedAt(p.plate, Math.floor((x - p.ox) / CELL_M), Math.floor((z - p.oz) / CELL_M))), P, dt);
     bodies.forEach((b, i) => {
       sfx.body(i, b.moved, Math.hypot(b.x - hull.x, b.z - hull.z), dt);
       if (b.touched) sfx.thud(0);
@@ -402,9 +403,10 @@ export function initWorldTab(root) {
       const dt = Math.min(0.05, last ? (now - last) / 1000 : 0);
       last = now;
       lastDt = dt;
-      step(dt, keys.input());
-      if (probe && simT - lastLog >= 1) { lastLog = simT; console.log(logLine()); }
+      const t0 = performance.now();
+      step(dt, inp);
       sync();
+      noteStep(performance.now() - t0);
       render();
     });
   });

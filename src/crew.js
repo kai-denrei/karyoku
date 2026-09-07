@@ -14,7 +14,7 @@
 // asks it too, with the walker's own radius, so nobody walks through a
 // container or the tank. Something that rolls onto a walker slowly shoves
 // them out (`escape`); fast, it squashes them (stepSquash).
-import { KIND, CELL_M, rotSide, DIRS } from './plate.js?v=23bfe440';
+import { KIND, CELL_M, rotSide, DIRS } from './plate.js?v=3e6a547f';
 
 export const CREW_TUNE = {
   walk: 1.4, run: 4.6,      // m/s
@@ -42,6 +42,7 @@ export const CREW_TUNE = {
   kneelChance: 0.2, kneelMin: 2.0, kneelMax: 4.0,
   cowerChance: 0.5, cowerBreakM: 9,
   separation: 0.9,
+  tripM: 70,                // m: how far a walker looks for its next area
 };
 export const CREW_KINDS = ['astronaut', 'scientist', 'worker'];
 // the suit says the TRADE, the backpack says the TEAM
@@ -152,8 +153,9 @@ export function fleePoint(plate, w, threat, solid = null) {
   return null;
 }
 
-function pickArea(plate, w, areas, rng, avoid = null, solid = null) {
-  const seen = areas.filter((a) => Math.hypot(a.x - w.x, a.z - w.z) > 2 && straightClear(plate, w.x, w.z, a.x, a.z, solid));
+function pickArea(plate, w, areas, rng, avoid = null, solid = null, tune = CREW_TUNE) {
+  // near areas only (a trip is a stroll, not a march), and the straight-line check is the costly part: it comes last
+  const seen = areas.filter((a) => { const d = Math.hypot(a.x - w.x, a.z - w.z); return d > 2 && d <= tune.tripM; }).filter((a) => straightClear(plate, w.x, w.z, a.x, a.z, solid));
   if (avoid) {
     // flee: away from the threat if the ground allows, else the reachable
     // area farthest from it, and only if that is farther than here

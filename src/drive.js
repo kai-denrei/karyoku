@@ -11,8 +11,8 @@
 // THE ANTI-AIMBOT NUMBERS are yawRate and the arc: a sentry cannot point
 // outside its arc, and inside it turns at yawRate, so a hull that crosses
 // the arc fast, or stays in the blind sector, is never fired on.
-import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=23bfe440';
-import { KIND, CELL_M, wrapDeg, dirOfYaw, DIRS, yawOfSide, rotSide } from './plate.js?v=23bfe440';
+import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=3e6a547f';
+import { KIND, CELL_M, wrapDeg, dirOfYaw, DIRS, yawOfSide, rotSide } from './plate.js?v=3e6a547f';
 
 export const DRIVE_TUNE = {
   speed: 12,        // m/s forward
@@ -228,6 +228,7 @@ export function makeBodies(plate, ox = 0, oz = 0, dims = null) {
       rot: pc.rot,
     });
   });
+  indexBodies(out);
   return out;
 }
 // rotation.y = -rot * PI/2 in the scene; the same turn here
@@ -245,8 +246,35 @@ export function bodyContains(b, x, z) {
   const [lx, lz] = toLocal(b, x, z);
   return Math.abs(lx) <= b.hw && Math.abs(lz) <= b.hd;
 }
-export const bodyAt = (bodies, x, z) => bodies.some((b) => bodyContains(b, x, z));
-export const bodyHit = (bodies, x, z) => bodies.find((b) => bodyContains(b, x, z)) || null;
+// THE BODY INDEX. Every walker's step asks whether a body sits under five
+// points, and a trip pick asks it a few hundred times more; against 283
+// bodies on a 70-cell plate that was ten milliseconds a frame and sixty
+// on a pick. Bodies live in 8 m buckets (`bodies.index`, rebuilt by
+// stepBodies each frame since a shove can move one); a point asks its own
+// bucket and the eight around it, which covers any body's 2.7 m reach.
+const BUCKET_M = 8;
+const bkey = (x, z) => `${Math.floor(x / BUCKET_M)},${Math.floor(z / BUCKET_M)}`;
+export function indexBodies(bodies) {
+  const index = new Map();
+  for (const b of bodies) {
+    if (b.dead) continue;
+    const k = bkey(b.x, b.z);
+    if (!index.has(k)) index.set(k, []);
+    index.get(k).push(b);
+  }
+  bodies.index = index;
+  return index;
+}
+// the bodies that could touch (x, z), or every body when no index exists
+export function nearBodies(bodies, x, z, reach = 1) {
+  if (!bodies.index) return bodies;
+  const bx = Math.floor(x / BUCKET_M), bz = Math.floor(z / BUCKET_M);
+  const out = [];
+  for (let dz = -reach; dz <= reach; dz++) for (let dx = -reach; dx <= reach; dx++) { const l = bodies.index.get(`${bx + dx},${bz + dz}`); if (l) for (const b of l) out.push(b); }
+  return out;
+}
+export const bodyAt = (bodies, x, z) => nearBodies(bodies, x, z).some((b) => bodyContains(b, x, z));
+export const bodyHit = (bodies, x, z) => nearBodies(bodies, x, z).find((b) => bodyContains(b, x, z)) || null;
 function bodySamples(b, x, z) {
   const pts = [];
   for (const lx of [-b.hw, 0, b.hw]) for (const lz of [-b.hd, 0, b.hd]) { if (lx === 0 && lz === 0) continue; const [wx, wz] = toWorld({ ...b, x, z }, lx, lz); pts.push([wx, wz]); }
@@ -257,7 +285,7 @@ function bodySamples(b, x, z) {
 function bodyFits(b, x, z, bodies, blocked) {
   for (const [wx, wz] of bodySamples(b, x, z)) if (blocked(wx, wz)) return false;
   const moved = { ...b, x, z };
-  for (const o of bodies) {
+  for (const o of nearBodies(bodies, x, z, 2)) {
     if (o === b) continue;
     for (const [wx, wz] of bodySamples(moved, x, z)) if (bodyContains(o, wx, wz)) return false;
     for (const [wx, wz] of bodySamples(o, o.x, o.z)) if (bodyContains(moved, wx, wz)) return false;
@@ -292,6 +320,7 @@ export function stepBodies(bodies, hull, blocked, tune = DRIVE_TUNE, dt = 1 / 60
     if (bodyFits(b, b.x - nx * pen, b.z - nz * pen, bodies, blocked)) { b.x -= nx * pen; b.z -= nz * pen; b.moved = true; moved++; }
     else { hull.x += nx * pen; hull.z += nz * pen; hull.vx = 0; hull.vz = 0; }
   }
+  indexBodies(bodies);
   return moved;
 }
 

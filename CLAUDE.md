@@ -242,6 +242,29 @@ no build step, Node invariant suites).
   every prototype's file, triangles and size at load: read it before
   guessing. `?breakat=x,z&breakto=N` starts the nearest body at state N.
 
+## Big plates (operator, 2026-09-07: 70 cells ran at 21 fps)
+- THE CPU WAS THE FRAME: `[perf] step=` (an EMA of step + sync ms, and the
+  worst frame; `noteStep` from both loops) read 10 ms average and 60 ms
+  spikes at 70 x 52 against 1.7 ms at 40 x 32. Every crew step asked
+  `bodyAt` for five points per walker and every trip pick a few hundred
+  more, each a scan of all 283 bodies. THE BODY INDEX (`indexBodies`,
+  8 m buckets on `bodies.index`, rebuilt by `stepBodies` each frame;
+  `nearBodies` reads 3 x 3 buckets; `bodyAt` / `bodyHit` / `bodyFits` use
+  it) and `tripM` 70 m (a walker only considers areas that near) took it
+  to 1.2 ms average, 4 ms worst. The bloom source is half resolution in
+  every look now (`scale: 0.5`). syncBodies keys on a numeric hash.
+- Still on the GPU at scale: 429 wall segments at 5.9k tris each, and in
+  battlezone 650 line sets / 4 M line segments at 70 cells. Next lever: a
+  box LOD per tile beyond ~120 m for static and body sets.
+- DOORS STAY CLEAR: `frontCell(pc)` is the cell before a piece's S face;
+  `reserveEntrance` marks it and its two neighbours along the face
+  RESERVED after every non-yard building and landmark (so yard stock and
+  props never pack there); `findSpot` turns a building whose S face
+  finds no road toward OPEN ground (`frontOpen`) before settling for any
+  orientation; the tabs' body blocker includes `reservedAt`, so a shoved
+  crate cannot stop on a doorstep. Test: every building's door opens
+  onto free ground or road; the infirmary's doorstep is reserved.
+
 ## Outposts and the rescue (operator, 2026-09-07)
 - `world.outposts` (`WORLD_TUNE.outposts` 4, `OUTPOST_R` 14): camps on
   open ground, ours and theirs by turns, off the road (R + 16), outside

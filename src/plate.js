@@ -13,9 +13,9 @@
 // `rotation.y = -rot * PI/2`. Yaw is compass degrees, 0 = N, 90 = E.
 // Plate width and depth are EVEN, because roads are 2 x 2 pieces laid on
 // even coordinates and a gate's road port has to land on one.
-import { mulberry32 } from './rng.js?v=23bfe440';
-import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=23bfe440';
-import { specById } from './catalog-spec.js?v=23bfe440';
+import { mulberry32 } from './rng.js?v=3e6a547f';
+import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=3e6a547f';
+import { specById } from './catalog-spec.js?v=3e6a547f';
 
 export const CELL_M = 4;
 
@@ -619,6 +619,30 @@ export function shuffled(rng, arr) {
 
 // The entrance is the authored S face (rot 0). Unswapped dims allow rot 0
 // (entrance S) or 2 (entrance N); swapped dims allow rot 1 (W) or 3 (E).
+// the cell in front of a piece's S face (turned by rot): where its door is
+export function frontCell(pc) {
+  const side = rotSide('S', pc.rot);
+  const mx = pc.x + Math.floor(pc.pw / 2), mz = pc.z + Math.floor(pc.ph / 2);
+  const cx = side === 'E' ? pc.x + pc.pw : side === 'W' ? pc.x - 1 : mx;
+  const cz = side === 'S' ? pc.z + pc.ph : side === 'N' ? pc.z - 1 : mz;
+  return { cx, cz, side };
+}
+const frontOpen = (s, x, z, pw, ph, rot) => { const f = frontCell({ x, z, pw, ph, rot }); return inside(s, f.cx, f.cz) && s.cells[idx(s, f.cx, f.cz)] === KIND.FOUNDATION && s.owner[idx(s, f.cx, f.cz)] === -1; };
+// RESERVE THE DOORSTEP: the front cell and its two neighbours along the
+// face stay free ground, so no crate, barrel or prop can pack against a
+// door (operator: the infirmary's entrance can never be blocked)
+function reserveEntrance(s, pc) {
+  const f = frontCell(pc);
+  const along = f.side === 'N' || f.side === 'S' ? [1, 0] : [0, 1];
+  for (const t of [-1, 0, 1]) {
+    const cx = f.cx + along[0] * t, cz = f.cz + along[1] * t;
+    if (!inside(s, cx, cz)) continue;
+    const i = idx(s, cx, cz);
+    if (s.cells[i] === KIND.FOUNDATION && s.owner[i] === -1) s.owner[i] = RESERVED;
+  }
+}
+export const reservedAt = (plate, cx, cz) => cx >= 0 && cz >= 0 && cx < plate.w && cz < plate.h && plate.owner[cz * plate.w + cx] === RESERVED;
+
 function findSpot(s, rng, block, def) {
   const [px, pz] = def.plot;
   let orients = shuffled(rng, [[px, pz, [0, 2]], [pz, px, [1, 3]]]);
@@ -647,7 +671,11 @@ function findSpot(s, rng, block, def) {
       if (!laneClear(s, block, x, z, pw, ph, def.gapOverride ?? gap)) continue;
       const sides = roadSides(s, x, z, pw, ph);
       if (sides.size === 0 && !NO_ROAD.has(def.id)) continue;
-      const rot = rots.find((r) => sides.has(rotSide('S', r)));
+      // the S face (the entrance) meets a road if it can; else it faces OPEN
+      // ground (a wall or another building in front of a door is a door nobody
+      // uses); else whatever
+      let rot = rots.find((r) => sides.has(rotSide('S', r)));
+      if (rot === undefined) rot = rots.find((r) => frontOpen(s, x, z, pw, ph, r));
       return { x, z, pw, ph, rot: rot === undefined ? rots[0] : rot };
     }
   }
@@ -671,7 +699,8 @@ function packBlock(s, rng, block) {
       if (used.get(def.id) && !REPEATABLE.has(def.id)) continue;
       const spot = findSpot(s, rng, block, def);
       if (!spot) continue;
-      place(s, def.id, spot.x, spot.z, spot.pw, spot.ph, spot.rot, KIND.BUILDING, { zone: block.zone });
+      const pi = place(s, def.id, spot.x, spot.z, spot.pw, spot.ph, spot.rot, KIND.BUILDING, { zone: block.zone });
+      if (!NO_LANE.has(def.id)) reserveEntrance(s, s.pieces[pi]); // yard stock has no door
       used.set(def.id, (used.get(def.id) || 0) + 1);
       filled += spot.pw * spot.ph;
       placedAny = true;
@@ -702,7 +731,8 @@ function stepLandmark(s, rng) {
     for (const block of blocks.length ? blocks : s.blocks) {
       const spot = findSpot(s, rng, block, def);
       if (!spot) continue;
-      place(s, lm.id, spot.x, spot.z, spot.pw, spot.ph, spot.rot, KIND.BUILDING, { zone: block.zone, landmark: lm.landmark });
+      const pi = place(s, lm.id, spot.x, spot.z, spot.pw, spot.ph, spot.rot, KIND.BUILDING, { zone: block.zone, landmark: lm.landmark });
+      reserveEntrance(s, s.pieces[pi]);
       done = true;
       break;
     }

@@ -1,6 +1,6 @@
 import { generatePlate, makePlateParams, PLATE_TUNE, KIND, CELL_M, blindCells } from '../src/plate.js';
 import { DRIVE_TUNE, driveKnobProblems, makeHull, stepHull, blockedAt, makeGates, stepGates, spawnFor,
-  makeSentries, stepSentries, losClear, stepTracers, buildingAt, bearingTo, lobHeight, LOB_FAMILIES, fireHull, rayStop, damageAt, autopilotInput, makeBodies, stepBodies, bodyAt, BODY_IDS, hitsPerState, shotRangeFor, solidHeightAt, sentryAt, damageSentryAt, SOLID_HEIGHT, stepCrush, FLAT_IDS, CRUSH_IDS, ammoDotsLit, damageBody, bodyHit, powered, BODY_HITS } from '../src/drive.js';
+  makeSentries, stepSentries, losClear, stepTracers, buildingAt, bearingTo, lobHeight, LOB_FAMILIES, fireHull, rayStop, damageAt, autopilotInput, makeBodies, stepBodies, bodyAt, BODY_IDS, hitsPerState, shotRangeFor, solidHeightAt, sentryAt, damageSentryAt, SOLID_HEIGHT, stepCrush, FLAT_IDS, CRUSH_IDS, ammoDotsLit, damageBody, bodyHit, powered, BODY_HITS, indexBodies, nearBodies } from '../src/drive.js';
 import { check, near, done } from './check.mjs';
 
 check('knob table is sound', driveKnobProblems().length === 0, driveKnobProblems().join('; '));
@@ -418,5 +418,15 @@ for (let seed = 1; seed <= 50; seed++) {
   check('held at the stop it does not', e.elevating === false);
   stepHull(e, {}, 1 / 60, () => false);
   check('idle it does not', e.elevating === false);
+}
+// THE BODY INDEX answers exactly what the scan answered
+{
+  const p = generatePlate(makePlateParams({ ...PLATE_TUNE, seed: 7, w: 70, h: 52 }));
+  const bs = makeBodies(p);
+  check('the bodies are indexed at birth', bs.index && bs.index.size > 10);
+  let agree = true, asked = 0;
+  for (let z = 0; z < p.h * CELL_M; z += 3) for (let x = 0; x < p.w * CELL_M; x += 3) { asked++; const scan = bs.some((b) => !b.dead && Math.abs(b.x - x) <= 3 && Math.abs(b.z - z) <= 3 && bodyHit([b], x, z) === b); if (Boolean(bodyAt(bs, x, z)) !== scan) agree = false; }
+  check('index and scan agree on every 3 m of a 70-cell plate', agree, `${asked} points`);
+  check('a near query never lists a body two buckets away', bs.every((b) => nearBodies(bs, b.x + 30, b.z + 30).indexOf(b) < 0));
 }
 done();

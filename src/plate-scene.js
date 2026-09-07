@@ -5,16 +5,16 @@
 // as clones with their YAW pivot exposed, and everything else as a labelled
 // placeholder box of its footprint.
 import * as THREE from '../vendor/three.module.js';
-import { KIND, CELL_M, ringCoverage, LANDMARK, dirOfYaw } from './plate.js?v=23bfe440';
-import { fileFor, fitFor, SECTION_COLOR, PLACEHOLDER_HEIGHT_M } from './catalog.js?v=23bfe440';
-import { LOB_FAMILIES, LOB_ELEV_DEG } from './drive.js?v=23bfe440';
-import { PALETTE, neonBox, BZ, styleForLook, bakeEdges } from './looks.js?v=23bfe440';
-import { prepFor, ladderTint, dressMetal } from './casts.js?v=23bfe440';
-import { tintModel } from './glbmodels.js?v=23bfe440';
-import { BODY_IDS } from './drive.js?v=23bfe440';
+import { KIND, CELL_M, ringCoverage, LANDMARK, dirOfYaw } from './plate.js?v=3e6a547f';
+import { fileFor, fitFor, SECTION_COLOR, PLACEHOLDER_HEIGHT_M } from './catalog.js?v=3e6a547f';
+import { LOB_FAMILIES, LOB_ELEV_DEG } from './drive.js?v=3e6a547f';
+import { PALETTE, neonBox, BZ, styleForLook, bakeEdges } from './looks.js?v=3e6a547f';
+import { prepFor, ladderTint, dressMetal } from './casts.js?v=3e6a547f';
+import { tintModel } from './glbmodels.js?v=3e6a547f';
+import { BODY_IDS } from './drive.js?v=3e6a547f';
 // pieces whose model carries a looping clip: the assembly kit's machines
 export const LOOP_IDS = new Set(['robotic_assembly_line', 'robotic_arm', 'conveyor_module']);
-import { loadGlb, loadGlbWithClips, mergeByMaterial, fitModel } from './glbmodels.js?v=23bfe440';
+import { loadGlb, loadGlbWithClips, mergeByMaterial, fitModel } from './glbmodels.js?v=3e6a547f';
 
 const labelCache = new Map();
 function labelTexture(text) {
@@ -452,7 +452,7 @@ export function buildPlateGroup({ plate, catalog, wallState = 0, showArcs = true
   // called every frame by the tab with the drive's bodies (world metres;
   // ox, oz shift them into this plate's frame)
   function syncBodies(bodies, ox = 0, oz = 0) {
-    const keys = bodies.map((b) => b.id + b.state).join(',');
+    let keys = bodies.length; for (let i = 0; i < bodies.length; i++) keys = (keys * 31 + bodies[i].state * 7 + i) | 0; // a change key, not a string a frame
     if (keys !== bodyKeys) { bodyKeys = keys; drawBodies(bodies, ox, oz); return; }
     for (const s of bodySets) {
       let dirty = false;

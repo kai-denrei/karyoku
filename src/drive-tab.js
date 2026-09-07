@@ -5,22 +5,23 @@
 import * as THREE from '../vendor/three.module.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { bodyDims } from './catalog.js?v=23bfe440';
-import { generatePlate, makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M, dirOfYaw } from './plate.js?v=23bfe440';
+import { noteStep } from './fps.js?v=3e6a547f';
+import { bodyDims } from './catalog.js?v=3e6a547f';
+import { generatePlate, makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M, dirOfYaw, reservedAt } from './plate.js?v=3e6a547f';
 import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, blockedAt, makeGates, stepGates,
-  spawnFor, makeSentries, stepSentries, losClear, stepTracers, rayStop, fireHull, damageAt, makeBodies, stepBodies, bodyAt, shotRangeFor, damageSentryAt, stepCrush, ammoDotsLit, bodyHit, damageBody, powered } from './drive.js?v=23bfe440';
-import { PALETTE, LOOK, LOOKS } from './looks.js?v=23bfe440';
-import { withParam } from './url.js?v=23bfe440';
-import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=23bfe440';
-import { query, loadCatalog } from './plate-tab.js?v=23bfe440';
-import { modelledIds } from './catalog.js?v=23bfe440';
-import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS, makeMobileShell, mobileShell, makeGuardObject, makeFlagStand, makeCarriedFlag } from './drive-rig.js?v=23bfe440';
-import { makeSfx } from './sfx.js?v=23bfe440';
-import { makeCrew, stepCrew, stepSquash, shotHits, splashHits, hullCovers, crewFreeAt, CREW_TUNE } from './crew.js?v=23bfe440';
-import { makeCrewScene } from './crew-scene.js?v=23bfe440';
-import { makeGuard, stepGuard, GUARD_TUNE } from './guard.js?v=23bfe440';
-import { makeCtf, stepCtf, poleState, SLOTS, CTF_TUNE } from './ctf.js?v=23bfe440';
-import { mulberry32 } from './rng.js?v=23bfe440';
+  spawnFor, makeSentries, stepSentries, losClear, stepTracers, rayStop, fireHull, damageAt, makeBodies, stepBodies, bodyAt, shotRangeFor, damageSentryAt, stepCrush, ammoDotsLit, bodyHit, damageBody, powered } from './drive.js?v=3e6a547f';
+import { PALETTE, LOOK, LOOKS } from './looks.js?v=3e6a547f';
+import { withParam } from './url.js?v=3e6a547f';
+import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=3e6a547f';
+import { query, loadCatalog } from './plate-tab.js?v=3e6a547f';
+import { modelledIds } from './catalog.js?v=3e6a547f';
+import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS, makeMobileShell, mobileShell, makeGuardObject, makeFlagStand, makeCarriedFlag } from './drive-rig.js?v=3e6a547f';
+import { makeSfx } from './sfx.js?v=3e6a547f';
+import { makeCrew, stepCrew, stepSquash, shotHits, splashHits, hullCovers, crewFreeAt, CREW_TUNE } from './crew.js?v=3e6a547f';
+import { makeCrewScene } from './crew-scene.js?v=3e6a547f';
+import { makeGuard, stepGuard, GUARD_TUNE } from './guard.js?v=3e6a547f';
+import { makeCtf, stepCtf, poleState, SLOTS, CTF_TUNE } from './ctf.js?v=3e6a547f';
+import { mulberry32 } from './rng.js?v=3e6a547f';
 
 export function initDriveTab(root) {
   const { renderer, scene, camera, hud, notice, resize, render, setGroups, post, radar } = makeViewer(root);
@@ -108,7 +109,7 @@ export function initDriveTab(root) {
     stepHull(hull, input, dt, (x, z) => blockedAt(plate, gates, x, z), P);
     if (hull.bump) sfx.wallHit(hull.bump);
     sfx.elevating(Boolean(hull.elevating));
-    stepBodies(bodies, hull, (x, z) => blockedAt(plate, gates, x, z), P, dt);
+    stepBodies(bodies, hull, (x, z) => blockedAt(plate, gates, x, z) || reservedAt(plate, Math.floor(x / CELL_M), Math.floor(z / CELL_M)), P, dt);
     for (const b of bodies) {
       sfx.body(b.pieceIndex, b.moved, Math.hypot(b.x - hull.x, b.z - hull.z), dt);
       if (b.touched) sfx.thud(0);
@@ -278,8 +279,10 @@ export function initDriveTab(root) {
       lastDt = dt;
       const inp = keys.input();
       if (q.get('autofire') === '1') inp.fire = true; // a probe that keeps shooting live
+      const t0 = performance.now();
       step(dt, inp);
       sync();
+      noteStep(performance.now() - t0);
       render();
       // logged AFTER sync so the line reports what was drawn, feel offsets included
       if (probe && simT - lastLog >= 1) { lastLog = simT; console.log(logLine()); }

@@ -1,4 +1,4 @@
-import { generatePlate, makePlateParams, plateKnobProblems, KIND, rotSide, dirOfYaw, PLATE_TUNE, roadsConnected, roadBlockKey, ZONES, sentrySockets, blindCells, sentryBears, GUN_FAMILIES, MODELLED, LANDMARK, YARD_IDS, POWER, CELL_M } from '../src/plate.js';
+import { generatePlate, makePlateParams, plateKnobProblems, KIND, rotSide, dirOfYaw, PLATE_TUNE, roadsConnected, roadBlockKey, ZONES, sentrySockets, blindCells, sentryBears, GUN_FAMILIES, MODELLED, LANDMARK, YARD_IDS, POWER, CELL_M, frontCell, reservedAt } from '../src/plate.js';
 import { specById } from '../src/catalog-spec.js';
 import { check, near, done } from './check.mjs';
 
@@ -108,6 +108,10 @@ function checkPacking(p, label, minBuildings = 3) {
   check(`${label}: has buildings`, buildings.length >= minBuildings, `got ${buildings.length}`);
   // yard stock needs no road; the power compound's pieces stand behind their own wall, its gate meets the road
   check(`${label}: every building touches a road`, buildings.filter((pc) => pc.zone !== 'band' && !YARD_IDS.includes(pc.id) && pc.id !== POWER.id && pc.id !== POWER.rack).every((pc) => ROAD_TOUCH(p, pc)));
+  // DOORS STAY CLEAR: every building's front cell is open ground or road, and the infirmary's doorstep is reserved
+  check(`${label}: every building's door opens onto free ground or a road`, buildings.filter((pc) => pc.zone !== 'band' && !YARD_IDS.includes(pc.id) && pc.id !== POWER.id && pc.id !== POWER.rack).every((pc) => { const f = frontCell(pc); const k = cellAt(p, f.cx, f.cz); return k === KIND.FOUNDATION || k === KIND.ROAD; }),
+    buildings.filter((pc) => pc.zone !== 'band' && !YARD_IDS.includes(pc.id) && pc.id !== POWER.id && pc.id !== POWER.rack).filter((pc) => { const f = frontCell(pc); const k = cellAt(p, f.cx, f.cz); return !(k === KIND.FOUNDATION || k === KIND.ROAD); }).map((pc) => `${pc.id}->${(() => { const f = frontCell(pc); const o = p.pieces[p.owner[f.cz * p.w + f.cx]]; return o ? o.id : 'kind' + cellAt(p, f.cx, f.cz); })()}`).join(' '));
+  check(`${label}: the infirmary's doorstep is reserved ground`, (() => { const inf = p.pieces.find((pc) => pc.id === LANDMARK); if (!inf) return true; const f = frontCell(inf); return cellAt(p, f.cx, f.cz) === KIND.ROAD || reservedAt(p, f.cx, f.cz); })());
   check(`${label}: the flag stand: two poles a cell apart on a strip a road touches (or the plate is too narrow)`, (() => {
     if (!p.flags) return Math.min(p.w, p.h) - 2 * p.inset < 14 || p.warnings.some((w) => /flag stand/.test(w));
     const f = p.flags, pc = p.pieces[f.pieceIndex];

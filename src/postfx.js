@@ -24,7 +24,7 @@ import { ShaderPass } from '../vendor/ShaderPass.js';
 import { OutputPass } from '../vendor/OutputPass.js';
 import * as THREE from '../vendor/three.module.js';
 import { buildWeightMap, materialConflicts, clampWeight, DEFAULT_BLOOM_WEIGHTS }
-  from './bloomweights.js?v=23bfe440';
+  from './bloomweights.js?v=3e6a547f';
 
 const COARSE = typeof matchMedia === 'function'
   && matchMedia('(pointer: coarse)').matches;
@@ -91,7 +91,9 @@ export function makeBloom(renderer, scene, camera, opts = {}) {
     // total light, spread over far more of the frame.
     strength: 0.3, radius: 0.5, threshold: 0.2, enabled: true,
     // UnrealBloomPass builds a mip chain — halve it on phones
-    scale: COARSE ? 0.5 : 1.0,
+    // half resolution everywhere now, not only on phones: the bloom is a blur, and
+    // the mip chain over a 1.5x retina frame was fragment work for nothing
+    scale: 0.5,
     ...opts,
   };
   let enabled = o.enabled;
