@@ -4,6 +4,22 @@ Newest first. Each entry: what landed, then how it works, for programmers.
 Decisions and dead ends in more detail live in `.deban/` (local, not
 published).
 
+## cc3594e — the reckon guard
+
+Each base has a drone now, the workshop's twin-rotor reckon guard,
+hovering a slow circle fourteen metres over the power compound with its
+rotors spinning and its nose on the hull. The hostile one is the threat
+you can read: with the hull inside 140 m it lays a MARK where the hull
+will be 1.4 s on, a red beam from the drone to a pulsing red ring on the
+ground, holds it 1.6 s, and only then drops a shell on the mark. The mark
+is fixed when it is laid, so leaving it is the dodge; the shell is a lob
+with a start height (the lob arc learned `y0`), and the landing splash
+that already counts sentry lobs counts this one. Four and a half seconds
+between shells. The suite proves the mark leads the hull, the shell lands
+on the mark and not on the hull, a hull that stayed is hit and one that
+left is not, and a home guard only hovers. The lock warning is the
+minigun's ready clip, the shell the aoe thump.
+
 ## a70d9d8 — outposts, and the rescue
 
 Between the bases the world now has four small camps on open ground,
