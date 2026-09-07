@@ -5,26 +5,26 @@
 import * as THREE from '../vendor/three.module.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { noteStep } from './fps.js?v=759122e0';
-import { bodyDims } from './catalog.js?v=759122e0';
-import { makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M, reservedAt } from './plate.js?v=759122e0';
-import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, stepGates, stepSentries, stepTracers, fireHull, damageAt, autopilotInput, makeBodies, stepBodies, bodyAt, shotRangeFor, solidHeightAt, SOLID_HEIGHT, damageSentryAt, stepCrush, ammoDotsLit, bodyHit, damageBody, powered } from './drive.js?v=759122e0';
-import { WORLD_KNOBS, makeWorldParams, clampWorldParams, makeWorld, worldBlocked, worldBuildingAt, worldLosFor, worldSentries, worldGates, terrainNormal, splitQuad, groundAt, outpostGround } from './world.js?v=759122e0';
-import { PALETTE, terrainMeshes, floraMeshes, LOOK, LOOKS } from './looks.js?v=759122e0';
-import { withParam } from './url.js?v=759122e0';
-import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=759122e0';
-import { query, loadCatalog } from './plate-tab.js?v=759122e0';
-import { modelledIds } from './catalog.js?v=759122e0';
-import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS, makeMobileShell, mobileShell, makeGuardObject, makeFlagStand, makeCarriedFlag } from './drive-rig.js?v=759122e0';
-import { makeSfx } from './sfx.js?v=759122e0';
-import { makeCrew, stepCrew, stepSquash, shotHits, splashHits, hullCovers, crewFreeAt, keyAreas, CREW_TUNE } from './crew.js?v=759122e0';
-import { makeCrewScene } from './crew-scene.js?v=759122e0';
-import { makeGuard, stepGuard, GUARD_TUNE } from './guard.js?v=759122e0';
-import { makeCtf, stepCtf, poleState, SLOTS, CTF_TUNE } from './ctf.js?v=759122e0';
-import { makeRescue, stepBoarding, stepUnloading, makeRescued, stepEntered, RESCUE_TUNE } from './rescue.js?v=759122e0';
-import { proto } from './plate-scene.js?v=759122e0';
-import { fileFor } from './catalog.js?v=759122e0';
-import { mulberry32 } from './rng.js?v=759122e0';
+import { noteStep } from './fps.js?v=dc8a0b52';
+import { bodyDims } from './catalog.js?v=dc8a0b52';
+import { makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M, reservedAt } from './plate.js?v=dc8a0b52';
+import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, stepGates, stepSentries, stepTracers, fireHull, damageAt, autopilotInput, makeBodies, stepBodies, bodyAt, shotRangeFor, solidHeightAt, SOLID_HEIGHT, damageSentryAt, stepCrush, ammoDotsLit, bodyHit, damageBody, powered } from './drive.js?v=dc8a0b52';
+import { WORLD_KNOBS, makeWorldParams, clampWorldParams, makeWorld, worldBlocked, worldBuildingAt, worldLosFor, worldSentries, worldGates, terrainNormal, splitQuad, groundAt, outpostGround } from './world.js?v=dc8a0b52';
+import { PALETTE, terrainMeshes, floraMeshes, LOOK, LOOKS } from './looks.js?v=dc8a0b52';
+import { withParam } from './url.js?v=dc8a0b52';
+import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=dc8a0b52';
+import { query, loadCatalog } from './plate-tab.js?v=dc8a0b52';
+import { modelledIds } from './catalog.js?v=dc8a0b52';
+import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS, makeMobileShell, mobileShell, makeGuardObject, makeFlagStand, makeCarriedFlag } from './drive-rig.js?v=dc8a0b52';
+import { makeSfx } from './sfx.js?v=dc8a0b52';
+import { makeCrew, stepCrew, stepSquash, shotHits, splashHits, hullCovers, crewFreeAt, keyAreas, CREW_TUNE } from './crew.js?v=dc8a0b52';
+import { makeCrewScene } from './crew-scene.js?v=dc8a0b52';
+import { makeGuard, stepGuard, GUARD_TUNE } from './guard.js?v=dc8a0b52';
+import { makeCtf, stepCtf, poleState, SLOTS, CTF_TUNE } from './ctf.js?v=dc8a0b52';
+import { makeRescue, stepBoarding, stepUnloading, makeRescued, stepEntered, RESCUE_TUNE } from './rescue.js?v=dc8a0b52';
+import { proto } from './plate-scene.js?v=dc8a0b52';
+import { fileFor } from './catalog.js?v=dc8a0b52';
+import { mulberry32 } from './rng.js?v=dc8a0b52';
 
 const ARRIVE_M = 8;
 
@@ -403,8 +403,11 @@ export function initWorldTab(root) {
       const dt = Math.min(0.05, last ? (now - last) / 1000 : 0);
       last = now;
       lastDt = dt;
+      const inp = keys.input();
+      if (q.get('autofire') === '1') inp.fire = true; // a probe that keeps shooting live
       const t0 = performance.now();
       step(dt, inp);
+      if (probe && simT - lastLog >= 1) { lastLog = simT; console.log(logLine()); }
       sync();
       noteStep(performance.now() - t0);
       render();
