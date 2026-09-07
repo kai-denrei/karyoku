@@ -4,6 +4,30 @@ Newest first. Each entry: what landed, then how it works, for programmers.
 Decisions and dead ends in more detail live in `.deban/` (local, not
 published).
 
+## 297c60f — fear, and the flags
+
+THE FEAR RULES, the operator's. Every crew is told about the tank now,
+with whether it is moving. A moving tank frightens everyone inside the
+flee radius: the enemy's crew runs, or cowers on a coin; ours always
+runs and never cowers, and the moment the tank stops ours forget it. A
+walker on a mission (a rescued one bound for the door) or already
+climbing aboard ignores the tank. So a stranded crew scatters from a
+tank rolling in and walks into it once it has stopped, and the rescued
+go into the infirmary and stay.
+
+CAPTURE THE FLAG. The workshop's flag kit is vendored whole (six banner
+units, three poles, the socket); the ember and vanguard banners carry
+the kit's own fire and power glyphs, which is exactly the operator's slot
+one and slot two. The generator places a three-cell flag stand beside a
+road near each base's centre: two poles a cell apart. Home keeps the
+fire flag with its power pole empty; the enemy keeps power with its fire
+pole empty. Stop the hull by the enemy's full pole and the flag comes
+down and rides on the hull; stop by our empty pole and it goes up (the
+kit's Raise clip), the set is complete, and that is the win, a thousand
+points. The rules are pure and tested; the world probe drives the whole
+thing to `flag=won`. The drive tab shows only the enemy's stand, so a
+flag can be taken there but not planted.
+
 ## cc3594e — the reckon guard
 
 Each base has a drone now, the workshop's twin-rotor reckon guard,
