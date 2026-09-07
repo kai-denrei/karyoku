@@ -37,10 +37,10 @@
 // ---------------------------------------------------------------------------
 
 import Delaunator from '../vendor/delaunator.js';
-import { mulberry32 } from './rng.js?v=3e6a547f';
-import { poissonDisk } from './poisson.js?v=3e6a547f';
-import { hexLattice } from './hex.js?v=3e6a547f';
-import { sub, mean, cross, dot, len, dist } from './vec2.js?v=3e6a547f';
+import { mulberry32 } from './rng.js?v=759122e0';
+import { poissonDisk } from './poisson.js?v=759122e0';
+import { hexLattice } from './hex.js?v=759122e0';
+import { sub, mean, cross, dot, len, dist } from './vec2.js?v=759122e0';
 
 // --- constants -------------------------------------------------------------
 const MAX_ANGLE = (Math.PI / 2) * 1.65; // ≈ 148.5°, drop slivers ≥ this

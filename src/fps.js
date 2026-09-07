@@ -2,7 +2,7 @@
 // loop calls tickFps(now); once a second the nav shows the rate and
 // window.__fps carries it for a probe. `?perf=1` logs the renderer's
 // counts every two seconds: draw calls are what a big plate costs.
-import { query } from './url.js?v=3e6a547f';
+import { query } from './url.js?v=759122e0';
 let frames = 0, last = 0, fps = 0, el = null, perfAt = 0;
 const perf = query().get('perf') === '1';
 // the tabs report their simulation cost here: an EMA of step() milliseconds, and the worst frame since the last perf line

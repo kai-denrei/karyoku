@@ -22,6 +22,8 @@ main { position: absolute; top: 36px; left: 0; right: 0; bottom: 0; }
 .notice { position: absolute; left: 176px; top: 12px; padding: 4px 8px; color: #ffb454;
   background: rgba(10, 13, 18, 0.88); border: 1px solid var(--line); }
 .notice[hidden] { display: none; }
+#fault { position: fixed; left: 12px; right: 12px; top: 44px; z-index: 30; padding: 8px 12px; background: #3a0d12; color: #ffb4b4; border: 1px solid #ff4d5e; font: 13px/1.4 ui-monospace, Menlo, monospace; }
+#fault[hidden] { display: none; }
 .radar { position: absolute; left: 12px; top: 12px; z-index: 4; pointer-events: none; border-radius: 50%; }
 body.mobile-shell .radar { left: max(8px, env(safe-area-inset-left)); top: 8px; width: 96px !important; height: 96px !important; }
 .lil-gui { --width: 280px; }
