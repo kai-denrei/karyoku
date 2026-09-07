@@ -1,0 +1,566 @@
+{
+ "version": 1,
+ "units": "meters",
+ "up": "+Y",
+ "forward": "+Z",
+ "target_triangles": 40000,
+ "assets": [
+  {
+   "id": "hugin_launchpad_d0",
+   "name": "HUGIN / Reusable launch & recovery / Game",
+   "state": "Intact",
+   "file": "hugin_launchpad_d0_game.glb",
+   "plot_m": [
+    40,
+    40
+   ],
+   "description": "Reusable booster with three broad flat landing feet, open engine bells, launch hold-downs and flame trench. The tower catcher grips the upper cargo capsule, lifts it clear, swings to the receiving deck, lowers it and returns it in a 20-second loop.",
+   "sockets": [
+    {
+     "id": "FUEL",
+     "kind": "fuel",
+     "position_m": [
+      13,
+      0.8,
+      -12
+     ],
+     "normal": [
+      0,
+      0,
+      -1
+     ],
+     "available": true,
+     "width_m": null
+    }
+   ],
+   "colliders": [
+    {
+     "id": "launch_pad",
+     "center_m": [
+      -3,
+      1.3,
+      0
+     ],
+     "size_m": [
+      17.4,
+      2.6,
+      17.4
+     ],
+     "condition": "always"
+    },
+    {
+     "id": "tower",
+     "center_m": [
+      9,
+      15,
+      -3
+     ],
+     "size_m": [
+      5.6,
+      30,
+      6
+     ],
+     "condition": "D0_D1_D2"
+    }
+   ],
+   "clearance": [],
+   "animations": [
+    "Cargo_Recovery_Cycle"
+   ],
+   "family": "hugin_launchpad_game",
+   "damage_level": 0,
+   "functional": true,
+   "landing_leg_count": 3,
+   "collision_quality": "blockout",
+   "bytes": 3244492,
+   "triangles": 39731,
+   "source_family": "hugin_launchpad",
+   "source_file": "../launchpad/hugin_launchpad_d0.glb",
+   "source_triangles": 91428,
+   "quality": "game",
+   "draw_calls": 90,
+   "nodes": 113,
+   "source_draw_calls": 408
+  },
+  {
+   "id": "hugin_launchpad_d1",
+   "name": "HUGIN / Reusable launch & recovery / Game",
+   "state": "Damaged",
+   "file": "hugin_launchpad_d1_game.glb",
+   "plot_m": [
+    40,
+    40
+   ],
+   "description": "Operational damage: heat-scarred booster, impact fragments and fault telemetry. The complete cargo-recovery sequence remains active.",
+   "sockets": [
+    {
+     "id": "FUEL",
+     "kind": "fuel",
+     "position_m": [
+      13,
+      0.8,
+      -12
+     ],
+     "normal": [
+      0,
+      0,
+      -1
+     ],
+     "available": true,
+     "width_m": null
+    }
+   ],
+   "colliders": [
+    {
+     "id": "launch_pad",
+     "center_m": [
+      -3,
+      1.3,
+      0
+     ],
+     "size_m": [
+      17.4,
+      2.6,
+      17.4
+     ],
+     "condition": "always"
+    },
+    {
+     "id": "tower",
+     "center_m": [
+      9,
+      15,
+      -3
+     ],
+     "size_m": [
+      5.6,
+      30,
+      6
+     ],
+     "condition": "D0_D1_D2"
+    }
+   ],
+   "clearance": [],
+   "animations": [
+    "Cargo_Recovery_Cycle"
+   ],
+   "family": "hugin_launchpad_game",
+   "damage_level": 1,
+   "functional": true,
+   "landing_leg_count": 3,
+   "collision_quality": "blockout",
+   "bytes": 3263412,
+   "triangles": 39727,
+   "source_family": "hugin_launchpad",
+   "source_file": "../launchpad/hugin_launchpad_d1.glb",
+   "source_triangles": 92940,
+   "quality": "game",
+   "draw_calls": 91,
+   "nodes": 114,
+   "source_draw_calls": 422
+  },
+  {
+   "id": "hugin_launchpad_d2",
+   "name": "HUGIN / Reusable launch & recovery / Game",
+   "state": "Critical",
+   "file": "hugin_launchpad_d2_game.glb",
+   "plot_m": [
+    40,
+    40
+   ],
+   "description": "Disabled recovery system: ruptured booster hull, stalled low catcher, damaged finger, tilted cargo capsule and torn service cable; booster and launcher remain recognizable.",
+   "sockets": [
+    {
+     "id": "FUEL",
+     "kind": "fuel",
+     "position_m": [
+      13,
+      0.8,
+      -12
+     ],
+     "normal": [
+      0,
+      0,
+      -1
+     ],
+     "available": false,
+     "width_m": null
+    }
+   ],
+   "colliders": [
+    {
+     "id": "launch_pad",
+     "center_m": [
+      -3,
+      1.3,
+      0
+     ],
+     "size_m": [
+      17.4,
+      2.6,
+      17.4
+     ],
+     "condition": "always"
+    },
+    {
+     "id": "tower",
+     "center_m": [
+      9,
+      15,
+      -3
+     ],
+     "size_m": [
+      5.6,
+      30,
+      6
+     ],
+     "condition": "D0_D1_D2"
+    }
+   ],
+   "clearance": [],
+   "animations": [],
+   "family": "hugin_launchpad_game",
+   "damage_level": 2,
+   "functional": false,
+   "landing_leg_count": 3,
+   "collision_quality": "blockout",
+   "bytes": 3260116,
+   "triangles": 40284,
+   "source_family": "hugin_launchpad",
+   "source_file": "../launchpad/hugin_launchpad_d2.glb",
+   "source_triangles": 93948,
+   "quality": "game",
+   "draw_calls": 93,
+   "nodes": 116,
+   "source_draw_calls": 430
+  },
+  {
+   "id": "hugin_launchpad_d3",
+   "name": "HUGIN / Reusable launch & recovery / Game",
+   "state": "Destroyed",
+   "file": "hugin_launchpad_d3_game.glb",
+   "plot_m": [
+    40,
+    40
+   ],
+   "description": "Collapsed recovery complex: open broken booster shell, detached flat landing feet, fallen catcher boom, cargo capsule wreck and severed tower conduits.",
+   "sockets": [
+    {
+     "id": "FUEL",
+     "kind": "fuel",
+     "position_m": [
+      13,
+      0.8,
+      -12
+     ],
+     "normal": [
+      0,
+      0,
+      -1
+     ],
+     "available": false,
+     "width_m": null
+    }
+   ],
+   "colliders": [
+    {
+     "id": "launch_pad",
+     "center_m": [
+      -3,
+      1.3,
+      0
+     ],
+     "size_m": [
+      17.4,
+      2.6,
+      17.4
+     ],
+     "condition": "always"
+    },
+    {
+     "id": "tower",
+     "center_m": [
+      9,
+      15,
+      -3
+     ],
+     "size_m": [
+      5.6,
+      30,
+      6
+     ],
+     "condition": "D0_D1_D2"
+    }
+   ],
+   "clearance": [],
+   "animations": [],
+   "family": "hugin_launchpad_game",
+   "damage_level": 3,
+   "functional": false,
+   "landing_leg_count": 3,
+   "collision_quality": "blockout",
+   "bytes": 2198380,
+   "triangles": 40064,
+   "source_family": "hugin_launchpad",
+   "source_file": "../launchpad/hugin_launchpad_d3.glb",
+   "source_triangles": 40064,
+   "quality": "game",
+   "draw_calls": 47,
+   "nodes": 61,
+   "source_draw_calls": 195
+  },
+  {
+   "id": "terraformer_3000_d0",
+   "name": "Terraformer 3000 / Stålheart / Game",
+   "state": "Intact",
+   "file": "terraformer_3000_d0_game.glb",
+   "plot_m": [
+    48,
+    56
+   ],
+   "description": "36 m tall planetary printer: rail-mounted portal, transverse carriage, vertical ram, six articulated joints, twin pressure silos and three side monitoring balconies. 16-second operating loop.",
+   "sockets": [
+    {
+     "id": "MATERIAL_INPUT",
+     "kind": "material",
+     "position_m": [
+      16,
+      1,
+      -24
+     ],
+     "normal": [
+      0,
+      0,
+      -1
+     ],
+     "available": true,
+     "width_m": null
+    }
+   ],
+   "colliders": [
+    {
+     "id": "reserved_machine_envelope",
+     "center_m": [
+      0,
+      18,
+      0
+     ],
+     "size_m": [
+      44,
+      36,
+      22
+     ],
+     "condition": "coarse_only"
+    }
+   ],
+   "clearance": [],
+   "animations": [
+    "Terraforming_Cycle"
+   ],
+   "family": "terraformer_3000_game",
+   "damage_level": 0,
+   "functional": true,
+   "height_m": 36.1,
+   "collision_quality": "blockout",
+   "arm_dof": 6,
+   "bytes": 4108224,
+   "triangles": 40506,
+   "source_family": "terraformer_3000",
+   "source_file": "../terraformer/terraformer_3000_d0.glb",
+   "source_triangles": 165404,
+   "quality": "game",
+   "draw_calls": 105,
+   "nodes": 122,
+   "source_draw_calls": 782
+  },
+  {
+   "id": "terraformer_3000_d1",
+   "name": "Terraformer 3000 / Stålheart / Game",
+   "state": "Damaged",
+   "file": "terraformer_3000_d1_game.glb",
+   "plot_m": [
+    48,
+    56
+   ],
+   "description": "Operational impact state: scarred armor, fallen fragments and warning telemetry. Rail, carriage and six-joint arm remain animated.",
+   "sockets": [
+    {
+     "id": "MATERIAL_INPUT",
+     "kind": "material",
+     "position_m": [
+      16,
+      1,
+      -24
+     ],
+     "normal": [
+      0,
+      0,
+      -1
+     ],
+     "available": true,
+     "width_m": null
+    }
+   ],
+   "colliders": [
+    {
+     "id": "reserved_machine_envelope",
+     "center_m": [
+      0,
+      18,
+      0
+     ],
+     "size_m": [
+      44,
+      36,
+      22
+     ],
+     "condition": "coarse_only"
+    }
+   ],
+   "clearance": [],
+   "animations": [
+    "Terraforming_Cycle"
+   ],
+   "family": "terraformer_3000_game",
+   "damage_level": 1,
+   "functional": true,
+   "height_m": 36.1,
+   "collision_quality": "blockout",
+   "arm_dof": 6,
+   "bytes": 4058084,
+   "triangles": 40009,
+   "source_family": "terraformer_3000",
+   "source_file": "../terraformer/terraformer_3000_d1.glb",
+   "source_triangles": 167564,
+   "quality": "game",
+   "draw_calls": 106,
+   "nodes": 123,
+   "source_draw_calls": 802
+  },
+  {
+   "id": "terraformer_3000_d2",
+   "name": "Terraformer 3000 / Stålheart / Game",
+   "state": "Critical",
+   "file": "terraformer_3000_d2_game.glb",
+   "plot_m": [
+    48,
+    56
+   ],
+   "description": "Disabled critical state: ruptured reservoir, exposed tank ribs, broken nozzle feed, folded arm and dead monitors.",
+   "sockets": [
+    {
+     "id": "MATERIAL_INPUT",
+     "kind": "material",
+     "position_m": [
+      16,
+      1,
+      -24
+     ],
+     "normal": [
+      0,
+      0,
+      -1
+     ],
+     "available": false,
+     "width_m": null
+    }
+   ],
+   "colliders": [
+    {
+     "id": "reserved_machine_envelope",
+     "center_m": [
+      0,
+      18,
+      0
+     ],
+     "size_m": [
+      44,
+      36,
+      22
+     ],
+     "condition": "coarse_only"
+    }
+   ],
+   "clearance": [],
+   "animations": [],
+   "family": "terraformer_3000_game",
+   "damage_level": 2,
+   "functional": false,
+   "height_m": 36.1,
+   "collision_quality": "blockout",
+   "arm_dof": 6,
+   "bytes": 3573204,
+   "triangles": 40254,
+   "source_family": "terraformer_3000",
+   "source_file": "../terraformer/terraformer_3000_d2.glb",
+   "source_triangles": 160836,
+   "quality": "game",
+   "draw_calls": 59,
+   "nodes": 76,
+   "source_draw_calls": 787
+  },
+  {
+   "id": "terraformer_3000_d3",
+   "name": "Terraformer 3000 / Stålheart / Game",
+   "state": "Destroyed",
+   "file": "terraformer_3000_d3_game.glb",
+   "plot_m": [
+    48,
+    56
+   ],
+   "description": "Collapsed state: fallen named bridge, detached reservoirs, broken arm segments, tower stumps and torn cabling.",
+   "sockets": [
+    {
+     "id": "MATERIAL_INPUT",
+     "kind": "material",
+     "position_m": [
+      16,
+      1,
+      -24
+     ],
+     "normal": [
+      0,
+      0,
+      -1
+     ],
+     "available": false,
+     "width_m": null
+    }
+   ],
+   "colliders": [
+    {
+     "id": "reserved_machine_envelope",
+     "center_m": [
+      0,
+      18,
+      0
+     ],
+     "size_m": [
+      44,
+      36,
+      22
+     ],
+     "condition": "coarse_only"
+    }
+   ],
+   "clearance": [],
+   "animations": [],
+   "family": "terraformer_3000_game",
+   "damage_level": 3,
+   "functional": false,
+   "height_m": 36.1,
+   "collision_quality": "blockout",
+   "arm_dof": 6,
+   "bytes": 3449216,
+   "triangles": 39639,
+   "source_family": "terraformer_3000",
+   "source_file": "../terraformer/terraformer_3000_d3.glb",
+   "source_triangles": 70732,
+   "quality": "game",
+   "draw_calls": 25,
+   "nodes": 32,
+   "source_draw_calls": 344
+  }
+ ],
+ "source": "jelaludo.github.io/SentryTowers_A6/game-assets (assets/game-ready): the 40k-triangle terraformer and the Hugin launchpad, four states each; ids without the _game suffix so the catalog reads the state"
+}

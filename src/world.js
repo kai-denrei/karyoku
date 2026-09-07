@@ -10,16 +10,16 @@
 // and the hull samples it where it stands, so the two cannot disagree
 // beyond the mesh's own faceting, and a plate sits on ground that is
 // exactly zero because the mask says so, not because a vertex was edited.
-import { mulberry32 } from './rng.js?v=eb404f6f';
-import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=eb404f6f';
-import { generateMesh, relax } from './organic-grid.js?v=eb404f6f';
-import { valueNoise2D } from './noise.js?v=eb404f6f';
-import { generatePlate, makePlateParams, CELL_M, DIRS, yawOfSide, KIND, shuffled } from './plate.js?v=eb404f6f';
-import { makeGates, makeSentries, blockedAt, losClear, buildingAt, gateCentre } from './drive.js?v=eb404f6f';
+import { mulberry32 } from './rng.js?v=ef335ef3';
+import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=ef335ef3';
+import { generateMesh, relax } from './organic-grid.js?v=ef335ef3';
+import { valueNoise2D } from './noise.js?v=ef335ef3';
+import { generatePlate, makePlateParams, CELL_M, DIRS, yawOfSide, KIND, shuffled } from './plate.js?v=ef335ef3';
+import { makeGates, makeSentries, blockedAt, losClear, buildingAt, gateCentre } from './drive.js?v=ef335ef3';
 
 export const ROAD_CLEAR_M = 7;
 export const WORLD_TUNE = {
-  size: 760,        // m, the world is a square
+  size: 1200,       // m, the world is a square: room for two 100-cell plates with ground between (it grows if not)
   r: 0.04,          // poisson radius in [0,1]; ~11 m quads after subdivision
   relaxIters: 40,
   amp: 14,          // m, main relief

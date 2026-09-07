@@ -275,6 +275,26 @@ no build step, Node invariant suites).
   Before this, yard fronts were areas: walkers spawned boxed inside yards
   and three of eight never walked; one paced inside the compound. The
   walking test measures the farthest REACH from the start, not the end.
+- THE CULL OF STAND-INS (operator, 2026-09-07): every NASA model is gone
+  (crane, drone pad, radar, antenna, launcher, and the folder); only what
+  we built (trees, rocks, the old Stalheart cast as `command_hq`) and what
+  the workshop built remains. Their ids are unmodelled and never placed.
+- THE 40K SET (`assets/game-ready/`, `GAME_URL`; ids without the kit's
+  `_game` suffix so `splitId` reads the state): `terraformer_3000` (12 x 14)
+  and `hugin_launchpad` (10 x 10), four states each, both LOOP_IDS with a
+  cycle clip, both LANDMARKS; the Hugin has `farFrom: 'terraformer_3000'`
+  so it takes the block farthest from the terraformer (they must not
+  display together). Battlezone edges at 40 degrees for the set.
+- DEFAULTS (operator): plate 100 x 76 cells, `speed` 30 (the knob's max),
+  `density` 0.25, `PROPS_PER_BLOCK` 3, `YARD_PER_BLOCK` 10, band stock
+  (w + h) / 10, world `size` 1200 m. A default plate holds ~890 pieces and
+  ~50 bodies (was 1300 / 470 before the yard cap): the key spots stand out.
+- PLACEMENT ON A BIG PLATE: `findSpot` takes `def.near` (spots nearest a
+  point first) so the compound and the flag stand sit at the CENTRE, not
+  at a random spot of a forty-cell block; the compound is tried with its
+  lane and then without before any farther block; a spot with no
+  orientation that gives a usable door is skipped (except yard stock, the
+  compound and the flag stand).
 - THE RAM: `RAM_IDS` (the comms tower) take a round per hit at
   `ramSpeed` 10 m/s, once per touch (0.8 s, `pc.ramCool`), down the same
   D0..D3 ladder as shells (`stepRam(plate, hull, dt, tune)`, called

@@ -13,9 +13,9 @@
 // `rotation.y = -rot * PI/2`. Yaw is compass degrees, 0 = N, 90 = E.
 // Plate width and depth are EVEN, because roads are 2 x 2 pieces laid on
 // even coordinates and a gate's road port has to land on one.
-import { mulberry32 } from './rng.js?v=eb404f6f';
-import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=eb404f6f';
-import { specById } from './catalog-spec.js?v=eb404f6f';
+import { mulberry32 } from './rng.js?v=ef335ef3';
+import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=ef335ef3';
+import { specById } from './catalog-spec.js?v=ef335ef3';
 
 export const CELL_M = 4;
 
@@ -24,11 +24,11 @@ export const ASCII_OF_KIND = ['.', '#', 'G', '=', 'B', 'o', 'S'];
 
 export const PLATE_TUNE = {
   seed: 1,
-  w: 40,          // cells, including the ring; even — a 7.8 m hull needs room
-  h: 32,          // cells, including the ring; even
+  w: 100,         // cells, including the ring; even (operator, 2026-09-07: base size 100 by default)
+  h: 76,          // cells, including the ring; even (4:3)
   gates: 2,
   moat: 4,        // cells of open ground between the outer perimeter and the base wall; 0 = one ring
-  density: 0.4,   // fraction of a block the packer tries to fill; the rest is manoeuvring room
+  density: 0.25,  // fraction of a block the packer tries to fill; sparse on purpose: the key spots must stand out
   gap: 2,         // cells kept clear around every building inside its block: a lane the hull fits
   arc: 110,       // sentry traverse, degrees
   tier: 1,        // sentry tier
@@ -432,14 +432,14 @@ export const MODELLED = new Set([
   'command_comms', 'air_launchpad', 'industry_garage', 'logistics_container', 'research_specimen_crate', 'road_straight', 'utility_conduit',
   // the warehouse props (the armored container stands in as logistics_container) and the solar kit
   'cargo_crate', 'secure_case', 'fuel_barrel', 'pallet_stack', 'solar_power_station', 'solar_panel_rack',
-  // the terraformer: a landmark that only a big plate can hold
-  'terraformer_3000',
+  // the workshop's 40k set: two landmarks kept far apart
+  'terraformer_3000', 'hugin_launchpad',
   // the assembly-line kit
   'robotic_assembly_line', 'robotic_arm', 'conveyor_module', 'control_platform', 'gantry_module', 'assembly_pallet',
   // house casts and NASA stand-ins
-  // (the habitat demonstration unit that stood in for the recreation hall and the shelter is gone: a
-  // 2.3k-triangle cone whose facets and airlock box read as a spiky jumble in the vector look)
-  'command_hq', 'logistics_crane', 'air_drone_pad', 'defense_radar', 'field_signal',
+  // (every NASA stand-in is gone, operator 2026-09-07: the crane and the drone pad were a mess of
+  // parts; only what we built and what the workshop built remains)
+  'command_hq',
   // the base kit
   'wall_standard', 'wall_corner', 'gate_vehicle', 'foundation_flat',
 ]);
@@ -472,7 +472,9 @@ export const LANDMARK = 'personnel_infirmary';
 // `minSide`: the plate's interior must be at least this many cells on its
 // shorter side, else the landmark is skipped without a word (the
 // terraformer is 12 x 14 cells with a lane: a default plate cannot hold it)
-export const LANDMARKS = [{ id: 'personnel_infirmary', gap: null, landmark: true }, { id: 'terraformer_3000', gap: 1, landmark: false, minSide: 40 }, { id: 'robotic_assembly_line', gap: 1, landmark: false }];
+// `farFrom`: placed in the block FARTHEST from that landmark (the two big
+// machines must not display together, operator 2026-09-07)
+export const LANDMARKS = [{ id: 'personnel_infirmary', gap: null, landmark: true }, { id: 'terraformer_3000', gap: 1, landmark: false, minSide: 40 }, { id: 'hugin_launchpad', gap: 1, landmark: false, minSide: 30, farFrom: 'terraformer_3000' }, { id: 'robotic_assembly_line', gap: 1, landmark: false }];
 // Buildings a block may hold more than once. Everything else is one per block.
 // THE WAREHOUSE PROPS: the container, crate, case, barrel and pallet are
 // the yard's stock and the drive's BODIES (pushable, breakable). They pack
@@ -484,7 +486,8 @@ const REPEATABLE = new Set(['personnel_barracks', 'command_comms', 'personnel_sh
 const NO_LANE = new Set(YARD_IDS);
 const NO_ROAD = new Set(YARD_IDS);
 const PROP_RATE = 0.08;
-const PROPS_PER_BLOCK = 6; // a 120-cell plate grew 486 antennas at the old rate
+const PROPS_PER_BLOCK = 3;
+const YARD_PER_BLOCK = 10;  // pieces of yard stock a block may hold (operator, 2026-09-07: not too many items)
 
 function floodBlocks(s) {
   const seen = new Uint8Array(s.w * s.h);
@@ -648,7 +651,7 @@ function reserveEntrance(s, pc) {
 }
 export const reservedAt = (plate, cx, cz) => cx >= 0 && cz >= 0 && cx < plate.w && cz < plate.h && plate.owner[cz * plate.w + cx] === RESERVED;
 
-function findSpot(s, rng, block, def) {
+export function findSpot(s, rng, block, def) {
   const [px, pz] = def.plot;
   let orients = shuffled(rng, [[px, pz, [0, 2]], [pz, px, [1, 3]]]);
   // a row packer keeps the orientation its block already has, so the rows stay rows
@@ -658,7 +661,11 @@ function findSpot(s, rng, block, def) {
   }
   const spots = [];
   for (let z = block.z0; z <= block.z1; z++) for (let x = block.x0; x <= block.x1; x++) spots.push([x, z]);
-  const order = shuffled(rng, spots);
+  // `near`: the spots closest to a point first (the compound and the flag
+  // stand want the plate's centre, not any corner of a forty-cell block)
+  const order = def.near
+    ? spots.sort((a, b) => Math.hypot(a[0] + def.plot[0] / 2 - def.near[0], a[1] + def.plot[1] / 2 - def.near[1]) - Math.hypot(b[0] + def.plot[0] / 2 - def.near[0], b[1] + def.plot[1] / 2 - def.near[1]))
+    : shuffled(rng, spots);
   const gap = NO_LANE.has(def.id) ? 0 : s.params.gap;
   for (const [pw, ph, rots] of orients) {
     // a row-packer goes BESIDE its own kind first, same orientation, so
@@ -679,8 +686,15 @@ function findSpot(s, rng, block, def) {
       // the S face (the entrance) meets a road if it can; else it faces OPEN
       // ground (a wall or another building in front of a door is a door nobody
       // uses); else whatever
-      let rot = rots.find((r) => sides.has(rotSide('S', r)));
+      // ...and the door's own cell must be road or free ground either way: a
+      // road along the face can still put a GATE or a socket at the door
+      const frontOk = (r) => { const f = frontCell({ x, z, pw, ph, rot: r }); if (!inside(s, f.cx, f.cz)) return false; const i = idx(s, f.cx, f.cz); return s.cells[i] === KIND.ROAD || (s.cells[i] === KIND.FOUNDATION && s.owner[i] === -1); };
+      let rot = rots.find((r) => sides.has(rotSide('S', r)) && frontOk(r));
       if (rot === undefined) rot = rots.find((r) => frontOpen(s, x, z, pw, ph, r));
+      // no orientation gives this spot a usable door: it is not a spot (a
+      // cramped plate packs less; a building with its door in a gate is worse)
+      if (rot === undefined && !NO_LANE.has(def.id) && def.id !== 'power_compound' && def.id !== FLAG_STAND) continue;
+      if (rot === undefined) rot = rots.find((r) => sides.has(rotSide('S', r)));
       return { x, z, pw, ph, rot: rot === undefined ? rots[0] : rot };
     }
   }
@@ -696,15 +710,18 @@ function packBlock(s, rng, block) {
   const list = [sorted[0], ...shuffled(rng, sorted.slice(1))];
   const target = s.params.density * block.cells.length;
   const used = new Map();
-  let filled = 0, placedAny = true;
+  let filled = 0, placedAny = true, yard = 0;
   while (filled < target && placedAny) {
     placedAny = false;
     for (const def of list) {
       if (filled >= target) break;
       if (used.get(def.id) && !REPEATABLE.has(def.id)) continue;
+      // a yard is a few rows, not a warehouse floor: the key spots must stand out
+      if (NO_LANE.has(def.id) && yard >= YARD_PER_BLOCK) continue;
       const spot = findSpot(s, rng, block, def);
       if (!spot) continue;
       const pi = place(s, def.id, spot.x, spot.z, spot.pw, spot.ph, spot.rot, KIND.BUILDING, { zone: block.zone });
+      if (NO_LANE.has(def.id)) yard++;
       if (!NO_LANE.has(def.id)) reserveEntrance(s, s.pieces[pi]); // yard stock has no door
       used.set(def.id, (used.get(def.id) || 0) + 1);
       filled += spot.pw * spot.ph;
@@ -732,7 +749,9 @@ function stepLandmark(s, rng) {
     if (!s.allowed.has(lm.id)) continue;
     if (lm.minSide && Math.min(s.w, s.h) - 2 * s.inset < lm.minSide) continue;
     const def = { ...specById(lm.id), gapOverride: lm.gap };
-    const blocks = s.blocks.filter((b) => b.zone !== 'command').sort((a, b) => b.cells.length - a.cells.length);
+    let blocks = s.blocks.filter((b) => b.zone !== 'command').sort((a, b) => b.cells.length - a.cells.length);
+    const far = lm.farFrom ? s.pieces.find((pc) => pc.id === lm.farFrom) : null;
+    if (far) { const fx = far.x + far.pw / 2, fz = far.z + far.ph / 2; const dist = (b) => Math.hypot((b.x0 + b.x1) / 2 - fx, (b.z0 + b.z1) / 2 - fz); blocks = [...blocks].sort((a, b) => dist(b) - dist(a)); }
     let done = false;
     for (const block of blocks.length ? blocks : s.blocks) {
       const spot = findSpot(s, rng, block, def);
@@ -761,12 +780,14 @@ function stepLandmark(s, rng) {
 export const POWER = { id: 'solar_power_station', rack: 'solar_panel_rack', w: 8, h: 6 };
 function stepPower(s, rng) {
   if (!s.allowed.has(POWER.id) || !s.allowed.has(POWER.rack)) return;
-  const def = { id: 'power_compound', plot: [POWER.w, POWER.h], gapOverride: 1 };
   const cx = s.w / 2, cz = s.h / 2;
+  const def = { id: 'power_compound', plot: [POWER.w, POWER.h], gapOverride: 1, near: [cx, cz] };
   const blocks = s.blocks.filter((b) => b.zone !== 'command')
     .sort((a, b) => Math.hypot((a.x0 + a.x1) / 2 - cx, (a.z0 + a.z1) / 2 - cz) - Math.hypot((b.x0 + b.x1) / 2 - cx, (b.z0 + b.z1) / 2 - cz));
+  // centrality first: each block near the centre is tried with its lane and
+  // then without one before a farther block is considered at all
   for (const block of blocks.length ? blocks : s.blocks) {
-    const spot = findSpot(s, rng, block, def);
+    const spot = findSpot(s, rng, block, def) || findSpot(s, rng, block, { ...def, gapOverride: 0 });
     if (!spot) continue;
     layCompound(s, spot, block);
     return;
@@ -815,8 +836,8 @@ export const RESERVED = -2;
 // nothing for: the tab stands the kit's poles on `plate.flags.poles`.
 export const FLAG_STAND = 'ctf_stand';
 function stepFlags(s, rng) {
-  const def = { id: FLAG_STAND, plot: [3, 1], gapOverride: 1 };
   const cx = s.w / 2, cz = s.h / 2;
+  const def = { id: FLAG_STAND, plot: [3, 1], gapOverride: 1, near: [cx, cz] };
   const blocks = [...s.blocks].sort((a, b) => Math.hypot((a.x0 + a.x1) / 2 - cx, (a.z0 + a.z1) / 2 - cz) - Math.hypot((b.x0 + b.x1) / 2 - cx, (b.z0 + b.z1) / 2 - cz));
   for (const block of blocks) {
     const spot = findSpot(s, rng, block, def);
@@ -854,7 +875,7 @@ function stepBand(s, rng) {
   const inBand = (x, z) => x > 0 && z > 0 && x < s.w - 1 && z < s.h - 1 && (x < R.x0 || z < R.z0 || x > R.x1 || z > R.z1);
   const stock = BAND_STOCK.filter((id) => s.allowed.has(id));
   if (!stock.length) return;
-  const want = Math.round((s.w + s.h) / 6);
+  const want = Math.round((s.w + s.h) / 10);
   const spots = [];
   for (let z = 1; z < s.h - 1; z++) for (let x = 1; x < s.w - 1; x++) if (inBand(x, z)) spots.push([x, z]);
   const order = shuffled(rng, spots);

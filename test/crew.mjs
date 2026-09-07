@@ -8,12 +8,12 @@ const rng = mulberry32(99);
 const areas = keyAreas(plate);
 check('key areas exist: building fronts, gates, the infirmary', areas.length >= 6 && areas.some((a) => a.tag === 'infirmary') && areas.some((a) => a.tag === 'gate'), `${areas.length} areas, tags ${[...new Set(areas.map((a) => a.tag))].join(' ')}`);
 check('key areas are walkable', areas.every((a) => crewWalkableAt(plate, a.x, a.z)));
-const crew = makeCrew(plate, 8, rng);
-check('eight walkers, all alive, one suit colour', crew.walkers.length === 8 && crew.walkers.every((w) => w.alive) && SUIT === 0xff7a1a);
+const crew = makeCrew(plate, 16, rng); // sixteen: a 100-cell plate's trips are long, so eight pick too few for the run coin to show
+check('sixteen walkers, all alive, one suit colour', crew.walkers.length === 16 && crew.walkers.every((w) => w.alive) && SUIT === 0xff7a1a);
 let everOff = false, ran = 0, movingFrames = 0;
 const start = crew.walkers.map((w) => [w.x, w.z]);
 const reach = crew.walkers.map(() => 0); // the farthest each walker ever got from where it began
-for (let i = 0; i < 90 * 60; i++) {
+for (let i = 0; i < 180 * 60; i++) {
   stepCrew(crew, plate, 1 / 60, rng);
   if (crew.walkers.some((w) => !crewWalkableAt(plate, w.x, w.z))) everOff = true;
   movingFrames += crew.walkers.filter((w) => w.moving).length;
@@ -22,8 +22,8 @@ for (let i = 0; i < 90 * 60; i++) {
 }
 // a walker may be back near its start when the clock stops; what matters is that it went somewhere
 const moved = reach.filter((d) => d > 4).length;
-check('ninety seconds of walking never leaves walkable ground', !everOff);
-check('they walk between areas', moved >= 5 && movingFrames > 90 * 8, `moved ${moved} movingFrames ${movingFrames}`);
+check('three minutes of walking never leaves walkable ground', !everOff);
+check('they walk between areas', moved >= 10 && movingFrames > 180 * 16, `moved ${moved} movingFrames ${movingFrames}`);
 check('sometimes they run', ran > 0 && ran < movingFrames * 0.6, `ran ${ran} of ${movingFrames}`);
 // an enemy hull nearby: everyone within fleeM runs, and most get farther
 // from it (a walker cornered between a wall and two buildings can only run

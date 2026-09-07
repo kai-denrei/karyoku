@@ -180,7 +180,7 @@ for (const seed of SEEDS) {
   YARDS.total += yards; YARDS.rowed += rowed;
 }
 // a cramped yard may only fit one container per orientation; most yards are rows
-check('the terraformer stands on the 120-cell plate and on no default plate', (() => { const big = generatePlate(makePlateParams({ ...PLATE_TUNE, seed: 3, w: 120, h: 120, gates: 3 })); const small = generatePlate(makePlateParams({ ...PLATE_TUNE, seed: 3 })); return big.pieces.filter((pc) => pc.id === 'terraformer_3000').length === 1 && small.pieces.every((pc) => pc.id !== 'terraformer_3000') && small.warnings.length === 0; })());
+check('the terraformer and the Hugin stand on the default plate, far apart, and not on a 40-cell one', (() => { const d = generatePlate(makePlateParams({ ...PLATE_TUNE, seed: 3 })); const t = d.pieces.find((pc) => pc.id === 'terraformer_3000'), h = d.pieces.find((pc) => pc.id === 'hugin_launchpad'); const small = generatePlate(makePlateParams({ ...PLATE_TUNE, seed: 3, w: 40, h: 32 })); return t && h && Math.hypot(t.x + t.pw / 2 - h.x - h.pw / 2, t.z + t.ph / 2 - h.z - h.ph / 2) >= 30 && small.pieces.every((pc) => pc.id !== 'terraformer_3000' && pc.id !== 'hugin_launchpad') && small.warnings.length === 0; })());
 check('the assembly line stands on nearly every default seed', LINES.stood >= LINES.total - 3, `${LINES.stood} of ${LINES.total}`);
 check('yard stock lines up in rows in most logistics yards', YARDS.total > 10 && YARDS.rowed / YARDS.total >= 0.8, `${YARDS.rowed} of ${YARDS.total}`);
 for (const [w, h] of SIZES) checkPacking(generatePlate(makePlateParams({ ...PLATE_TUNE, seed: 3, w, h, gates: 3 })), `${w}x${h}`, 2);

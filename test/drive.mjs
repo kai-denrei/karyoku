@@ -17,10 +17,10 @@ const DT = 1 / 60;
 {
   const h = makeHull(100, 100, 0);
   stepHull(h, { fwd: true }, 1, noBlock);
-  check('heading 0 drives toward -z', near(h.x, 100) && near(h.z, 88));
+  check('heading 0 drives toward -z', near(h.x, 100) && near(h.z, 100 - DRIVE_TUNE.speed));
   const e = makeHull(100, 100, 90);
   stepHull(e, { fwd: true }, 1, noBlock);
-  check('heading 90 drives toward +x', near(e.x, 112) && near(e.z, 100));
+  check('heading 90 drives toward +x', near(e.x, 100 + DRIVE_TUNE.speed) && near(e.z, 100));
   const t = makeHull(0, 0, 0);
   stepHull(t, { right: true }, 0.5, noBlock);
   check('turning right adds heading', near(t.heading, 60));
@@ -35,9 +35,9 @@ const DT = 1 / 60;
   const h = makeHull(20, wallFace + 16, 0);
   for (let i = 0; i < 300; i++) stepHull(h, { fwd: true }, DT, blocked);
   check('hull stops at the wall face plus its radius', h.z >= wallFace + DRIVE_TUNE.hullR - 1e-9 && h.z <= wallFace + DRIVE_TUNE.hullR + DRIVE_TUNE.speed * DT + 1e-9, `z=${h.z}`);
-  const s = makeHull(30, wallFace + 16, 315);
-  for (let i = 0; i < 120; i++) stepHull(s, { fwd: true }, DT, blocked);
-  check('driving diagonally into the wall slides along it', s.x < 30 - 5 && s.z >= wallFace + DRIVE_TUNE.hullR - 1e-9, `x=${s.x} z=${s.z}`);
+  const s = makeHull(60, wallFace + 16, 315);
+  for (let i = 0; i < 60; i++) stepHull(s, { fwd: true }, DT, blocked); // a second at 30 m/s is enough to reach the wall and slide
+  check('driving diagonally into the wall slides along it', s.x < 60 - 5 && s.z >= wallFace + DRIVE_TUNE.hullR - 1e-9, `x=${s.x} z=${s.z}`);
 }
 // --- gates ---------------------------------------------------------------
 {
@@ -99,7 +99,7 @@ const DT = 1 / 60;
   const [bx, bz] = bcell;
   const cx = (bx + 0.5) * CELL_M, cz = (bz + 0.5) * CELL_M;
   check('sight through a building is blocked', !losClear(plate, cx - 2 * CELL_M, cz, cx + 2 * CELL_M, cz));
-  check('sight over open ground is clear', losClear(plate, 200, 200, 240, 200));
+  check('sight over open ground is clear', losClear(plate, plate.w * CELL_M + 20, 40, plate.w * CELL_M + 60, 40)); // off the plate: open ground whatever the size
   // a column whose cells just inside the S wall are foundation: cross the wall only
   let col = -1;
   for (let x = 1; x < plate.w - 1 && col < 0; x++) if (plate.cells[(plate.h - 2) * plate.w + x] === KIND.FOUNDATION) col = x;

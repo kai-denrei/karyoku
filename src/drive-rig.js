@@ -2,15 +2,15 @@
 // the hull model with a stand-in until it lands, the key state, the tracer
 // meshes, and the two cameras. Rendering only; the rules are drive.js.
 import * as THREE from '../vendor/three.module.js';
-import { applySpaceScene, makeStars, makeComposer, PALETTE } from './looks.js?v=eb404f6f';
-import { tickFps } from './fps.js?v=eb404f6f';
-import { radarProject, radarBearing, sweepAngle, radarPhosphor, radarColor, RADAR_RANGE_M } from './radar.js?v=eb404f6f';
-import { castHull } from './casts.js?v=eb404f6f';
-import { styleForLook, BZ } from './looks.js?v=eb404f6f';
-import { STICK, stickVector, knobOffset } from './stick.js?v=eb404f6f';
-import { query } from './url.js?v=eb404f6f';
-import { loadGlb, mergeByMaterial, makeShellRack } from './glbmodels.js?v=eb404f6f';
-import { animProto } from './plate-scene.js?v=eb404f6f';
+import { applySpaceScene, makeStars, makeComposer, PALETTE } from './looks.js?v=ef335ef3';
+import { tickFps } from './fps.js?v=ef335ef3';
+import { radarProject, radarBearing, sweepAngle, radarPhosphor, radarColor, RADAR_RANGE_M } from './radar.js?v=ef335ef3';
+import { castHull } from './casts.js?v=ef335ef3';
+import { styleForLook, BZ } from './looks.js?v=ef335ef3';
+import { STICK, stickVector, knobOffset } from './stick.js?v=ef335ef3';
+import { query } from './url.js?v=ef335ef3';
+import { loadGlb, mergeByMaterial, makeShellRack } from './glbmodels.js?v=ef335ef3';
+import { animProto } from './plate-scene.js?v=ef335ef3';
 
 const HULL_URL = 'assets/models/mkcx2.glb';
 // The nodes that must keep moving through the merge, and the ones that

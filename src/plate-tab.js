@@ -4,16 +4,16 @@
 import * as THREE from '../vendor/three.module.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { generatePlate, PLATE_KNOBS, makePlateParams, clampPlateParams, CELL_M } from './plate.js?v=eb404f6f';
-import { CATALOG_SPEC } from './catalog-spec.js?v=eb404f6f';
-import { buildCatalog, modelledIds, BASE_KIT_URL, NASA_URL, HOUSE_URL, OUTPOST_URL, ASSEMBLY_URL, WAREHOUSE_URL, SOLAR_URL, TERRAFORMER_URL } from './catalog.js?v=eb404f6f';
-import { bustToken } from './glbmodels.js?v=eb404f6f';
-import { applySpaceScene, makeStars, makeComposer, LOOK, LOOKS } from './looks.js?v=eb404f6f';
-import { withParam } from './url.js?v=eb404f6f';
-import { tickFps } from './fps.js?v=eb404f6f';
-import { buildPlateGroup } from './plate-scene.js?v=eb404f6f';
+import { generatePlate, PLATE_KNOBS, makePlateParams, clampPlateParams, CELL_M } from './plate.js?v=ef335ef3';
+import { CATALOG_SPEC } from './catalog-spec.js?v=ef335ef3';
+import { buildCatalog, modelledIds, BASE_KIT_URL, HOUSE_URL, OUTPOST_URL, ASSEMBLY_URL, WAREHOUSE_URL, SOLAR_URL, GAME_URL } from './catalog.js?v=ef335ef3';
+import { bustToken } from './glbmodels.js?v=ef335ef3';
+import { applySpaceScene, makeStars, makeComposer, LOOK, LOOKS } from './looks.js?v=ef335ef3';
+import { withParam } from './url.js?v=ef335ef3';
+import { tickFps } from './fps.js?v=ef335ef3';
+import { buildPlateGroup } from './plate-scene.js?v=ef335ef3';
 
-import { query } from './url.js?v=eb404f6f';
+import { query } from './url.js?v=ef335ef3';
 export { query };
 
 // The catalog, once: the manifest fetched and merged, or placeholders only
@@ -22,17 +22,15 @@ let catalogP = null;
 export function loadCatalog() {
   if (catalogP) return catalogP;
   const get = (url) => fetch(`${url}${bustToken()}`).then((r) => (r.ok ? r.json() : Promise.reject(new Error(`${url}: HTTP ${r.status}`))));
-  // the NASA stand-ins are optional: a missing manifest costs placeholders, not the tab
-  const nasa = get(`${NASA_URL}manifest.json`).catch(() => null);
   const house = get(`${HOUSE_URL}manifest.json`).catch(() => null);
   const outpost = get(`${OUTPOST_URL}manifest.json`).catch(() => null);
   const assembly = get(`${ASSEMBLY_URL}manifest.json`).catch(() => null);
   const warehouse = get(`${WAREHOUSE_URL}manifest.json`).catch(() => null);
   const solar = get(`${SOLAR_URL}manifest.json`).catch(() => null);
-  const terraformer = get(`${TERRAFORMER_URL}manifest.json`).catch(() => null);
+  const game = get(`${GAME_URL}manifest.json`).catch(() => null);
   // order matters: a later manifest wins — the outpost kit beats the NASA
   // stand-ins, the house casts beat both
-  const extras = async () => [{ manifest: await nasa, base: NASA_URL }, { manifest: await outpost, base: OUTPOST_URL }, { manifest: await assembly, base: ASSEMBLY_URL }, { manifest: await warehouse, base: WAREHOUSE_URL }, { manifest: await solar, base: SOLAR_URL }, { manifest: await terraformer, base: TERRAFORMER_URL }, { manifest: await house, base: HOUSE_URL }];
+  const extras = async () => [{ manifest: await outpost, base: OUTPOST_URL }, { manifest: await assembly, base: ASSEMBLY_URL }, { manifest: await warehouse, base: WAREHOUSE_URL }, { manifest: await solar, base: SOLAR_URL }, { manifest: await game, base: GAME_URL }, { manifest: await house, base: HOUSE_URL }];
   catalogP = get(`${BASE_KIT_URL}manifest.json`)
     .then(async (m) => ({ catalog: buildCatalog(CATALOG_SPEC, m, await extras()), error: null }))
     .catch(async (e) => ({ catalog: buildCatalog(CATALOG_SPEC, null, await extras()), error: e.message }));

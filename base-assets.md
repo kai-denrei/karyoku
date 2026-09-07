@@ -73,7 +73,7 @@ All footprints below are **reserved plots in 4 m cells**, written X × Z. A 4 ×
 | ID | Individual asset | Plot | Function and placement logic |
 | --- | --- | --- | --- |
 | `command_hq` | Command nexus | 5 × 4 | Central command hub with roof sensor crown and protected entry. |
-| `terraformer_3000` | Terraformer (the Stalheart) | 12 × 14 | The 36 m planetary printer: rail portal, carriage, ram, reservoirs, a Terraforming_Cycle clip. A landmark for big plates only; 165k triangles, one per base. |
+| `terraformer_3000` | Terraformer (the Stalheart) | 12 × 14 | The 36 m planetary printer: rail portal, carriage, ram, reservoirs, a Terraforming_Cycle clip. A landmark; the workshop's 40k-triangle build, one per base. |
 | `command_operations` | Tactical operations annex | 3 × 3 | Expandable operations wing connected by an enclosed walkway. |
 | `command_comms` | Communications tower | 2 × 2 | Communications backbone with a visible antenna silhouette. |
 | `command_server` | Armored server vault | 3 × 2 | Data storage with cooling and dual power-feed sockets. |
@@ -146,6 +146,7 @@ All footprints below are **reserved plots in 4 m cells**, written X × Z. A 4 ×
 | ID | Individual asset | Plot | Function and placement logic |
 | --- | --- | --- | --- |
 | `air_launchpad` | VTOL launch and landing pad | 8 × 8 | Marked landing surface with a clear approach and overhead volume. |
+| `hugin_launchpad` | Hugin cargo launchpad | 10 × 10 | Reusable booster on three flat feet, catcher boom, cargo capsule, flame trench; a Cargo_Recovery_Cycle clip. A landmark, placed far from the terraformer. |
 | `air_pad_extension` | Landing apron extension | 2 × 2 | Expand a pad service apron without expanding its landing clearance. |
 | `air_hangar` | Aircraft maintenance hangar | 8 × 6 | Large-door bay matched to a named aircraft envelope. |
 | `air_control` | Flight-control tower | 3 × 3 | Pad-facing observation room and communications equipment. |

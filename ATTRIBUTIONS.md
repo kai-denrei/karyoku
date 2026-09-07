@@ -76,4 +76,4 @@ no longer in the repo.
 
 `assets/flags/` is the workshop's ctf-flags kit (jelaludo.github.io/SentryTowers_A6/ctf-flags): six banner units, three poles and the capture socket, all vendored for later use.
 
-`assets/terraformer/` is the workshop's Terraformer 3000 (jelaludo.github.io/SentryTowers_A6/terraformer), intact and collapsed states only; the damaged pair (21 MB) is not vendored.
+`assets/game-ready/` is the workshop's 40k-triangle set (jelaludo.github.io/SentryTowers_A6/game-assets): the Terraformer 3000 and the Hugin launchpad, four states each. The NASA stand-ins are no longer in the repo.

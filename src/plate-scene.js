@@ -5,16 +5,16 @@
 // as clones with their YAW pivot exposed, and everything else as a labelled
 // placeholder box of its footprint.
 import * as THREE from '../vendor/three.module.js';
-import { KIND, CELL_M, ringCoverage, LANDMARK, dirOfYaw } from './plate.js?v=eb404f6f';
-import { fileFor, fitFor, SECTION_COLOR, PLACEHOLDER_HEIGHT_M } from './catalog.js?v=eb404f6f';
-import { LOB_FAMILIES, LOB_ELEV_DEG } from './drive.js?v=eb404f6f';
-import { PALETTE, neonBox, BZ, styleForLook, bakeEdges } from './looks.js?v=eb404f6f';
-import { prepFor, ladderTint, dressMetal } from './casts.js?v=eb404f6f';
-import { tintModel } from './glbmodels.js?v=eb404f6f';
-import { BODY_IDS } from './drive.js?v=eb404f6f';
+import { KIND, CELL_M, ringCoverage, LANDMARK, dirOfYaw } from './plate.js?v=ef335ef3';
+import { fileFor, fitFor, SECTION_COLOR, PLACEHOLDER_HEIGHT_M } from './catalog.js?v=ef335ef3';
+import { LOB_FAMILIES, LOB_ELEV_DEG } from './drive.js?v=ef335ef3';
+import { PALETTE, neonBox, BZ, styleForLook, bakeEdges } from './looks.js?v=ef335ef3';
+import { prepFor, ladderTint, dressMetal } from './casts.js?v=ef335ef3';
+import { tintModel } from './glbmodels.js?v=ef335ef3';
+import { BODY_IDS } from './drive.js?v=ef335ef3';
 // pieces whose model carries a looping clip: the assembly kit's machines
-export const LOOP_IDS = new Set(['robotic_assembly_line', 'robotic_arm', 'conveyor_module', 'terraformer_3000']);
-import { loadGlb, loadGlbWithClips, mergeByMaterial, fitModel } from './glbmodels.js?v=eb404f6f';
+export const LOOP_IDS = new Set(['robotic_assembly_line', 'robotic_arm', 'conveyor_module', 'terraformer_3000', 'hugin_launchpad']);
+import { loadGlb, loadGlbWithClips, mergeByMaterial, fitModel } from './glbmodels.js?v=ef335ef3';
 
 const labelCache = new Map();
 function labelTexture(text) {
@@ -54,7 +54,7 @@ export function proto(url, pivots = [], fit = null, tint = null) {
     // painted over all of them. A faint emissive wash by side is all it gets.
     if (tint !== null && !BZ) {
       // ...and so does the research-outpost kit, from the same workshop
-      if (url.startsWith('assets/base-kit/') || url.startsWith('assets/outpost/') || url.startsWith('assets/warehouse/') || url.startsWith('assets/solar/') || url.startsWith('assets/terraformer/')) tintModel(fitted, tint, { wash: 0.10 });
+      if (url.startsWith('assets/base-kit/') || url.startsWith('assets/outpost/') || url.startsWith('assets/warehouse/') || url.startsWith('assets/solar/') || url.startsWith('assets/game-ready/')) tintModel(fitted, tint, { wash: 0.10 });
       else { ladderTint(fitted, tint); dressMetal(fitted); }
     }
     return styleForLook(fitted, url);

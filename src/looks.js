@@ -4,9 +4,9 @@
 // glow bleed. Everything visual that is not a model lives here, so a tab
 // asks for the look rather than owning a palette.
 import * as THREE from '../vendor/three.module.js';
-import { makeBloom } from './postfx.js?v=eb404f6f';
-import { tintModel, addEdgeOutlines } from './glbmodels.js?v=eb404f6f';
-import { query } from './url.js?v=eb404f6f';
+import { makeBloom } from './postfx.js?v=ef335ef3';
+import { tintModel, addEdgeOutlines } from './glbmodels.js?v=ef335ef3';
+import { query } from './url.js?v=ef335ef3';
 
 // TWO LOOKS. 'colony' is the Tron-and-TD-board look; 'battlezone' is the
 // 1980 vector display: black, one green, every shape an edge. `?look=`
@@ -79,9 +79,11 @@ export const BZ_EDGE_ANGLE = 28;
 // container authored for a vector look replaces it (noted in CLAUDE.md).
 export const BZ_OVERRIDES = {
   'container.glb': { angle: 60, color: G.dim, opacity: 0.5 },
-  // the terraformer is 165k triangles: at 28 degrees its edges are a haze; sparser and dimmer
-  'terraformer_3000_d0.glb': { angle: 55, color: G.dim, opacity: 0.6 },
-  'terraformer_3000_d3.glb': { angle: 55, color: G.dim, opacity: 0.6 },
+  // the 40k-triangle set: sparser edges than the kit pieces, so a machine reads as a machine, not a haze
+  'terraformer_3000_d0_game.glb': { angle: 40, color: G.dim, opacity: 0.7 }, 'terraformer_3000_d1_game.glb': { angle: 40, color: G.dim, opacity: 0.7 },
+  'terraformer_3000_d2_game.glb': { angle: 40, color: G.dim, opacity: 0.7 }, 'terraformer_3000_d3_game.glb': { angle: 40, color: G.dim, opacity: 0.7 },
+  'hugin_launchpad_d0_game.glb': { angle: 40, color: G.dim, opacity: 0.7 }, 'hugin_launchpad_d1_game.glb': { angle: 40, color: G.dim, opacity: 0.7 },
+  'hugin_launchpad_d2_game.glb': { angle: 40, color: G.dim, opacity: 0.7 }, 'hugin_launchpad_d3_game.glb': { angle: 40, color: G.dim, opacity: 0.7 },
 };
 export const bzStyleFor = (url) => (url ? BZ_OVERRIDES[url.split('/').pop()] : null) || { angle: BZ_EDGE_ANGLE, color: G.hi, opacity: 0.9 };
 

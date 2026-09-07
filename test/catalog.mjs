@@ -1,10 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { CATALOG_SPEC, SECTIONS, specById } from '../src/catalog-spec.js';
 import { MODELLED } from '../src/plate.js';
-import { buildCatalog, splitId, PLACEHOLDER_HEIGHT_M, fileFor, fitFor, modelledIds, bodyDims, NASA_URL, HOUSE_URL, OUTPOST_URL, ASSEMBLY_URL, WAREHOUSE_URL, SOLAR_URL, TERRAFORMER_URL } from '../src/catalog.js';
+import { buildCatalog, splitId, PLACEHOLDER_HEIGHT_M, fileFor, fitFor, modelledIds, bodyDims, HOUSE_URL, OUTPOST_URL, ASSEMBLY_URL, WAREHOUSE_URL, SOLAR_URL, GAME_URL } from '../src/catalog.js';
 import { check, near, done } from './check.mjs';
 
-check('123 asset types', CATALOG_SPEC.length === 123, `got ${CATALOG_SPEC.length}`);
+check('124 asset types', CATALOG_SPEC.length === 124, `got ${CATALOG_SPEC.length}`);
 check('unique ids', new Set(CATALOG_SPEC.map((r) => r.id)).size === CATALOG_SPEC.length);
 check('every plot is two positive integers',
   CATALOG_SPEC.every((r) => r.plot.length === 2 && r.plot.every((n) => Number.isInteger(n) && n > 0)));
@@ -18,7 +18,7 @@ check('unknown id is undefined', specById('nope') === undefined);
 const manifest = JSON.parse(readFileSync(new URL('../assets/base-kit/manifest.json', import.meta.url), 'utf8'));
 const cat = buildCatalog(CATALOG_SPEC, manifest);
 
-check('catalog has every spec row', cat.size === 123);
+check('catalog has every spec row', cat.size === 124);
 check('splitId parses a state suffix', splitId('wall_standard_d2').base === 'wall_standard' && splitId('wall_standard_d2').state === 2);
 check('splitId without suffix is state 0', splitId('road_t').state === 0 && splitId('road_t').base === 'road_t');
 const wall = cat.get('wall_standard');
@@ -38,15 +38,8 @@ for (const a of manifest.assets) {
     row ? `manifest ${a.plot_m} vs spec ${row.plot}` : 'no spec row');
 }
 // the NASA stand-ins: a second manifest, its own URL base, a fit per model
-const nasa = JSON.parse(readFileSync(new URL('../assets/models/nasa/manifest.json', import.meta.url), 'utf8'));
-const cat2 = buildCatalog(CATALOG_SPEC, manifest, [{ manifest: nasa, base: NASA_URL }]);
-check('nasa manifest ids all exist in the spec', nasa.assets.every((a) => specById(splitId(a.id).base)));
-check('nasa plots match the spec', nasa.assets.every((a) => { const r = specById(splitId(a.id).base); return a.plot_m[0] === r.plot[0] * 4 && a.plot_m[1] === r.plot[1] * 4; }));
-check('a nasa fit is carried', fitFor(cat2.get('air_drone_pad')).span === 7.2);
-check('the kit still wins its own pieces', fileFor(cat2.get('wall_standard')) === 'assets/base-kit/wall_standard_d0.glb' && fitFor(cat2.get('wall_standard')) === null);
-check('fits stay inside the footprint', nasa.assets.every((a) => a.fit.span <= Math.min(a.plot_m[0], a.plot_m[1])));
 const house = JSON.parse(readFileSync(new URL('../assets/models/manifest.json', import.meta.url), 'utf8'));
-const cat3 = buildCatalog(CATALOG_SPEC, manifest, [{ manifest: nasa, base: NASA_URL }, { manifest: house, base: HOUSE_URL }]);
+const cat3 = buildCatalog(CATALOG_SPEC, manifest, [{ manifest: house, base: HOUSE_URL }]);
 check('house manifest ids exist and plots match', house.assets.every((a) => { const r = specById(splitId(a.id).base); return r && a.plot_m[0] === r.plot[0] * 4 && a.plot_m[1] === r.plot[1] * 4; }));
 check('the house keeps only the Stalheart now', house.assets.length === 1);
 check('the Stalheart is the command nexus', fileFor(cat3.get('command_hq')) === HOUSE_URL + 'terraformer.glb' && fitFor(cat3.get('command_hq')).span === 19);
@@ -66,15 +59,16 @@ check('warehouse manifest: 20 assets, all known to the spec', warehouse.assets.l
 check('warehouse props fit their cells (collider inside the plot)', warehouse.assets.every((a) => { const r = specById(splitId(a.id).base); const c = a.colliders[0]; return c && c.size_m[0] <= r.plot[0] * 4 && c.size_m[2] <= r.plot[1] * 4; }));
 check('every warehouse and solar file is on disk', warehouse.assets.every((a) => { try { readFileSync(new URL('../assets/warehouse/' + a.file, import.meta.url)); return true; } catch { return false; } }) && solar.assets.every((a) => { try { readFileSync(new URL('../assets/solar/' + a.file, import.meta.url)); return true; } catch { return false; } }));
 check('solar manifest: the station (8 m) and the rack (6 m), four states each, in 2 x 2 cells', solar.assets.length === 8 && solar.assets.every((a) => { const r = specById(splitId(a.id).base); return r && r.plot[0] === 2 && r.plot[1] === 2 && a.plot_m[0] <= 8 && a.plot_m[1] <= 8; }));
-const terraformer = JSON.parse(readFileSync(new URL('../assets/terraformer/manifest.json', import.meta.url), 'utf8'));
-check('terraformer manifest: intact and collapsed, 12 x 14 cells, files on disk', terraformer.assets.length === 2 && terraformer.assets.every((a) => specById(splitId(a.id).base) && a.plot_m[0] === 48 && a.plot_m[1] === 56) && terraformer.assets.every((a) => { try { readFileSync(new URL('../assets/terraformer/' + a.file, import.meta.url)); return true; } catch { return false; } }));
-const cat4 = buildCatalog(CATALOG_SPEC, manifest, [{ manifest: nasa, base: NASA_URL }, { manifest: outpost, base: OUTPOST_URL }, { manifest: assembly, base: ASSEMBLY_URL }, { manifest: warehouse, base: WAREHOUSE_URL }, { manifest: solar, base: SOLAR_URL }, { manifest: terraformer, base: TERRAFORMER_URL }, { manifest: house, base: HOUSE_URL }]);
+const game = JSON.parse(readFileSync(new URL('../assets/game-ready/manifest.json', import.meta.url), 'utf8'));
+check('game-ready manifest: the terraformer and the Hugin, four states each, plots as the spec, files on disk', game.assets.length === 8 && game.assets.every((a) => { const r = specById(splitId(a.id).base); return r && a.plot_m[0] === r.plot[0] * 4 && a.plot_m[1] === r.plot[1] * 4; }) && game.assets.every((a) => { try { readFileSync(new URL('../assets/game-ready/' + a.file, import.meta.url)); return true; } catch { return false; } }));
+check('the set is about 40k triangles a state', game.assets.every((a) => a.triangles > 35000 && a.triangles < 45000));
+const cat4 = buildCatalog(CATALOG_SPEC, manifest, [{ manifest: outpost, base: OUTPOST_URL }, { manifest: assembly, base: ASSEMBLY_URL }, { manifest: warehouse, base: WAREHOUSE_URL }, { manifest: solar, base: SOLAR_URL }, { manifest: game, base: GAME_URL }, { manifest: house, base: HOUSE_URL }]);
 check('the armored container is the container now, four states', [0, 1, 2, 3].every((n) => cat4.get('logistics_container').states[n] && cat4.get('logistics_container').states[n].base === WAREHOUSE_URL) && fileFor(cat4.get('logistics_container')) === WAREHOUSE_URL + 'armored_container_d0.glb');
 const dims = bodyDims(cat4);
 check('body dims come from the colliders: the container is about 5.2 x 2.5 m', dims.logistics_container && near(dims.logistics_container.w, 5.2, 0.01) && near(dims.logistics_container.d, 2.5, 0.01) && dims.cargo_crate && dims.fuel_barrel && dims.pallet_stack && dims.secure_case);
 check('the assembly line is placeable with four states', [0, 1, 2, 3].every((n) => cat4.get('robotic_assembly_line').states[n]));
 check('the barracks has four states from the outpost', [0, 1, 2, 3].every((n) => cat4.get('personnel_barracks').states[n] && cat4.get('personnel_barracks').states[n].base === OUTPOST_URL));
-check('the outpost beats the NASA launcher for comms', fileFor(cat4.get('command_comms')) === OUTPOST_URL + 'command_comms_d0.glb');
+check('the outpost kit gives the comms tower', fileFor(cat4.get('command_comms')) === OUTPOST_URL + 'command_comms_d0.glb');
 
 check('the xenobiology lab is placeable', cat4.get('research_xenobiology') && !cat4.get('research_xenobiology').placeholder);
 {
