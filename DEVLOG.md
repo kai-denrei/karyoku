@@ -4,6 +4,15 @@ Newest first. Each entry: what landed, then how it works, for programmers.
 Decisions and dead ends in more detail live in `.deban/` (local, not
 published).
 
+## 7cea719 — the uplink, gone
+
+The orbital uplink never displayed properly (its stand-in was the NASA
+radome, a 272-triangle dome), so it is gone from the game entirely: the
+model, its manifest entry, the asset row, the modelled set, the command
+zone's list and the tests that named it. The workshop is at work on a
+40k-triangle Stalheart to take the terraformer's place at a quarter of
+the weight.
+
 ## 6c76dd8 — rams, a faster drone, and the Terraformer 3000
 
 The comms tower is destructible by RAM now: a hit at 10 m/s counts as a
