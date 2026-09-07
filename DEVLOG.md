@@ -4,6 +4,25 @@ Newest first. Each entry: what landed, then how it works, for programmers.
 Decisions and dead ends in more detail live in `.deban/` (local, not
 published).
 
+## f167eae — the seam, the span, the set
+
+Five of the operator's, in one pass. A shell that lands within 0.7 m of
+the seam between two wall segments wounds both: the aim is rewarded
+where it was only lucky before. The terraformer's hit-box is its two
+rail rows, the edges along its longer side where the legs run; the span
+between them is open to the hull, low to a shell and clear to a sentry's
+sight, so the tank drives under the portal the way the picture says it
+can. The old Stalheart cast, the last house model, left with its folder
+and its URL now that the workshop's terraformer stands in the base. The
+drone's shell flies at 75 m/s instead of 42; the pointer still holds 1.4 s.
+
+THE SET. The banners are grey until both flags stand on home's poles.
+Planting the captured flag completes the set: the cloth gets the kit's
+colours back on both stands, and a thirty-second hold begins; at its end
+the win and the bonus. The rules are pure and tested through capture,
+plant, hold and win, and the world probe runs the whole thing to `won`
+in forty simulated seconds.
+
 ## c3bf1f9 — ours and the workshop's, on a hundred cells
 
 The crane and the drone pad displayed as a mess of parts, so the rule is
