@@ -4,6 +4,31 @@ Newest first. Each entry: what landed, then how it works, for programmers.
 Decisions and dead ends in more detail live in `.deban/` (local, not
 published).
 
+## a70d9d8 — outposts, and the rescue
+
+Between the bases the world now has four small camps on open ground,
+ours and theirs by turns: five props on a wide ring (two crates, a
+barrel, a panel rack, a pallet) that block the hull like trunks do, work
+spots on the inside of the ring facing each prop so that every walk
+between them crosses the clearing, and a crew of four of the camp's side
+working there. The crew module learned to walk on any ground that
+answers `walkableAt`, not only a plate's cells, and to take a camp's own
+areas. The first cut put the work spots outside the ring and every
+straight walk crossed a prop; the whole crew stood idle for seven seconds
+in the probe before that was clear.
+
+OUR CAMPS ARE STRANDED. A hull that stops within 24 m is a lift: the
+walkers drop what they are doing, run to it, and within 5.2 m of its
+centre (past the hull's own half-length, which held them off at 3.4)
+climb aboard and vanish. Ten fit. Back at the home base, a hull stopped
+by the infirmary front unloads one every 0.6 s behind itself; each runs
+straight to the door on a mission that bypasses the crew's dawdling, goes
+in, and scores a hundred. The HUD carries aboard, rescued and score; the
+probe line too, and `?rescueprobe=1` drives the whole loop headlessly to
+`rescued=4 score=400`. Crew scenes grow on demand now, so a rescued
+walker set down at home gets a body. The radar shows the camps and their
+people by side.
+
 ## 799c0b6 — paint, a scope, a pick, and a wreck that stays put
 
 The crew is bigger (18 on the drive plate, 12 a plate in the world) and
