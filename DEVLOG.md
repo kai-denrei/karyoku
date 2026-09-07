@@ -4,6 +4,24 @@ Newest first. Each entry: what landed, then how it works, for programmers.
 Decisions and dead ends in more detail live in `.deban/` (local, not
 published).
 
+## dc8a2da — health you can see
+
+The operator asked for a diegetic read of the hull's points and doubted
+smoke would survive the wireframe. Two channels, both checked on
+pictures in both looks. THE LAMPS: six along the turret's rear roof
+edge, placed from the turret's measured box, one per sixth of the
+points; green while the hull is over half, amber over a quarter, red
+below, dark as they go out. In battlezone they stay green and the count
+is the read. THE DAMAGE: under half the hull throws sparks every fifth
+of a second, under a quarter embers and sparks, sized to be seen from
+the chase camera; they are points, so the vector look keeps them as a
+cloud of green speckles over the tank. The first cut was too small and
+too rare to land in any frame; twice the size and every fifth of a
+second, it does.
+
+The player has twenty points now (a sentry round one, a shell two, a lob
+three), the enemy twelve. `?hp=N` parks a probe at any level.
+
 ## 9b064eb — the hull you could not see
 
 The operator could neither see nor control his tank at 7e146775 and
