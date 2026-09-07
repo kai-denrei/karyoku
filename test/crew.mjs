@@ -12,14 +12,16 @@ const crew = makeCrew(plate, 8, rng);
 check('eight walkers, all alive, one suit colour', crew.walkers.length === 8 && crew.walkers.every((w) => w.alive) && SUIT === 0xff7a1a);
 let everOff = false, ran = 0, movingFrames = 0;
 const start = crew.walkers.map((w) => [w.x, w.z]);
+const reach = crew.walkers.map(() => 0); // the farthest each walker ever got from where it began
 for (let i = 0; i < 90 * 60; i++) {
   stepCrew(crew, plate, 1 / 60, rng);
   if (crew.walkers.some((w) => !crewWalkableAt(plate, w.x, w.z))) everOff = true;
   movingFrames += crew.walkers.filter((w) => w.moving).length;
   ran += crew.walkers.filter((w) => w.moving && w.running).length;
+  crew.walkers.forEach((w, k) => { reach[k] = Math.max(reach[k], Math.hypot(w.x - start[k][0], w.z - start[k][1])); });
 }
-let moved = 0;
-crew.walkers.forEach((w, i) => { if (Math.hypot(w.x - start[i][0], w.z - start[i][1]) > 4) moved++; });
+// a walker may be back near its start when the clock stops; what matters is that it went somewhere
+const moved = reach.filter((d) => d > 4).length;
 check('ninety seconds of walking never leaves walkable ground', !everOff);
 check('they walk between areas', moved >= 5 && movingFrames > 90 * 8, `moved ${moved} movingFrames ${movingFrames}`);
 check('sometimes they run', ran > 0 && ran < movingFrames * 0.6, `ran ${ran} of ${movingFrames}`);
@@ -126,7 +128,7 @@ check('sometimes they run', ran > 0 && ran < movingFrames * 0.6, `ran ${ran} of 
 {
   const c7 = makeCrew(plate, 9, mulberry32(31));
   check('the three kinds cycle through the crew', CREW_KINDS.length === 3 && c7.walkers.every((w, i) => w.kind === i % 3));
-  check('key areas know what they face', keyAreas(plate).filter((a) => a.tag !== 'gate').every((a) => typeof a.fx === 'number'));
+  check('key areas know what they face (roads and gates face nothing)', keyAreas(plate).filter((a) => a.tag !== 'gate' && a.tag !== 'road').every((a) => typeof a.fx === 'number') && keyAreas(plate).some((a) => a.tag === 'road'));
   const seen = new Set();
   let tooClose = 0, frames = 0;
   const r7 = mulberry32(32);

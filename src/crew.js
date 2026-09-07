@@ -14,7 +14,7 @@
 // asks it too, with the walker's own radius, so nobody walks through a
 // container or the tank. Something that rolls onto a walker slowly shoves
 // them out (`escape`); fast, it squashes them (stepSquash).
-import { KIND, CELL_M, rotSide, DIRS } from './plate.js?v=5fd2b9fe';
+import { KIND, CELL_M, rotSide, DIRS, YARD_IDS, POWER } from './plate.js?v=abe78688';
 
 export const CREW_TUNE = {
   walk: 1.4, run: 4.6,      // m/s
@@ -117,7 +117,9 @@ export function keyAreas(plate) {
   // `fx, fz` is what stands there, to face and point at
   const push = (cx, cz, tag, fx = null, fz = null) => { if (walkable(plate, cx, cz)) out.push({ x: (cx + 0.5) * CELL_M, z: (cz + 0.5) * CELL_M, tag, fx, fz }); };
   for (const pc of plate.pieces) {
-    if (pc.kind === KIND.BUILDING && pc.zone !== 'band' && pc.id !== 'logistics_container') {
+    // a building with a door: not yard stock (bodies, and they move), not the
+    // compound's station and racks (behind a wall a walker cannot cross)
+    if (pc.kind === KIND.BUILDING && pc.zone !== 'band' && !YARD_IDS.includes(pc.id) && pc.id !== POWER.id && pc.id !== POWER.rack) {
       const side = rotSide('S', pc.rot);
       const [dx, dz] = DIRS[side];
       const mx = pc.x + Math.floor(pc.pw / 2), mz = pc.z + Math.floor(pc.ph / 2);
@@ -127,6 +129,8 @@ export function keyAreas(plate) {
       void dx; void dz;
     }
   }
+  // the road junctions: somewhere to be seen going, always reachable along a road
+  if (plate.roads && plate.roads.nodes) for (const key of plate.roads.nodes) { const bx = Math.floor(key / 1000), bz = key % 1000; push(bx * 2, bz * 2, 'road'); }
   for (const g of plate.gates) {
     if (g.ring !== 'inner' && plate.inset > 0) continue;
     const [ox, oz] = DIRS[g.side];
