@@ -4,6 +4,23 @@ Newest first. Each entry: what landed, then how it works, for programmers.
 Decisions and dead ends in more detail live in `.deban/` (local, not
 published).
 
+## 9b064eb — the hull you could not see
+
+The operator could neither see nor control his tank at 7e146775 and
+guessed it had spawned under a hill. The probe said the hull was alive
+with twelve points and did move, and a visibility readout added to the
+probe line said the truth: the hull object had no children. Two hulls
+now load the same cached model, and the merge consumes the tree it is
+given, so whichever hull merged second was built from a hollow scene; it
+was the player's. Each hull merges a deep copy with its own materials.
+
+The hill guess was half right. The flat margin ramped from the plate's
+edge, so the spawn twelve metres out stood on a slope, and a tree stood
+thirteen metres straight ahead of it; the hull that did drive stopped
+against the trunk. The margin is flat for its full width and only then
+ramps, and nothing grows within thirty metres of either gate's outside
+point. The world checks hold both.
+
 ## 1e73f00 — the enemy tank, and the first win
 
 There is always an enemy tank now. It spawns at its base's facing gate,
