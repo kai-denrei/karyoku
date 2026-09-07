@@ -105,6 +105,19 @@ no build step, Node invariant suites).
   D3 is rubble and `blockedAt` lets the hull through. The scene draws walls
   by `piece.state` (`wallState: null`) and `rig.rebuildWalls()` after a hit.
   Corners and gates have no damaged models yet and shrug rounds off.
+- SENTRIES ARE DAMAGEABLE: `damageSentryAt(plate, sentries, x, z, tune)`
+  counts hull rounds on the socket (`sentryHits` 3); at the third the
+  sentry is `alive: false`: `stepSentries` skips it, `solidHeightAt(...,
+  sentries)` drops its cell to `SOLID_HEIGHT.wreck` so shells fly over,
+  `rayStop(plate, gates, bodies, sentries)`. THE WRECK stays: the scene's
+  `breakSentry(index)` keeps the plinth and base, knocks the head (the
+  YAW subtree) backward into the band on its side, rests it on the ground
+  by its measured box (offsets DIVIDED by the fit scale: the node's frame
+  is scaled), darkens it (0.3 colour, no emissive; dim lines in BZ), and
+  remembers indices broken before the model loaded. `sfx.sentryDestroyed`
+  is two shell bursts (head 5.0, plinth 3.4) and `sentry_destroyed`.
+  Probe: `?aim=sentry&fire=1&hold=1&elev=2&tick=6` logs `sentriesDown=1`
+  and a `[wreck]` line with the head's box.
 - World: plate A is HOME (gates open, sentries silent), plate B is HOSTILE
   (gates shut, sentries live) — you breach B through its wall.
 - Probes: `#drive?seed=7&tick=4&fire=1&hold=1&aim=wall` shoots the wall

@@ -39,10 +39,11 @@ export const ELEMENTS = [
     { event: 'a family with no round of its own (fallback)', key: 'tower_single', wired: true },
     { event: 'rapid round (reference leftover)', key: 'tower_rapid', wired: false },
     { event: 'turret slews onto the hull', key: null, want: 'servo whine, pitched by slew rate, audible only near' },
-    { event: 'sentry destroyed', key: null, want: 'not in the PoC: sentries take no damage yet' },
+    { event: 'sentry breaks after three rounds (blast, debris, the wreck stays)', key: 'sentry_destroyed', wired: true },
+    { event: 'a round on a sentry that still stands', key: null, want: 'covered by the shell impact today; wants a heavier clang of its own' },
   ] },
   { id: 'impacts', label: 'Shell impacts', events: [
-    { event: 'shell hits a wall or building', key: 'impact_shell', wired: true },
+    { event: 'shell hits a wall, a building or a sentry', key: 'impact_shell', wired: true },
     { event: 'wall panel collapses to rubble', key: 'impact_rubble', wired: true },
     { event: 'shell hits the ground', key: null, want: 'dull thud with dirt, quieter than a wall hit' },
     { event: 'lob lands (splash ring)', key: null, want: 'heavy crump, low, felt more than heard' },

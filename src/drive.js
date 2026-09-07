@@ -11,8 +11,8 @@
 // THE ANTI-AIMBOT NUMBERS are yawRate and the arc: a sentry cannot point
 // outside its arc, and inside it turns at yawRate, so a hull that crosses
 // the arc fast, or stays in the blind sector, is never fired on.
-import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=19ae0665';
-import { KIND, CELL_M, wrapDeg, dirOfYaw, DIRS, yawOfSide, rotSide } from './plate.js?v=19ae0665';
+import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=067e583d';
+import { KIND, CELL_M, wrapDeg, dirOfYaw, DIRS, yawOfSide, rotSide } from './plate.js?v=067e583d';
 
 export const DRIVE_TUNE = {
   speed: 12,        // m/s forward
@@ -25,6 +25,7 @@ export const DRIVE_TUNE = {
   sweepRate: 25,    // deg/s idle sweep
   tolerance: 3,     // deg on-target
   cooldown: 0.9,    // s between rounds
+  sentryHits: 3,    // hull rounds that break a sentry
   fireCells: 9,     // engagement range, cells
   tracerSpeed: 40,  // m/s
   hitR: 2.4,        // m, a tracer this close to the hull centre is a hit
@@ -62,6 +63,7 @@ export const DRIVE_KNOBS = [
   { key: 'sweepRate', label: 'sweep rate (deg/s)', group: 'sentries', min: 0, max: 120, step: 5 },
   { key: 'tolerance', label: 'tolerance (deg)', group: 'sentries', min: 0.5, max: 15, step: 0.5 },
   { key: 'cooldown', label: 'cooldown (s)', group: 'sentries', min: 0.1, max: 5, step: 0.1 },
+  { key: 'sentryHits', label: 'rounds to break one', group: 'sentries', min: 1, max: 9, step: 1 },
   { key: 'fireCells', label: 'range (cells)', group: 'sentries', min: 2, max: 20, step: 1 },
   { key: 'tracerSpeed', label: 'tracer speed (m/s)', group: 'sentries', min: 5, max: 120, step: 5 },
   { key: 'hitR', label: 'hit radius (m)', group: 'sentries', min: 0.5, max: 6, step: 0.1 },
@@ -325,7 +327,27 @@ export function makeSentries(plate) {
     home: st.yawDeg, arc: st.arcDeg, yaw: st.yawDeg, want: st.yawDeg,
     cool: 0, sweepDir: 1, tracking: false, rounds: 0,
     family: st.family, lob: LOB_FAMILIES.has(st.family),
+    hp: 0, alive: true,
   }));
+}
+
+// SENTRIES ARE DAMAGEABLE. A hull round on a socket cell counts against the
+// sentry standing there; at `sentryHits` it is broken: it stops tracking
+// and firing, and it stays as a wreck of its own kind on its plinth (the
+// scene poses it). The socket still blocks the hull; what changes for
+// shells is the height: a wreck is low, and a round flies over it.
+export function sentryAt(plate, sentries, x, z) {
+  const cx = toCell(x), cz = toCell(z);
+  if (cellKind(plate, cx, cz) !== KIND.SENTRY) return null;
+  return sentries.find((s) => { const st = plate.sentries[s.index]; return st && cx >= st.x && cx < st.x + 2 && cz >= st.z && cz < st.z + 2; }) || null;
+}
+export function damageSentryAt(plate, sentries, x, z, tune = DRIVE_TUNE) {
+  const s = sentryAt(plate, sentries, x, z);
+  if (!s || !s.alive) return null;
+  s.hp++;
+  if (s.hp < tune.sentryHits) return { sentry: s, destroyed: false };
+  s.alive = false; s.tracking = false;
+  return { sentry: s, destroyed: true };
 }
 
 // A building blocks sight; the ring wall does not — the turrets stand above
@@ -346,6 +368,7 @@ export function losClear(plate, ax, az, bx, bz) {
 export function stepSentries(sentries, hull, dt, los, tune = DRIVE_TUNE) {
   const fired = [];
   for (const s of sentries) {
+    if (s.alive === false) { s.tracking = false; continue; } // a wreck sees nothing
     if (s.cool > 0) s.cool = Math.max(0, s.cool - dt);
     const bearing = bearingTo(s.cx, s.cz, hull.x, hull.z);
     const dist = Math.hypot(hull.x - s.cx, hull.z - s.cz);
@@ -451,21 +474,22 @@ export const buildingAt = (plate, x, z) => {
 // what a hull shot stops on: anything that is not ground, road or an open lane
 export const solidAt = (plate, gates, x, z) => blockedAt(plate, gates, x, z);
 // how tall what stands on a cell is, metres: a shell above it flies on
-export const SOLID_HEIGHT = { wall: 3.2, gate: 5.5, building: 7.0, sentry: 5.0, prop: 1.5, body: 4.2 };
-export function solidHeightAt(plate, x, z) {
+export const SOLID_HEIGHT = { wall: 3.2, gate: 5.5, building: 7.0, sentry: 5.0, wreck: 1.6, prop: 1.5, body: 4.2 };
+// `sentries` lets a broken sentry's cell be as low as its wreck
+export function solidHeightAt(plate, x, z, sentries = null) {
   const k = cellKind(plate, toCell(x), toCell(z));
   if (k === KIND.WALL) return SOLID_HEIGHT.wall;
   if (k === KIND.GATE) return SOLID_HEIGHT.gate;
   if (k === KIND.BUILDING) return SOLID_HEIGHT.building;
-  if (k === KIND.SENTRY) return SOLID_HEIGHT.sentry;
+  if (k === KIND.SENTRY) { const s = sentries && sentryAt(plate, sentries, x, z); return s && !s.alive ? SOLID_HEIGHT.wreck : SOLID_HEIGHT.sentry; }
   if (k === KIND.PROP) return SOLID_HEIGHT.prop;
   return 0;
 }
 // the predicate for stepTracers: shots stop on solids they do not clear,
 // sentry rounds on buildings only
-export const rayStop = (plate, gates, bodies = []) => (x, z, t) => {
+export const rayStop = (plate, gates, bodies = [], sentries = null) => (x, z, t) => {
   if (!t || t.kind !== 'shot') return buildingAt(plate, x, z);
   const y = t.y ?? 0;
   if (bodyAt(bodies, x, z) && y <= SOLID_HEIGHT.body) return true;
-  return solidAt(plate, gates, x, z) && y <= solidHeightAt(plate, x, z);
+  return solidAt(plate, gates, x, z) && y <= solidHeightAt(plate, x, z, sentries);
 };

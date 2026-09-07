@@ -4,11 +4,11 @@
 // which round, how the engine bed follows the throttle, where a shell's
 // impact goes and which way it faces, how far a machine's hum carries.
 import * as THREE from '../vendor/three.module.js';
-import { makeAudio } from './audio.js?v=19ae0665';
-import { SENTRY_FIRE, DEATH_KEYS } from './audiomanifest.js?v=19ae0665';
-import { makeImpactBurst, IMPACT_TUNE, orientImpact } from './impactfx.js?v=19ae0665';
-import { PALETTE, BZ } from './looks.js?v=19ae0665';
-import { makeTankFeel, stepTankFeel, landTankFeel, fireTankFeel, applyTankFeel } from './tankfeel.js?v=19ae0665';
+import { makeAudio } from './audio.js?v=067e583d';
+import { SENTRY_FIRE, DEATH_KEYS } from './audiomanifest.js?v=067e583d';
+import { makeImpactBurst, IMPACT_TUNE, orientImpact } from './impactfx.js?v=067e583d';
+import { PALETTE, BZ } from './looks.js?v=067e583d';
+import { makeTankFeel, stepTankFeel, landTankFeel, fireTankFeel, applyTankFeel } from './tankfeel.js?v=067e583d';
 
 // the impact set is authored for a 4-unit wall; a shell on a 4 m cell
 // wants about this much of it
@@ -116,6 +116,12 @@ export function makeSfx(scene) {
       scene.add(g);
       fx.push(g);
       if (sound) audio.play(sound, { dist });
+    },
+    // a sentry breaking: the full shell recipe twice over, big, at the head
+    // and at the plinth (the second one lays the scorch), and the blast
+    sentryDestroyed(point, dist) {
+      this.impact('shell', point, [0, 1, 0], dist, 5.0, 'sentry_destroyed');
+      this.impact('shell', [point[0], point[1] - 2.6, point[2]], [0, 1, 0], dist, 3.4, null);
     },
     // a soft body hit: one of three cries, faded by distance, and the
     // two-colour burst at the body; the light impact recipe's flash and

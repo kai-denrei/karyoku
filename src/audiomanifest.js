@@ -43,6 +43,8 @@ export const SOUNDS = {
   impact_shell:  { file: `${A}/tower_single.mp3`,   bus: 'tank', gain: 0.55, maxVoices: 3, minInterval: 0.05, rateJitter: 0.10 },
   impact_rubble: { file: `${A}/tank_destroyed.mp3`, bus: 'tank', gain: 0.70, maxVoices: 2, minInterval: 0.20, rateJitter: 0.05 },
   impact_hit:    { file: `${A}/tank_secondary.mp3`, bus: 'tank', gain: 0.45, maxVoices: 3, minInterval: 0.08, rateJitter: 0.12 },
+  // a sentry breaking: the reference's tank death, which is the big one
+  sentry_destroyed: { file: `${A}/tank_destroyed.mp3`, bus: 'towers', gain: 0.90, maxVoices: 2, minInterval: 0.30, rateJitter: 0.05 },
 
   // --- the soft bodies: an astronaut hit by a shell, or run over. Three
   // cries, picked at random per death so a crowd never chants ------------

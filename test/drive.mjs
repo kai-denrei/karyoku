@@ -1,6 +1,6 @@
 import { generatePlate, makePlateParams, PLATE_TUNE, KIND, CELL_M, blindCells } from '../src/plate.js';
 import { DRIVE_TUNE, driveKnobProblems, makeHull, stepHull, blockedAt, makeGates, stepGates, spawnFor,
-  makeSentries, stepSentries, losClear, stepTracers, buildingAt, bearingTo, lobHeight, LOB_FAMILIES, fireHull, rayStop, damageAt, autopilotInput, makeBodies, stepBodies, bodyAt, BODY_IDS, hitsPerState, shotRangeFor, solidHeightAt } from '../src/drive.js';
+  makeSentries, stepSentries, losClear, stepTracers, buildingAt, bearingTo, lobHeight, LOB_FAMILIES, fireHull, rayStop, damageAt, autopilotInput, makeBodies, stepBodies, bodyAt, BODY_IDS, hitsPerState, shotRangeFor, solidHeightAt, sentryAt, damageSentryAt, SOLID_HEIGHT } from '../src/drive.js';
 import { check, near, done } from './check.mjs';
 
 check('knob table is sound', driveKnobProblems().length === 0, driveKnobProblems().join('; '));
@@ -303,5 +303,32 @@ for (let seed = 1; seed <= 50; seed++) {
   const k = makeHull(100, 100, 0);
   stepHull(k, { fwd: true }, 1, noBlock);
   check('the keys still drive at full speed', near(k.z, 100 - DRIVE_TUNE.speed));
+}
+// SENTRIES ARE DAMAGEABLE: three rounds on the socket break one; a wreck
+// sees nothing, fires nothing, and is low enough to shoot over
+{
+  const ss = makeSentries(plate);
+  const s = ss[0];
+  const st = plate.sentries[0];
+  const other = (st.x + 1) * CELL_M + 1.5; // the socket's far cell, still this sentry
+  const open = plate.cells.findIndex((k) => k === KIND.FOUNDATION);
+  check('a round on open ground is nobody\'s', damageSentryAt(plate, ss, (open % plate.w + 0.5) * CELL_M, (Math.floor(open / plate.w) + 0.5) * CELL_M) === null && ss.every((x) => x.hp === 0));
+  check('the socket resolves to its sentry on both cells', sentryAt(plate, ss, s.cx, s.cz) === s && sentryAt(plate, ss, other, s.cz + 1) === s);
+  const r1 = damageSentryAt(plate, ss, s.cx, s.cz), r2 = damageSentryAt(plate, ss, other, s.cz + 1);
+  check('two rounds wound it and it still stands', r1 && !r1.destroyed && r2 && !r2.destroyed && s.alive && s.hp === 2);
+  const r3 = damageSentryAt(plate, ss, s.cx, s.cz);
+  check('the third breaks it', r3 && r3.destroyed && r3.sentry === s && !s.alive);
+  check('a wreck takes no more', damageSentryAt(plate, ss, s.cx, s.cz) === null);
+  check('a wreck is low: shells clear it, a live one stops them', solidHeightAt(plate, s.cx, s.cz, ss) === SOLID_HEIGHT.wreck && solidHeightAt(plate, s.cx, s.cz) === SOLID_HEIGHT.sentry);
+  // a hull right in front of the wreck, inside its arc: nothing happens
+  const [dx, dz] = [Math.sin(s.home * Math.PI / 180), -Math.cos(s.home * Math.PI / 180)];
+  const h = makeHull(s.cx + dx * 4 * CELL_M, s.cz + dz * 4 * CELL_M, (s.home + 180) % 360);
+  let shots = 0;
+  for (let i = 0; i < 300; i++) shots += stepSentries([s], h, 1 / 60, () => true).length;
+  check('a wreck never tracks and never fires', shots === 0 && !s.tracking);
+  const live = makeSentries(plate)[0];
+  let liveShots = 0;
+  for (let i = 0; i < 300; i++) liveShots += stepSentries([live], h, 1 / 60, () => true).length;
+  check('...while the same sentry alive would have', liveShots > 0);
 }
 done();

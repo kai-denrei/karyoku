@@ -5,16 +5,16 @@
 // as clones with their YAW pivot exposed, and everything else as a labelled
 // placeholder box of its footprint.
 import * as THREE from '../vendor/three.module.js';
-import { KIND, CELL_M, ringCoverage, LANDMARK } from './plate.js?v=19ae0665';
-import { fileFor, fitFor, SECTION_COLOR, PLACEHOLDER_HEIGHT_M } from './catalog.js?v=19ae0665';
-import { LOB_FAMILIES, LOB_ELEV_DEG } from './drive.js?v=19ae0665';
-import { PALETTE, neonBox, BZ, styleForLook, bakeEdges } from './looks.js?v=19ae0665';
-import { prepFor, ladderTint, dressMetal } from './casts.js?v=19ae0665';
-import { tintModel } from './glbmodels.js?v=19ae0665';
-import { BODY_IDS } from './drive.js?v=19ae0665';
+import { KIND, CELL_M, ringCoverage, LANDMARK, dirOfYaw } from './plate.js?v=067e583d';
+import { fileFor, fitFor, SECTION_COLOR, PLACEHOLDER_HEIGHT_M } from './catalog.js?v=067e583d';
+import { LOB_FAMILIES, LOB_ELEV_DEG } from './drive.js?v=067e583d';
+import { PALETTE, neonBox, BZ, styleForLook, bakeEdges } from './looks.js?v=067e583d';
+import { prepFor, ladderTint, dressMetal } from './casts.js?v=067e583d';
+import { tintModel } from './glbmodels.js?v=067e583d';
+import { BODY_IDS } from './drive.js?v=067e583d';
 // pieces whose model carries a looping clip: the assembly kit's machines
 export const LOOP_IDS = new Set(['robotic_assembly_line', 'robotic_arm', 'conveyor_module']);
-import { loadGlb, loadGlbWithClips, mergeByMaterial, fitModel } from './glbmodels.js?v=19ae0665';
+import { loadGlb, loadGlbWithClips, mergeByMaterial, fitModel } from './glbmodels.js?v=067e583d';
 
 const labelCache = new Map();
 function labelTexture(text) {
@@ -200,6 +200,8 @@ export function setGateOpen(gr, open) {
 export function buildPlateGroup({ plate, catalog, wallState = 0, showArcs = true, showBlind = true, animatedGates = false, tint = PALETTE.home }) {
   const group = new THREE.Group();
   const sentryYaws = new Map();   // sentry index -> the node to turn
+  const sentryRigs = new Map();   // sentry index -> { inst, yaw, pitch }
+  const brokenSentries = new Set(); // indices broken before or after their model arrived
   const gateRigs = [];            // { index, obj, mixer, action, duration }
   const dynamic = new Map();      // piece index -> its own object, for the bodies the drive moves
   const loopRigs = [];            // { obj, mixer }: the assembly kit's Assembly_Cycle, looping
@@ -359,8 +361,53 @@ export function buildPlateGroup({ plate, catalog, wallState = 0, showArcs = true
       inst.position.set((st.x + 1) * CELL_M, 0.6, (st.z + 1) * CELL_M);
       group.add(inst);
       sentryYaws.set(index, yaw);
+      sentryRigs.set(index, { inst, yaw, pitch, home: st.yawDeg, broken: false });
+      // a probe (or a fast player) can break it before the model has loaded
+      if (brokenSentries.has(index)) wreck(index);
     }));
   });
+  // THE WRECK: the same tower, broken. The plinth and base stay; the head
+  // (everything under YAW) is knocked off its bearing and lies beside the
+  // base on its side, barrel drooped, and the whole thing goes dark. The
+  // tab stops turning the yaw node once it is broken.
+  const breakSentry = (index) => { brokenSentries.add(index); wreck(index); };
+  const wreck = (index) => {
+    const r = sentryRigs.get(index);
+    if (!r || r.broken) return;
+    r.broken = true;
+    sentryYaws.delete(index);
+    const { inst, yaw, pitch } = r;
+    // it falls BACKWARD, into the band behind it: sideways along the ring
+    // put a corner sentry's head through the wall
+    const [dx, dz] = dirOfYaw(r.home + 180);
+    // the proto is FIT to the socket, so the yaw node's frame is scaled:
+    // metres wanted here must be divided by that scale before they are local
+    const sc = new THREE.Vector3();
+    yaw.parent.getWorldScale(sc);
+    const k = 1 / (sc.y || 1);
+    yaw.rotation.order = 'YZX';
+    yaw.rotation.set(0.35, yawRotation(r.home + 25), 1.75);
+    yaw.position.set(dx * 2.2 * k, 0, dz * 2.2 * k);
+    if (pitch) pitch.rotation.x = 0.5;
+    // rest it on the ground: the pivot is up at the bearing, so after the
+    // tip the head hangs in the air until measured down
+    inst.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(yaw);
+    const groundY = new THREE.Vector3().setFromMatrixPosition(inst.matrixWorld).y - 0.6;
+    if (Number.isFinite(box.min.y)) yaw.position.y -= (box.min.y - groundY - 0.05) * k;
+    inst.updateMatrixWorld(true);
+    const after = new THREE.Box3().setFromObject(yaw), wp = new THREE.Vector3();
+    yaw.getWorldPosition(wp);
+    console.log(`[wreck] sentry ${index} ground=${groundY.toFixed(2)} head at ${wp.x.toFixed(1)},${wp.y.toFixed(2)},${wp.z.toFixed(1)} box y ${after.min.y.toFixed(2)}..${after.max.y.toFixed(2)} x ${after.min.x.toFixed(1)}..${after.max.x.toFixed(1)} z ${after.min.z.toFixed(1)}..${after.max.z.toFixed(1)} meshes ${(() => { let n = 0; yaw.traverse((o) => { if (o.isMesh || o.isLineSegments) n++; }); return n; })()}`);
+    // and dark: scorched paint in the colony look, dimmed lines in battlezone
+    inst.traverse((o) => {
+      if (o.isLineSegments) { o.material = o.material.clone(); o.material.color.multiplyScalar(0.4); return; }
+      if (!o.isMesh || BZ) return;
+      const mats = Array.isArray(o.material) ? o.material : [o.material];
+      const dark = mats.map((m) => { const c = m.clone(); if (c.color) c.color.multiplyScalar(0.3); if (c.emissive) c.emissive.setScalar(0); return c; });
+      o.material = Array.isArray(o.material) ? dark : dark[0];
+    });
+  };
   if (showBlind) {
     for (const c of ringCoverage(plate)) {
       if (c.covered) continue;
@@ -370,5 +417,5 @@ export function buildPlateGroup({ plate, catalog, wallState = 0, showArcs = true
     }
   }
   console.log('[plate] models', byModel.size + staticModels, 'pieces', plate.pieces.length, 'sentries', plate.sentries.length, 'warnings', plate.warnings.length);
-  return { group, sentryYaws, gateRigs, dynamic, loopRigs, ready: Promise.all(pending), rebuildWalls: drawStatic, rebuild: drawStatic };
+  return { group, sentryYaws, sentryRigs, breakSentry, gateRigs, dynamic, loopRigs, ready: Promise.all(pending), rebuildWalls: drawStatic, rebuild: drawStatic };
 }
