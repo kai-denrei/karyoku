@@ -259,6 +259,16 @@ no build step, Node invariant suites).
   `rescued=4 score=400`. Crew scenes GROW (rigs made on demand) and a
   `gone` walker is removed with no splash.
 - The radar shows camp props as statics and their crews as units by side.
+- THE RECKON GUARD (`guard.js`, `test/guard.mjs`; model `assets/guard/`):
+  one per base, hovering `alt` 14 m on an `orbitR` 18 m circle over the
+  compound; a HOSTILE guard with the hull inside `range` 140 m lays a MARK
+  where the hull will be after `leadT` 1.4 s, holds it `markT` 1.6 s (the
+  red pointer: `makeGuardObject` in drive-rig draws a beam from the drone
+  to a pulsing red ring on the ground), then drops a lob with `y0` (its
+  altitude; `lobHeight` honours `y0`) onto the mark: the existing landing
+  splash counts the hit. Cooldown 4.5 s. A home guard only hovers. Sounds:
+  `minigun_ready` as the lock warning, `tower_aoe` for the shell. Probe:
+  `guard=state:shots` (drive), `guards=` (world). Not damageable yet.
 - World: plate A is HOME (gates open, sentries silent), plate B is HOSTILE
   (gates shut, sentries live) — you breach B through its wall.
 - Probes: `#drive?seed=7&tick=4&fire=1&hold=1&aim=wall` shoots the wall

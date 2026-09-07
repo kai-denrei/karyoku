@@ -11,8 +11,8 @@
 // THE ANTI-AIMBOT NUMBERS are yawRate and the arc: a sentry cannot point
 // outside its arc, and inside it turns at yawRate, so a hull that crosses
 // the arc fast, or stays in the blind sector, is never fired on.
-import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=1abb261a';
-import { KIND, CELL_M, wrapDeg, dirOfYaw, DIRS, yawOfSide, rotSide } from './plate.js?v=1abb261a';
+import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=8e468128';
+import { KIND, CELL_M, wrapDeg, dirOfYaw, DIRS, yawOfSide, rotSide } from './plate.js?v=8e468128';
 
 export const DRIVE_TUNE = {
   speed: 12,        // m/s forward
@@ -512,7 +512,8 @@ function segDist(ax, az, bx, bz, px, pz) {
 // Advance every tracer; drop the spent, the stopped and the ones that hit.
 // Returns how many hit the hull this step — a HUD number, not damage.
 // A lob shell's height above the ground at its current point in flight.
-export const lobHeight = (t) => { const u = Math.min(1, t.t / t.flight); return 4 * t.apex * u * (1 - u); };
+// `y0` is a shell that left from a height (the guard's): it falls from there
+export const lobHeight = (t) => { const u = Math.min(1, t.t / t.flight); return (t.y0 || 0) * (1 - u) + 4 * t.apex * u * (1 - u); };
 
 // `groundY(x, z)` is the ground under a shell; `blockedRay(x, z, t)` may
 // read `t.y` to decide whether a shell in flight clears what is below it.

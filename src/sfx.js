@@ -4,11 +4,11 @@
 // which round, how the engine bed follows the throttle, where a shell's
 // impact goes and which way it faces, how far a machine's hum carries.
 import * as THREE from '../vendor/three.module.js';
-import { makeAudio } from './audio.js?v=1abb261a';
-import { SENTRY_FIRE, DEATH_KEYS, THUD_SLICES } from './audiomanifest.js?v=1abb261a';
-import { makeImpactBurst, IMPACT_TUNE, orientImpact } from './impactfx.js?v=1abb261a';
-import { PALETTE, BZ } from './looks.js?v=1abb261a';
-import { makeTankFeel, stepTankFeel, landTankFeel, fireTankFeel, applyTankFeel } from './tankfeel.js?v=1abb261a';
+import { makeAudio } from './audio.js?v=8e468128';
+import { SENTRY_FIRE, DEATH_KEYS, THUD_SLICES } from './audiomanifest.js?v=8e468128';
+import { makeImpactBurst, IMPACT_TUNE, orientImpact } from './impactfx.js?v=8e468128';
+import { PALETTE, BZ } from './looks.js?v=8e468128';
+import { makeTankFeel, stepTankFeel, landTankFeel, fireTankFeel, applyTankFeel } from './tankfeel.js?v=8e468128';
 
 // the impact set is authored for a 4-unit wall; a shell on a 4 m cell
 // wants about this much of it
@@ -114,6 +114,9 @@ export function makeSfx(scene) {
       else if (!active && gears) { gears.stop(0.08); gears = null; }
     },
     uiClick() { audio.play('ui_click'); },
+    // the guard's pointer lands on you: the spin-up as a lock warning; its shell is the aoe thump
+    guardMark(dist) { audio.play('minigun_ready', { dist }); },
+    guardFire(dist) { audio.play('tower_aoe', { dist }); },
     // a machine's beds, kept by key, gain by distance from the listener
     machine(key, dist) {
       let m = hums.get(key);

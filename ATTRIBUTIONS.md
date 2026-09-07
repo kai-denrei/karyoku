@@ -71,3 +71,5 @@ worker; rigged, seven clips each). The compact astronaut it replaces is
 no longer in the repo.
 
 `crush_slam.mp3` is the operator's door-close clip (universfield, 123784), trimmed and mono.
+
+`assets/guard/` is the workshop's reckon-guard drone (jelaludo.github.io/SentryTowers_A6/reckon-guard), with its RotorSpin clip.

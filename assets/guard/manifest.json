@@ -1,0 +1,33 @@
+{
+  "units": "meters",
+  "up": "+Y",
+  "forward": "+Z",
+  "assets": [
+    {
+      "id": "reckon_guard",
+      "name": "Reckon-Guard",
+      "state": "Intact",
+      "file": "reckon_guard.glb",
+      "plot_m": [
+        4,
+        4
+      ],
+      "description": "Low-poly twin ducted rotor reconnaissance and ground-defense drone.",
+      "sockets": [],
+      "colliders": [],
+      "clearance": [],
+      "animations": [
+        "RotorSpin"
+      ],
+      "bytes": 310904,
+      "triangles": 4444,
+      "articulation": [
+        "ROTOR_L",
+        "ROTOR_R",
+        "GIMBAL",
+        "RECOIL",
+        "MUZZLE_00"
+      ]
+    }
+  ]
+}

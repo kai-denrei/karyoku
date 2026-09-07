@@ -2,14 +2,15 @@
 // the hull model with a stand-in until it lands, the key state, the tracer
 // meshes, and the two cameras. Rendering only; the rules are drive.js.
 import * as THREE from '../vendor/three.module.js';
-import { applySpaceScene, makeStars, makeComposer, PALETTE } from './looks.js?v=1abb261a';
-import { tickFps } from './fps.js?v=1abb261a';
-import { radarProject, radarBearing, sweepAngle, radarPhosphor, radarColor, RADAR_RANGE_M } from './radar.js?v=1abb261a';
-import { castHull } from './casts.js?v=1abb261a';
-import { styleForLook, BZ } from './looks.js?v=1abb261a';
-import { STICK, stickVector, knobOffset } from './stick.js?v=1abb261a';
-import { query } from './url.js?v=1abb261a';
-import { loadGlb, mergeByMaterial, makeShellRack } from './glbmodels.js?v=1abb261a';
+import { applySpaceScene, makeStars, makeComposer, PALETTE } from './looks.js?v=8e468128';
+import { tickFps } from './fps.js?v=8e468128';
+import { radarProject, radarBearing, sweepAngle, radarPhosphor, radarColor, RADAR_RANGE_M } from './radar.js?v=8e468128';
+import { castHull } from './casts.js?v=8e468128';
+import { styleForLook, BZ } from './looks.js?v=8e468128';
+import { STICK, stickVector, knobOffset } from './stick.js?v=8e468128';
+import { query } from './url.js?v=8e468128';
+import { loadGlb, mergeByMaterial, makeShellRack } from './glbmodels.js?v=8e468128';
+import { animProto } from './plate-scene.js?v=8e468128';
 
 const HULL_URL = 'assets/models/mkcx2.glb';
 // The nodes that must keep moving through the merge, and the ones that
@@ -373,6 +374,53 @@ export function makePick(renderer, camera, scene, notice) {
     hideAt = performance.now() + 4000;
   });
   return { tick() { if (hideAt && performance.now() > hideAt) { hideAt = 0; notice.hidden = true; } } };
+}
+
+// THE RECKON GUARD on screen: the workshop's twin-rotor drone, rotors
+// spinning (its RotorSpin clip), nose toward the hull; and THE POINTER: a
+// red beam from the drone to the mark and a red ring on the ground there,
+// pulsing while the mark holds. Red in both looks: it is a warning.
+const POINTER_RED = 0xff2a2a;
+export function makeGuardObject(scene) {
+  const obj = new THREE.Group(); obj.name = 'guard'; obj.userData.label = 'reckon guard';
+  let mixer = null;
+  animProto('assets/guard/reckon_guard.glb').then((res) => {
+    if (!res) return;
+    const m = res.root.clone();
+    mixer = new THREE.AnimationMixer(m);
+    for (const c of res.clips) mixer.clipAction(c).play();
+    obj.add(m);
+  });
+  const beamGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+  const beam = new THREE.Line(beamGeo, new THREE.LineBasicMaterial({ color: POINTER_RED, transparent: true, opacity: 0.85 }));
+  beam.name = 'pointer'; beam.visible = false; scene.add(beam);
+  const ring = new THREE.Mesh(new THREE.RingGeometry(2.2, 3.0, 40), new THREE.MeshBasicMaterial({ color: POINTER_RED, transparent: true, opacity: 0.8, side: THREE.DoubleSide, depthWrite: false }));
+  ring.rotation.x = -Math.PI / 2; ring.name = 'pointer'; ring.visible = false; scene.add(ring);
+  const dot = new THREE.Mesh(new THREE.CircleGeometry(0.6, 20), new THREE.MeshBasicMaterial({ color: POINTER_RED, transparent: true, opacity: 0.9, depthWrite: false }));
+  dot.rotation.x = -Math.PI / 2; dot.visible = false; scene.add(dot);
+  let t = 0;
+  return {
+    obj, beam, ring, dot,
+    // `g` from guard.js, `groundY(x, z)`; the mark's ring sits on the ground
+    setPose(g, groundY, dt) {
+      t += dt;
+      if (mixer) mixer.update(dt);
+      const gy = groundY(g.x, g.z) + g.y + Math.sin(t * 1.3) * 0.4;
+      obj.position.set(g.x, gy, g.z);
+      obj.rotation.y = Math.PI - g.heading * Math.PI / 180;
+      const marking = g.state === 'mark' && g.mark;
+      beam.visible = ring.visible = dot.visible = Boolean(marking);
+      if (!marking) return;
+      const my = groundY(g.mark.x, g.mark.z) + 0.12;
+      const pos = beam.geometry.attributes.position;
+      pos.setXYZ(0, g.x, gy - 0.5, g.z); pos.setXYZ(1, g.mark.x, my, g.mark.z); pos.needsUpdate = true;
+      beam.geometry.computeBoundingSphere();
+      ring.position.set(g.mark.x, my, g.mark.z); dot.position.set(g.mark.x, my + 0.02, g.mark.z);
+      const pulse = 1 + 0.18 * Math.sin(t * 14);
+      ring.scale.setScalar(pulse);
+      ring.material.opacity = 0.55 + 0.35 * Math.abs(Math.sin(t * 7));
+    },
+  };
 }
 
 export function makeViewer(root) {
