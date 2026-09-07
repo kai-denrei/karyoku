@@ -234,6 +234,13 @@ no build step, Node invariant suites).
 - THE WRECK slumps IN PLACE now (tilted on its plinth, sunk 0.4 m, dark):
   the toppled-beside pose made a heptapod's legs a bright unnameable pile.
 - Probes: `?breakat=x,z` starts the nearest body destroyed.
+- THE SECOND SPIKY JUMBLE (operator, 2026-09-07 13:36) was the NASA
+  Habitat Demonstration Unit standing in for `personnel_recreation` and
+  `personnel_shelter`: a 2.3k-triangle nine-metre cone whose facets and
+  airlock box read as shards under the vector look. Removed (manifest,
+  MODELLED, disk); those two ids are unmodelled again. `[proto]` logs
+  every prototype's file, triangles and size at load: read it before
+  guessing. `?breakat=x,z&breakto=N` starts the nearest body at state N.
 
 ## Outposts and the rescue (operator, 2026-09-07)
 - `world.outposts` (`WORLD_TUNE.outposts` 4, `OUTPOST_R` 14): camps on

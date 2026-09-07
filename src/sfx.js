@@ -4,11 +4,11 @@
 // which round, how the engine bed follows the throttle, where a shell's
 // impact goes and which way it faces, how far a machine's hum carries.
 import * as THREE from '../vendor/three.module.js';
-import { makeAudio } from './audio.js?v=4cf41af5';
-import { SENTRY_FIRE, DEATH_KEYS, THUD_SLICES } from './audiomanifest.js?v=4cf41af5';
-import { makeImpactBurst, IMPACT_TUNE, orientImpact } from './impactfx.js?v=4cf41af5';
-import { PALETTE, BZ } from './looks.js?v=4cf41af5';
-import { makeTankFeel, stepTankFeel, landTankFeel, fireTankFeel, applyTankFeel } from './tankfeel.js?v=4cf41af5';
+import { makeAudio } from './audio.js?v=23bfe440';
+import { SENTRY_FIRE, DEATH_KEYS, THUD_SLICES } from './audiomanifest.js?v=23bfe440';
+import { makeImpactBurst, IMPACT_TUNE, orientImpact } from './impactfx.js?v=23bfe440';
+import { PALETTE, BZ } from './looks.js?v=23bfe440';
+import { makeTankFeel, stepTankFeel, landTankFeel, fireTankFeel, applyTankFeel } from './tankfeel.js?v=23bfe440';
 
 // the impact set is authored for a 4-unit wall; a shell on a 4 m cell
 // wants about this much of it

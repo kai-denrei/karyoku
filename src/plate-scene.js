@@ -5,16 +5,16 @@
 // as clones with their YAW pivot exposed, and everything else as a labelled
 // placeholder box of its footprint.
 import * as THREE from '../vendor/three.module.js';
-import { KIND, CELL_M, ringCoverage, LANDMARK, dirOfYaw } from './plate.js?v=4cf41af5';
-import { fileFor, fitFor, SECTION_COLOR, PLACEHOLDER_HEIGHT_M } from './catalog.js?v=4cf41af5';
-import { LOB_FAMILIES, LOB_ELEV_DEG } from './drive.js?v=4cf41af5';
-import { PALETTE, neonBox, BZ, styleForLook, bakeEdges } from './looks.js?v=4cf41af5';
-import { prepFor, ladderTint, dressMetal } from './casts.js?v=4cf41af5';
-import { tintModel } from './glbmodels.js?v=4cf41af5';
-import { BODY_IDS } from './drive.js?v=4cf41af5';
+import { KIND, CELL_M, ringCoverage, LANDMARK, dirOfYaw } from './plate.js?v=23bfe440';
+import { fileFor, fitFor, SECTION_COLOR, PLACEHOLDER_HEIGHT_M } from './catalog.js?v=23bfe440';
+import { LOB_FAMILIES, LOB_ELEV_DEG } from './drive.js?v=23bfe440';
+import { PALETTE, neonBox, BZ, styleForLook, bakeEdges } from './looks.js?v=23bfe440';
+import { prepFor, ladderTint, dressMetal } from './casts.js?v=23bfe440';
+import { tintModel } from './glbmodels.js?v=23bfe440';
+import { BODY_IDS } from './drive.js?v=23bfe440';
 // pieces whose model carries a looping clip: the assembly kit's machines
 export const LOOP_IDS = new Set(['robotic_assembly_line', 'robotic_arm', 'conveyor_module']);
-import { loadGlb, loadGlbWithClips, mergeByMaterial, fitModel } from './glbmodels.js?v=4cf41af5';
+import { loadGlb, loadGlbWithClips, mergeByMaterial, fitModel } from './glbmodels.js?v=23bfe440';
 
 const labelCache = new Map();
 function labelTexture(text) {
@@ -47,6 +47,8 @@ export function proto(url, pivots = [], fit = null, tint = null) {
     if (prep) prep(scene);
     const merged = mergeByMaterial(scene, pivots);
     const fitted = fit ? fitModel(merged, fit) : merged;
+    // what each prototype really is: the file, its triangles and its fitted size (a jumble on screen starts here)
+    { let tris = 0; fitted.traverse((o) => { if (o.isMesh && o.geometry) tris += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3; }); const bb = new THREE.Box3().setFromObject(fitted); const sz = bb.getSize(new THREE.Vector3()); console.log(`[proto] ${url} tris=${Math.round(tris)} size=${sz.x.toFixed(1)}x${sz.y.toFixed(1)}x${sz.z.toFixed(1)}`); }
     // THE KIT KEEPS ITS PAINT. Its materials are authored colours — blue
     // steel, graphite, amber caution, mint status — and the grey ladder
     // painted over all of them. A faint emissive wash by side is all it gets.

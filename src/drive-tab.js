@@ -5,22 +5,22 @@
 import * as THREE from '../vendor/three.module.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { bodyDims } from './catalog.js?v=4cf41af5';
-import { generatePlate, makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M, dirOfYaw } from './plate.js?v=4cf41af5';
+import { bodyDims } from './catalog.js?v=23bfe440';
+import { generatePlate, makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M, dirOfYaw } from './plate.js?v=23bfe440';
 import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, blockedAt, makeGates, stepGates,
-  spawnFor, makeSentries, stepSentries, losClear, stepTracers, rayStop, fireHull, damageAt, makeBodies, stepBodies, bodyAt, shotRangeFor, damageSentryAt, stepCrush, ammoDotsLit, bodyHit, damageBody, powered } from './drive.js?v=4cf41af5';
-import { PALETTE, LOOK, LOOKS } from './looks.js?v=4cf41af5';
-import { withParam } from './url.js?v=4cf41af5';
-import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=4cf41af5';
-import { query, loadCatalog } from './plate-tab.js?v=4cf41af5';
-import { modelledIds } from './catalog.js?v=4cf41af5';
-import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS, makeMobileShell, mobileShell, makeGuardObject, makeFlagStand, makeCarriedFlag } from './drive-rig.js?v=4cf41af5';
-import { makeSfx } from './sfx.js?v=4cf41af5';
-import { makeCrew, stepCrew, stepSquash, shotHits, splashHits, hullCovers, crewFreeAt, CREW_TUNE } from './crew.js?v=4cf41af5';
-import { makeCrewScene } from './crew-scene.js?v=4cf41af5';
-import { makeGuard, stepGuard, GUARD_TUNE } from './guard.js?v=4cf41af5';
-import { makeCtf, stepCtf, poleState, SLOTS, CTF_TUNE } from './ctf.js?v=4cf41af5';
-import { mulberry32 } from './rng.js?v=4cf41af5';
+  spawnFor, makeSentries, stepSentries, losClear, stepTracers, rayStop, fireHull, damageAt, makeBodies, stepBodies, bodyAt, shotRangeFor, damageSentryAt, stepCrush, ammoDotsLit, bodyHit, damageBody, powered } from './drive.js?v=23bfe440';
+import { PALETTE, LOOK, LOOKS } from './looks.js?v=23bfe440';
+import { withParam } from './url.js?v=23bfe440';
+import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=23bfe440';
+import { query, loadCatalog } from './plate-tab.js?v=23bfe440';
+import { modelledIds } from './catalog.js?v=23bfe440';
+import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS, makeMobileShell, mobileShell, makeGuardObject, makeFlagStand, makeCarriedFlag } from './drive-rig.js?v=23bfe440';
+import { makeSfx } from './sfx.js?v=23bfe440';
+import { makeCrew, stepCrew, stepSquash, shotHits, splashHits, hullCovers, crewFreeAt, CREW_TUNE } from './crew.js?v=23bfe440';
+import { makeCrewScene } from './crew-scene.js?v=23bfe440';
+import { makeGuard, stepGuard, GUARD_TUNE } from './guard.js?v=23bfe440';
+import { makeCtf, stepCtf, poleState, SLOTS, CTF_TUNE } from './ctf.js?v=23bfe440';
+import { mulberry32 } from './rng.js?v=23bfe440';
 
 export function initDriveTab(root) {
   const { renderer, scene, camera, hud, notice, resize, render, setGroups, post, radar } = makeViewer(root);
@@ -95,7 +95,7 @@ export function initDriveTab(root) {
     if (q.get('elev') !== null) hull.elev = Number(q.get('elev')); // a probe's muzzle
     if (q.get('ammo') !== null) hull.ammo = Number(q.get('ammo')); // a probe's rack
     // ?breakat=x,z: the body nearest that point starts DESTROYED (state 3), to see what its debris looks like
-    if (q.get('breakat')) { const [bx, bz] = q.get('breakat').split(',').map(Number); const b = bodies.reduce((best, c) => (Math.hypot(c.x - bx, c.z - bz) < Math.hypot(best.x - bx, best.z - bz) ? c : best), bodies[0]); if (b) { while (!b.dead) damageBody(b); console.log(`[drive] broke ${b.id} at ${b.x.toFixed(0)},${b.z.toFixed(0)}`); } }
+    if (q.get('breakat')) { const [bx, bz] = q.get('breakat').split(',').map(Number); const b = bodies.reduce((best, c) => (Math.hypot(c.x - bx, c.z - bz) < Math.hypot(best.x - bx, best.z - bz) ? c : best), bodies[0]); if (b) { const to = q.get('breakto') !== null ? Number(q.get('breakto')) : 3; while (!b.dead && b.state < to) damageBody(b); console.log(`[drive] broke ${b.id} to d${b.state} at ${b.x.toFixed(0)},${b.z.toFixed(0)}`); } }
     // ?at=x,z and ?heading=deg park a probe's hull anywhere on the plate
     if (q.get('at')) { const [ax, az] = q.get('at').split(',').map(Number); if (Number.isFinite(ax) && Number.isFinite(az)) { hull.x = ax; hull.z = az; } }
     if (q.get('heading') !== null) hull.heading = Number(q.get('heading'));

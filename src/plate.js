@@ -13,9 +13,9 @@
 // `rotation.y = -rot * PI/2`. Yaw is compass degrees, 0 = N, 90 = E.
 // Plate width and depth are EVEN, because roads are 2 x 2 pieces laid on
 // even coordinates and a gate's road port has to land on one.
-import { mulberry32 } from './rng.js?v=4cf41af5';
-import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=4cf41af5';
-import { specById } from './catalog-spec.js?v=4cf41af5';
+import { mulberry32 } from './rng.js?v=23bfe440';
+import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=23bfe440';
+import { specById } from './catalog-spec.js?v=23bfe440';
 
 export const CELL_M = 4;
 
@@ -435,7 +435,9 @@ export const MODELLED = new Set([
   // the assembly-line kit
   'robotic_assembly_line', 'robotic_arm', 'conveyor_module', 'control_platform', 'gantry_module', 'assembly_pallet',
   // house casts and NASA stand-ins
-  'command_hq', 'command_uplink', 'personnel_recreation', 'personnel_shelter', 'logistics_crane', 'air_drone_pad', 'defense_radar', 'field_signal',
+  // (the habitat demonstration unit that stood in for the recreation hall and the shelter is gone: a
+  // 2.3k-triangle cone whose facets and airlock box read as a spiky jumble in the vector look)
+  'command_hq', 'command_uplink', 'logistics_crane', 'air_drone_pad', 'defense_radar', 'field_signal',
   // the base kit
   'wall_standard', 'wall_corner', 'gate_vehicle', 'foundation_flat',
 ]);
