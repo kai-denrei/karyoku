@@ -4,6 +4,21 @@ Newest first. Each entry: what landed, then how it works, for programmers.
 Decisions and dead ends in more detail live in `.deban/` (local, not
 published).
 
+## 279c170 — the jumble, named
+
+The operator sent a second spiky jumble: big flat triangular facets, a
+box through the middle, near a wall, two crew in front. Not the wreck
+this time (that is fixed), not a destroyed prop (every destroyed state
+measures under six metres), not the IBEX (a clean octagonal drum in
+battlezone), not the lander (a small dense lattice). It was the NASA
+Habitat Demonstration Unit, the stand-in for the recreation hall and the
+shelter: a nine-metre cone of 2,264 triangles whose facets are all wider
+than the edge angle, so every one draws, and whose airlock is the box. A
+model that coarse cannot be fixed with an edge override; it is removed
+from the NASA manifest, the modelled set and the disk, and the barracks
+carries the personnel zone. Every prototype now logs its file, triangle
+count and fitted size when it loads, which is where the next hunt starts.
+
 ## 297c60f — fear, and the flags
 
 THE FEAR RULES, the operator's. Every crew is told about the tank now,
