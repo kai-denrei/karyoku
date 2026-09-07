@@ -4,6 +4,14 @@ Newest first. Each entry: what landed, then how it works, for programmers.
 Decisions and dead ends in more detail live in `.deban/` (local, not
 published).
 
+## 0804270 — nothing burns when you drive over a crate
+
+Running over an antenna or ramming a crate apart landed the full shell
+recipe, flash, ring and scorch included, which read as fire. A new
+`crush` recipe is debris alone, chunks and nothing burning, and its sound
+is the operator's door slam; the crush step and a ram that breaks a state
+use it. Shells keep the shell recipe, and a fuel barrel still goes up.
+
 ## df02eb7 — the station crew
 
 The workshop's three station characters replace the compact astronaut:

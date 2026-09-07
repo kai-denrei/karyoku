@@ -189,6 +189,9 @@ no build step, Node invariant suites).
   `sfx.thud`, one of `THUD_SLICES` (twelve thuds in one file, played by
   `offset` + `duration`, both audio.js options now); `setCam` ->
   `sfx.uiClick`; `impact_hit` is the metal-hit clip.
+- NO FIRE ON A RUN-OVER: `IMPACT_RECIPES.crush` is debris only; `sfx.crush`
+  and a RAMMED `sfx.bodyHit(..., true)` use it with `crush_slam` (the
+  operator's door slam). Shells keep the shell recipe; a barrel still blows.
 - ONE SCENE RENDER (postfx.js): the bloom WEIGHT rides in the ALPHA of the
   single base render (an opaque material's `opacity` is written to alpha
   untouched, so opacity = weight); the bloom source is rgb * alpha in a
