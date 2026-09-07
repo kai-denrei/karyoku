@@ -4,6 +4,33 @@ Newest first. Each entry: what landed, then how it works, for programmers.
 Decisions and dead ends in more detail live in `.deban/` (local, not
 published).
 
+## 7f77bd7 — sentries break, and stay broken
+
+Three hull rounds on a sentry's socket break it (`sentryHits`, a knob).
+`damageSentryAt` (drive.js) resolves a socket cell to its sentry through
+the plate's sentry records, counts the round, and at the third marks it
+dead: `stepSentries` skips a dead one (no tracking, no fire), and its
+cell's solid height drops from 5 m to a 1.6 m wreck, so the next shell
+flies over it and lands on whatever stood behind. The socket still blocks
+the hull: a wreck is a wreck, not a road.
+
+The explosion is the full shell recipe twice, big at the head and smaller
+at the plinth (that one lays the scorch), with the reference's tank death
+as the blast. And the tower does not vanish: the scene's `breakSentry`
+keeps the plinth and the base, knocks the head (everything under YAW) off
+its bearing backward into the band, on its side with the barrel drooped,
+rests it on the ground by its measured bounding box, and darkens it (a
+third of its colour, no emissive; dimmed lines in battlezone). Two things
+that went wrong on the way: the yaw node's frame is scaled by the socket
+fit, so metres set on it went several times too far (divided by the world
+scale now); and a probe breaks the sentry before its model has loaded, so
+the scene remembers broken indices and poses the wreck when the model
+arrives. Sideways was the first fall direction, and a corner sentry's head
+went through the ring wall; backward into the band is always clear.
+`?aim=sentry` parks a probe behind the first sentry, inside the ring;
+`sentriesDown=` on the probe lines, `sentries N/M` on the HUD, and the
+lab lists the blast as wired and a heavier clang for a standing hit as a gap.
+
 ## 48efa34 — the soft bodies
 
 The reference's hit on a soft creature, brought across whole. There the
