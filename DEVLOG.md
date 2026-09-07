@@ -4,6 +4,33 @@ Newest first. Each entry: what landed, then how it works, for programmers.
 Decisions and dead ends in more detail live in `.deban/` (local, not
 published).
 
+## 1e73f00 — the enemy tank, and the first win
+
+There is always an enemy tank now. It spawns at its base's facing gate,
+follows the road to ours, comes in through our gate (gates open for any
+hull), and drives our base's own roads to the flag stand: the outer gate,
+the inner gate behind it, that gate's road port, a breadth-first walk
+over the road graph to the junction nearest the stand. It circles the
+stand and fires straight shells at the player whenever he is within
+seventy metres and near enough to ahead. Our sentries and our drone fire
+at it, as theirs fire at us; two hulls now ride through the tracer rules,
+each taking points from what strikes it. It has twelve points, like the
+player, dies with a blast and respawns at its gate eight seconds later.
+
+Hulls have points. A sentry round is one, a shell two, a lob three; at
+zero the hull blows, waits three seconds and respawns at base with a full
+rack, and a flag it carried goes back to the enemy's pole.
+
+THE FIRST WIN CONDITION: both flags on our poles and the thirty-second
+hold runs out. While the enemy is inside our inner ring the hold stands
+where it is, and the HUD says so; that is the window in which a raid can
+still spoil a set. The drone is meaner (a 0.9 s pointer, a shell every
+1.6 s at 110 m/s). A hundred and twenty simulated seconds in the world
+probe: the enemy invaded, our defences killed it three times, it came
+back each time and was inside again at the end. Along the way the
+crew's road-junction areas turned out to be decoded transposed (the road
+key packs the row first); one decoder now.
+
 ## f167eae — the seam, the span, the set
 
 Five of the operator's, in one pass. A shell that lands within 0.7 m of
