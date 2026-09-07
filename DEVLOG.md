@@ -4,6 +4,30 @@ Newest first. Each entry: what landed, then how it works, for programmers.
 Decisions and dead ends in more detail live in `.deban/` (local, not
 published).
 
+## 799c0b6 — paint, a scope, a pick, and a wreck that stays put
+
+The crew is bigger (18 on the drive plate, 12 a plate in the world) and
+tells you what it is: the suit is the trade (astronaut grey, scientist
+blue, worker orange) and the backpack is the team. The kit has no
+backpack material, so each model is cut once by position: every triangle
+of a body part that sits behind the spine between hip and shoulder
+becomes a second skinned mesh, and that mesh wears the side's colour per
+walker.
+
+THE RADAR. A PPI scope in the top-left corner, heading-up, 220 m: the
+reference's sweep and phosphor on a flat plane. Our statics are blue
+squares and our people dark-blue dots; theirs red and orange; the hull a
+white arrowhead. The arithmetic is pure and tested (facing east, north is
+on the left; past range a contact pins to the rim).
+
+THE PICK. The operator sent a screenshot of a bright spiky jumble in a
+yard nobody could name. A click now names whatever is under the pointer
+(instanced pieces and bodies by instance, sentries by label) in the
+notice line and the console. The jumble itself was a broken sentry: the
+head knocked off its plinth to lie beside it, which for the seven-legged
+heptapod is a pile of legs in the air, bright in battlezone. The wreck
+now slumps in place, tilted on its plinth, sunk a little and dark.
+
 ## 0804270 — nothing burns when you drive over a crate
 
 Running over an antenna or ramming a crate apart landed the full shell
