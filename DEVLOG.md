@@ -4,6 +4,20 @@ Newest first. Each entry: what landed, then how it works, for programmers.
 Decisions and dead ends in more detail live in `.deban/` (local, not
 published).
 
+## 2852f6e — the blank screen, twice
+
+The operator saw a blank canvas at build 3e6a547f. From here the public
+site loaded three times out of three, every module answered 200, and one
+early load reproduced the symptom without a message: a module that fails
+to load kills an ES module page silently, which is what the deploy window
+does. So the page grew a FAULT BANNER: any load failure or exception
+before the first frame is printed with the build token. The next build
+the operator hit the banner at once, and it said `Can't find variable:
+inp` in the world tab. The step-timing patch had rewritten the world
+tab's loop and dropped its input line, and only the drive tab had been
+re-run headlessly after it. Restored, with the probe log the same patch
+lost; all four tabs are now run headlessly before a push.
+
 ## e598aee — a 70-cell plate at speed, and doors that open
 
 The operator's default plate ran at fifty frames a second and a 70-cell
