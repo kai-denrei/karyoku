@@ -11,8 +11,8 @@
 // THE ANTI-AIMBOT NUMBERS are yawRate and the arc: a sentry cannot point
 // outside its arc, and inside it turns at yawRate, so a hull that crosses
 // the arc fast, or stays in the blind sector, is never fired on.
-import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=110951bf';
-import { KIND, CELL_M, wrapDeg, dirOfYaw, DIRS, yawOfSide, rotSide } from './plate.js?v=110951bf';
+import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=7e146775';
+import { KIND, CELL_M, wrapDeg, dirOfYaw, DIRS, yawOfSide, rotSide } from './plate.js?v=7e146775';
 
 export const DRIVE_TUNE = {
   speed: 30,        // m/s forward: the knob's maximum by default (operator, 2026-09-07)
@@ -51,6 +51,7 @@ export const DRIVE_TUNE = {
   elevMin: -5, elevMax: 45, elevRate: 25, elevDefault: 6,
   muzzleY: 2.2,     // m above the hull's ground
   ammoMax: 27,      // shells racked: nine sockets on the deck, three shells each
+  hullHp: 12,       // points before the hull is destroyed (a sentry round 1, a shell 2, a lob 3)
   shellsPerDot: 3,
 };
 export const LOB_FAMILIES = new Set(['mortar', 'howitzer']);
@@ -87,6 +88,7 @@ export const DRIVE_KNOBS = [
   { key: 'elevDefault', label: 'muzzle default (deg)', group: 'gun', min: -5, max: 45, step: 1 },
   { key: 'muzzleY', label: 'muzzle height (m)', group: 'gun', min: 0.5, max: 5, step: 0.1 },
   { key: 'ammoMax', label: 'shells racked', group: 'gun', min: 3, max: 27, step: 3 },
+  { key: 'hullHp', label: 'hull points', group: 'hull', min: 1, max: 40, step: 1 },
   { key: 'shellsPerDot', label: 'shells per rack dot', group: 'gun', min: 1, max: 9, step: 1 },
 ];
 export const makeDriveParams = (src = DRIVE_TUNE) => makeParams(DRIVE_KNOBS, src);
@@ -102,7 +104,7 @@ const toCell = (m) => Math.floor(m / CELL_M);
 
 // --- hull ------------------------------------------------------------------
 export function makeHull(x, z, heading = 0, tune = DRIVE_TUNE) {
-  return { x, z, heading, speed: 0, vx: 0, vz: 0, cool: 0, shots: 0, elev: tune.elevDefault, y: 0, ammo: tune.ammoMax };
+  return { x, z, heading, speed: 0, vx: 0, vz: 0, cool: 0, shots: 0, elev: tune.elevDefault, y: 0, ammo: tune.ammoMax, hp: tune.hullHp, damage: 0, alive: true };
 }
 
 // Turn, then move along the heading. The move is accepted when the four
@@ -479,9 +481,11 @@ export function makeGates(plate) {
   });
 }
 
+// `hull` may be an array: a gate opens for any hull near it (the enemy's too)
 export function stepGates(gates, hull, dt, tune = DRIVE_TUNE) {
+  const hulls = Array.isArray(hull) ? hull : [hull];
   for (const g of gates) {
-    const near = Math.hypot(hull.x - g.cx, hull.z - g.cz) <= tune.gateCells * CELL_M;
+    const near = hulls.some((h) => h && h.alive !== false && Math.hypot(h.x - g.cx, h.z - g.cz) <= tune.gateCells * CELL_M);
     const step = dt / tune.gateSecs;
     g.open = near ? Math.min(1, g.open + step) : Math.max(0, g.open - step);
   }
@@ -603,8 +607,16 @@ export const lobHeight = (t) => { const u = Math.min(1, t.t / t.flight); return 
 
 // `groundY(x, z)` is the ground under a shell; `blockedRay(x, z, t)` may
 // read `t.y` to decide whether a shell in flight clears what is below it.
+// `hull` may be an array of hulls: the first is the PLAYER (whose hits are
+// the return value); every hull hit gets `damage` counted on it. A shot
+// from the player (`from: -1`) can hit any other hull; a shot from an
+// enemy hull (`from: 'enemy'`) can hit the player; nobody shoots himself.
 export function stepTracers(tracers, hull, dt, blockedRay, tune = DRIVE_TUNE, groundY = () => 0) {
   let hits = 0;
+  const hulls = (Array.isArray(hull) ? hull : [hull]).filter((h) => h && h.alive !== false);
+  const player = Array.isArray(hull) ? hull[0] : hull;
+  // `hits` counts EVENTS on the player (the HUD's number); `damage` carries the points
+  const hurt = (h, n = 1) => { h.damage = (h.damage || 0) + n; if (h === player) hits++; };
   for (let i = tracers.length - 1; i >= 0; i--) {
     const t = tracers[i];
     if (t.kind === 'shot') {
@@ -612,6 +624,13 @@ export function stepTracers(tracers, hull, dt, blockedRay, tune = DRIVE_TUNE, gr
       const ny = t.y + t.vy * dt - 0.5 * tune.gravity * dt * dt;
       t.vy -= tune.gravity * dt;
       t.left -= Math.hypot(nx - t.x, nz - t.z);
+      // a shell through a hull: the player's through anyone else's, an enemy's through the player's
+      let struck = null;
+      for (const h of hulls) {
+        if ((t.from === -1 && h === player) || (t.from === 'enemy' && h !== player)) continue;
+        if (ny <= 3.2 && segDist(t.x, t.z, nx, nz, h.x, h.z) <= tune.hitR) { struck = h; break; }
+      }
+      if (struck) { hurt(struck, 2); t.hit = true; t.x = nx; t.z = nz; t.y = ny; tracers.splice(i, 1); continue; }
       t.x = nx; t.z = nz; t.y = ny;
       const g = groundY(nx, nz);
       if (t.y <= g) { t.y = g; t.landed = true; blockedRay(nx, nz, t); tracers.splice(i, 1); continue; }
@@ -624,7 +643,7 @@ export function stepTracers(tracers, hull, dt, blockedRay, tune = DRIVE_TUNE, gr
       t.x = t.x0 + (t.tx - t.x0) * u; t.z = t.z0 + (t.tz - t.z0) * u;
       if (u >= 1) {
         t.landed = true;
-        if (Math.hypot(hull.x - t.tx, hull.z - t.tz) <= tune.splashR) { t.hit = true; hits++; }
+        for (const h of hulls) if (Math.hypot(h.x - t.tx, h.z - t.tz) <= tune.splashR) { t.hit = true; hurt(h, 3); }
         blockedRay(t.tx, t.tz, t); // a landing: the tab draws the splash and plays it
         tracers.splice(i, 1);
       }
@@ -633,7 +652,7 @@ export function stepTracers(tracers, hull, dt, blockedRay, tune = DRIVE_TUNE, gr
     const [dx, dz] = dirOfYaw(t.heading);
     const step = Math.min(t.left, (t.speed || tune.tracerSpeed) * dt);
     const nx = t.x + dx * step, nz = t.z + dz * step;
-    if (!t.hit && segDist(t.x, t.z, nx, nz, hull.x, hull.z) <= tune.hitR) { t.hit = true; hits++; }
+    for (const h of hulls) if (!t.hit && segDist(t.x, t.z, nx, nz, h.x, h.z) <= tune.hitR) { t.hit = true; hurt(h, 1); }
     t.x = nx; t.z = nz; t.left -= step;
     if (t.left <= 0 || t.hit || blockedRay(nx, nz, t)) tracers.splice(i, 1);
   }

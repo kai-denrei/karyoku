@@ -2,15 +2,15 @@
 // the hull model with a stand-in until it lands, the key state, the tracer
 // meshes, and the two cameras. Rendering only; the rules are drive.js.
 import * as THREE from '../vendor/three.module.js';
-import { applySpaceScene, makeStars, makeComposer, PALETTE } from './looks.js?v=110951bf';
-import { tickFps } from './fps.js?v=110951bf';
-import { radarProject, radarBearing, sweepAngle, radarPhosphor, radarColor, RADAR_RANGE_M } from './radar.js?v=110951bf';
-import { castHull } from './casts.js?v=110951bf';
-import { styleForLook, BZ } from './looks.js?v=110951bf';
-import { STICK, stickVector, knobOffset } from './stick.js?v=110951bf';
-import { query } from './url.js?v=110951bf';
-import { loadGlb, mergeByMaterial, makeShellRack } from './glbmodels.js?v=110951bf';
-import { animProto } from './plate-scene.js?v=110951bf';
+import { applySpaceScene, makeStars, makeComposer, PALETTE } from './looks.js?v=7e146775';
+import { tickFps } from './fps.js?v=7e146775';
+import { radarProject, radarBearing, sweepAngle, radarPhosphor, radarColor, RADAR_RANGE_M } from './radar.js?v=7e146775';
+import { castHull } from './casts.js?v=7e146775';
+import { styleForLook, BZ } from './looks.js?v=7e146775';
+import { STICK, stickVector, knobOffset } from './stick.js?v=7e146775';
+import { query } from './url.js?v=7e146775';
+import { loadGlb, mergeByMaterial, makeShellRack } from './glbmodels.js?v=7e146775';
+import { animProto } from './plate-scene.js?v=7e146775';
 
 const HULL_URL = 'assets/models/mkcx2.glb';
 // The nodes that must keep moving through the merge, and the ones that
@@ -68,16 +68,17 @@ const SHIFTMAP = { W: 'elevUp', S: 'elevDown' };
 // A group that holds a box until the GLB replaces it; the swap is invisible
 // to whatever moves the group. The hull's authored forward is +z (south),
 // so `setPose` turns it by PI - heading.
-export function makeHullObject() {
+// `colour`: the hull's tint (ours cyan, the enemy's red)
+export function makeHullObject(colour = PALETTE.hull) {
   const obj = new THREE.Group();
-  const stub = new THREE.Mesh(new THREE.BoxGeometry(3.2, 1.4, 7.4), BZ ? new THREE.MeshBasicMaterial({ color: PALETTE.hull, wireframe: true }) : new THREE.MeshStandardMaterial({ color: 0x9fb3c8, roughness: 0.6 }));
+  const stub = new THREE.Mesh(new THREE.BoxGeometry(3.2, 1.4, 7.4), BZ ? new THREE.MeshBasicMaterial({ color: colour, wireframe: true }) : new THREE.MeshStandardMaterial({ color: 0x9fb3c8, roughness: 0.6 }));
   stub.position.y = 1.0;
   obj.add(stub);
   loadGlb(HULL_URL).then((gltfScene) => {
     if (!gltfScene) return;
     obj.remove(stub);
     const merged = mergeByMaterial(gltfScene, HULL_PIVOTS, HULL_DROP);
-    obj.add(BZ ? styleForLook(merged) : castHull(merged, PALETTE.hull));
+    obj.add(BZ ? styleForLook(merged) : castHull(merged, colour));
     buildRack(merged, obj);
     buildHoverSplit(merged, obj);
     console.log('[drive] hull model loaded');

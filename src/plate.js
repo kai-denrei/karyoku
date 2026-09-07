@@ -13,9 +13,9 @@
 // `rotation.y = -rot * PI/2`. Yaw is compass degrees, 0 = N, 90 = E.
 // Plate width and depth are EVEN, because roads are 2 x 2 pieces laid on
 // even coordinates and a gate's road port has to land on one.
-import { mulberry32 } from './rng.js?v=110951bf';
-import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=110951bf';
-import { specById } from './catalog-spec.js?v=110951bf';
+import { mulberry32 } from './rng.js?v=7e146775';
+import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=7e146775';
+import { specById } from './catalog-spec.js?v=7e146775';
 
 export const CELL_M = 4;
 
@@ -358,6 +358,25 @@ function extendEnds(s, ends) {
   }
 }
 
+// a road node's centre in plate metres (keys are roadBlockKey: bz * 1000 + bx)
+export const roadNodeCentre = (key) => [((key % 1000) * 2 + 1) * CELL_M, (Math.floor(key / 1000) * 2 + 1) * CELL_M];
+// the road from one node to another: breadth-first over the road graph, a
+// list of keys from `from` to `to` inclusive, or [] when they are not joined
+export function roadPath(plate, from, to) {
+  const adj = new Map();
+  for (const [a, b] of plate.roads.edges) { if (!adj.has(a)) adj.set(a, []); if (!adj.has(b)) adj.set(b, []); adj.get(a).push(b); adj.get(b).push(a); }
+  const prev = new Map([[from, null]]);
+  const queue = [from];
+  while (queue.length) {
+    const k = queue.shift();
+    if (k === to) break;
+    for (const n of adj.get(k) || []) if (!prev.has(n)) { prev.set(n, k); queue.push(n); }
+  }
+  if (!prev.has(to)) return [];
+  const out = [];
+  for (let k = to; k !== null; k = prev.get(k)) out.push(k);
+  return out.reverse();
+}
 export function roadsConnected(s) {
   const { nodes, edges } = s.roads;
   if (nodes.length === 0) return false;

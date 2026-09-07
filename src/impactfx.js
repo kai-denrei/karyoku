@@ -19,7 +19,7 @@
 // Deterministic: a hashed pseudo-stream per effect, seeded by the caller.
 // House rule — no Math.random in anything the game can replay.
 import * as THREE from '../vendor/three.module.js';
-import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=110951bf';
+import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=7e146775';
 
 export const IMPACT_TUNE = {
   // SPARK SHOWER — hot chips thrown off the surface, falling under gravity

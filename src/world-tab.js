@@ -5,26 +5,27 @@
 import * as THREE from '../vendor/three.module.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { noteStep } from './fps.js?v=110951bf';
-import { bodyDims } from './catalog.js?v=110951bf';
-import { makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M, reservedAt } from './plate.js?v=110951bf';
-import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, stepGates, stepSentries, stepTracers, fireHull, damageAt, autopilotInput, makeBodies, stepBodies, bodyAt, shotRangeFor, solidHeightAt, SOLID_HEIGHT, damageSentryAt, stepCrush, stepRam, ammoDotsLit, bodyHit, damageBody, powered, damageSplit } from './drive.js?v=110951bf';
-import { WORLD_KNOBS, makeWorldParams, clampWorldParams, makeWorld, worldBlocked, worldBuildingAt, worldLosFor, worldSentries, worldGates, terrainNormal, splitQuad, groundAt, outpostGround } from './world.js?v=110951bf';
-import { PALETTE, terrainMeshes, floraMeshes, LOOK, LOOKS } from './looks.js?v=110951bf';
-import { withParam } from './url.js?v=110951bf';
-import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=110951bf';
-import { query, loadCatalog } from './plate-tab.js?v=110951bf';
-import { modelledIds } from './catalog.js?v=110951bf';
-import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS, makeMobileShell, mobileShell, makeGuardObject, makeFlagStand, makeCarriedFlag } from './drive-rig.js?v=110951bf';
-import { makeSfx } from './sfx.js?v=110951bf';
-import { makeCrew, stepCrew, stepSquash, shotHits, splashHits, hullCovers, crewFreeAt, keyAreas, CREW_TUNE } from './crew.js?v=110951bf';
-import { makeCrewScene } from './crew-scene.js?v=110951bf';
-import { makeGuard, stepGuard, GUARD_TUNE } from './guard.js?v=110951bf';
-import { makeCtf, stepCtf, poleState, SLOTS, CTF_TUNE } from './ctf.js?v=110951bf';
-import { makeRescue, stepBoarding, stepUnloading, makeRescued, stepEntered, RESCUE_TUNE } from './rescue.js?v=110951bf';
-import { proto } from './plate-scene.js?v=110951bf';
-import { fileFor } from './catalog.js?v=110951bf';
-import { mulberry32 } from './rng.js?v=110951bf';
+import { noteStep } from './fps.js?v=7e146775';
+import { bodyDims } from './catalog.js?v=7e146775';
+import { makePlateParams, clampPlateParams, PLATE_KNOBS, CELL_M, reservedAt } from './plate.js?v=7e146775';
+import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, stepGates, stepSentries, stepTracers, fireHull, damageAt, autopilotInput, makeBodies, stepBodies, bodyAt, shotRangeFor, solidHeightAt, SOLID_HEIGHT, damageSentryAt, stepCrush, stepRam, ammoDotsLit, bodyHit, damageBody, powered, damageSplit } from './drive.js?v=7e146775';
+import { WORLD_KNOBS, makeWorldParams, clampWorldParams, makeWorld, worldBlocked, worldBuildingAt, worldLosFor, worldSentries, worldGates, terrainNormal, splitQuad, groundAt, outpostGround } from './world.js?v=7e146775';
+import { PALETTE, terrainMeshes, floraMeshes, LOOK, LOOKS } from './looks.js?v=7e146775';
+import { withParam } from './url.js?v=7e146775';
+import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=7e146775';
+import { query, loadCatalog } from './plate-tab.js?v=7e146775';
+import { modelledIds } from './catalog.js?v=7e146775';
+import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS, makeMobileShell, mobileShell, makeGuardObject, makeFlagStand, makeCarriedFlag } from './drive-rig.js?v=7e146775';
+import { makeSfx } from './sfx.js?v=7e146775';
+import { makeCrew, stepCrew, stepSquash, shotHits, splashHits, hullCovers, crewFreeAt, keyAreas, CREW_TUNE } from './crew.js?v=7e146775';
+import { makeCrewScene } from './crew-scene.js?v=7e146775';
+import { makeGuard, stepGuard, GUARD_TUNE } from './guard.js?v=7e146775';
+import { makeCtf, stepCtf, poleState, SLOTS, CTF_TUNE } from './ctf.js?v=7e146775';
+import { makeEnemy, stepEnemy, ENEMY_TUNE } from './enemy.js?v=7e146775';
+import { makeRescue, stepBoarding, stepUnloading, makeRescued, stepEntered, RESCUE_TUNE } from './rescue.js?v=7e146775';
+import { proto } from './plate-scene.js?v=7e146775';
+import { fileFor } from './catalog.js?v=7e146775';
+import { mulberry32 } from './rng.js?v=7e146775';
 
 const ARRIVE_M = 8;
 
@@ -42,6 +43,10 @@ export function initWorldTab(root) {
   const P = clampDriveParams(makeDriveParams(), qo);
   const view = { camera: q.get('view') || 'chase' };
   const hullObj = makeHullObject();
+  // THE ENEMY TANK: always one, red, driven by enemy.js
+  const enemyObj = makeHullObject(PALETTE.hostile);
+  let enemy = null, deaths = 0, respawnT = 0;
+  const RESPAWN_S = 3;
   scene.add(hullObj);
   const pool = makeTracerPool(scene);
   const sfx = makeSfx(scene);
@@ -51,6 +56,7 @@ export function initWorldTab(root) {
   let camps = [], rescue = makeRescue(), drop = null, campGroup = null;
   let guards = [];
   const guardObjs = [];
+  scene.add(enemyObj);
   let ctf = null, stands = [], carried = null;
   // what a shot can damage: anything the catalog has damaged models for
   const destructible = (pc) => { const e = catalog && catalog.get(pc.id); return !!(e && e.states[1] && e.states[3]); };
@@ -118,8 +124,10 @@ export function initWorldTab(root) {
       const cg = new THREE.Group(); cg.name = 'crew'; g.add(cg);
       return { o, ground, solid, crew, group: g, scene: makeCrewScene(cg, crew) };
     });
-    // THE GUARDS: one per base over its compound; only the hostile one fires
-    guards = world.plates.map((p) => { const st = p.plate.power ? p.plate.pieces[p.plate.power.pieceIndex] : null; return makeGuard((st ? (st.x + 1) * CELL_M : p.wM / 2) + p.ox, (st ? (st.z + 1) * CELL_M : p.hM / 2) + p.oz, p.hostile); });
+    // THE GUARDS: one per base over its compound; each fires at the OTHER side's tank
+    guards = world.plates.map((p) => { const st = p.plate.power ? p.plate.pieces[p.plate.power.pieceIndex] : null; return makeGuard((st ? (st.x + 1) * CELL_M : p.wM / 2) + p.ox, (st ? (st.z + 1) * CELL_M : p.hM / 2) + p.oz, true); });
+    enemy = makeEnemy(world);
+    deaths = 0; respawnT = 0;
     while (guardObjs.length < guards.length) { const go = makeGuardObject(scene); scene.add(go.obj); guardObjs.push(go); }
     // CAPTURE THE FLAG: each plate's stand in world metres; home keeps fire, the enemy power
     for (const st of stands) scene.remove(st.group);
@@ -184,7 +192,21 @@ export function initWorldTab(root) {
         rigs[pi].rebuild();
       }
     });
-    stepHull(hull, input, dt, (x, z) => worldBlocked(world, x, z), P);
+    // THE PLAYER'S HULL: dead hulls wait for the respawn at base (the flag they carried goes back)
+    if (!hull.alive) {
+      respawnT -= dt;
+      if (respawnT <= 0) { hull.alive = true; hull.hp = P.hullHp; hull.damage = 0; hull.ammo = P.ammoMax; hull.x = world.spawn.x; hull.z = world.spawn.z; hull.heading = world.spawn.heading; hull.speed = 0; camera.userData.placed = false; console.log('[hull] respawned at base'); }
+      input = { fwd: false, rev: false, throttle: 0 };
+    }
+    const enemySolid = (x, z) => enemy && enemy.alive && hullCovers(enemy, x, z);
+    stepHull(hull, input, dt, (x, z) => worldBlocked(world, x, z) || enemySolid(x, z), P);
+    // THE ENEMY drives its road, comes in through our gate, raids the stand, shoots us
+    if (enemy) {
+      const ev = stepEnemy(enemy, world, hull, dt, (x, z) => worldBlocked(world, x, z) || bodyAt(bodies, x, z) || (hull.alive && hullCovers(hull, x, z)), ENEMY_TUNE, P);
+      if (ev.shot) { tracers.push(ev.shot); sfx.sentryFired('railgun', Math.hypot(enemy.x - hull.x, enemy.z - hull.z)); }
+      if (ev.died) { sfx.sentryDestroyed([enemy.x, groundAt(world, enemy.x, enemy.z).y + 2, enemy.z], Math.hypot(enemy.x - hull.x, enemy.z - hull.z)); console.log('[enemy] destroyed'); }
+      if (ev.respawned) console.log('[enemy] respawned at its gate');
+    }
     if (hull.bump) sfx.wallHit(hull.bump);
     sfx.elevating(Boolean(hull.elevating));
     stepBodies(bodies, hull, (x, z) => worldBlocked(world, x, z) || world.plates.some((p) => reservedAt(p.plate, Math.floor((x - p.ox) / CELL_M), Math.floor((z - p.oz) / CELL_M))), P, dt);
@@ -215,31 +237,43 @@ export function initWorldTab(root) {
     }
     stepEntered(rescue, crews[0].crew, RESCUE_TUNE);
     // the flags: a stop by the enemy's full pole takes its flag, a stop by our empty pole plants it
-    if (ctf) for (const ev of stepCtf(ctf, hull, CTF_TUNE, dt)) {
+    // the hold stands still while the enemy is inside our base
+    if (ctf) for (const ev of stepCtf(ctf, hull, CTF_TUNE, dt, Boolean(enemy && enemy.alive && enemy.inside))) {
       if (ev === 'capture') { const f = ctf.carrying; const st = stands[1]; if (st) st.set(f.slot, 'empty', null); carried = makeCarriedFlag(hullObj, SLOTS[f.slot].banner); sfx.flagTaken(); console.log(`[ctf] captured the ${f.glyph} flag`); }
       if (ev === 'plant') { const st = stands[0]; const slot = ctf.flags.find((f) => f.at === 'home' && f.owner === 'hostile').slot; if (st) st.set(slot, 'flag', 'Raise'); if (carried) { carried.remove(); carried = null; } for (const s of stands) s.setLive(true); sfx.flagPlanted(); console.log(`[ctf] the set is complete: the colours return, ${CTF_TUNE.holdS} s to hold`); }
       if (ev === 'win') { rescue.score += CTF_TUNE.winBonus; console.log('[ctf] VICTORY'); }
     }
     for (const c of crews) {
       const local = { x: hull.x - c.p.ox, z: hull.z - c.p.oz, heading: hull.heading, speed: hull.speed };
-      stepCrew(c.crew, c.plate, dt, crewRng, { ...local, moving: Math.abs(hull.speed) >= 1.5 }, CREW_TUNE, c.solid, (x, z) => hullCovers(local, x, z));
+      // the threat is the nearer of the two tanks (a home crew fears the enemy's too)
+      let threat = { ...local, moving: Math.abs(hull.speed) >= 1.5 };
+      if (enemy && enemy.alive) { const el = { x: enemy.x - c.p.ox, z: enemy.z - c.p.oz, heading: enemy.heading, speed: enemy.speed, moving: Math.abs(enemy.speed) >= 1.5 }; const w0 = c.crew.walkers[0]; if (w0 && Math.hypot(el.x - w0.x, el.z - w0.z) < Math.hypot(threat.x - w0.x, threat.z - w0.z)) threat = el; }
+      stepCrew(c.crew, c.plate, dt, crewRng, threat, CREW_TUNE, c.solid, (x, z) => hullCovers(local, x, z));
       for (const w of stepSquash(c.crew, local, P.hullR)) { squashed++; sfx.softHit([w.x + c.p.ox, groundAt(world, w.x + c.p.ox, w.z + c.p.oz).y + 0.6, w.z + c.p.oz], 0); }
     }
     if (input.fire) { const shot = fireHull(hull, P); if (shot) { tracers.push(shot); sfx.fire(); } else if (hull.empty) sfx.empty(); }
     sfx.engine(hull.speed, P.speed, dt);
     // every gate opens for the hull, both rings, both plates (operator: for
     // now); only the hostile plate's sentries fire
-    stepGates(gates, hull, dt, P);
-    for (const g of guards) {
-      const ev = stepGuard(g, hull, dt, GUARD_TUNE);
+    stepGates(gates, [hull, enemy], dt, P);
+    guards.forEach((g, gi) => {
+      // each base's drone marks the OTHER side's tank
+      const target = world.plates[gi].hostile ? hull : enemy;
+      if (!target || target.alive === false) return;
+      const ev = stepGuard(g, target, dt, GUARD_TUNE);
       const gd = Math.hypot(g.x - hull.x, g.z - hull.z);
       if (ev.mark) sfx.guardMark(gd);
       if (ev.shot) { tracers.push(ev.shot); sfx.guardFire(gd); }
-    }
-    for (const p of world.plates) if (p.hostile) for (const t of stepSentries(p.sentries, hull, dt, worldLosFor(p), P, powered(p.plate))) {
-      tracers.push(t);
-      const s = p.sentries[t.from];
-      if (s) sfx.sentryFired(s.family, Math.hypot(s.cx - hull.x, s.cz - hull.z));
+    });
+    // every base's sentries fire at the OTHER side's tank: theirs at us, ours at the enemy
+    for (const p of world.plates) {
+      const target = p.hostile ? hull : enemy;
+      if (!target || target.alive === false) continue;
+      for (const t of stepSentries(p.sentries, target, dt, worldLosFor(p), P, powered(p.plate))) {
+        tracers.push(t);
+        const s = p.sentries[t.from];
+        if (s) sfx.sentryFired(s.family, Math.hypot(s.cx - hull.x, s.cz - hull.z));
+      }
     }
     const distTo = (x, z) => Math.hypot(x - hull.x, z - hull.z);
     const damage = (x, z) => world.plates.forEach((p, pi) => {
@@ -274,7 +308,7 @@ export function initWorldTab(root) {
       }
       return false;
     };
-    hits += stepTracers(tracers, hull, dt, (x, z, t) => {
+    hits += stepTracers(tracers, [hull, enemy], dt, (x, z, t) => {
       if (t && t.kind === 'lob' && t.landed) { sfx.impact('shell', [x, groundAt(world, x, z).y + 0.1, z], [0, 1, 0], distTo(x, z), 3.2, 'tower_aoe'); splash(x, z); return true; }
       if (t && t.kind === 'shot') {
         const y = t.y - groundAt(world, x, z).y; // height above the ground under it
@@ -294,18 +328,30 @@ export function initWorldTab(root) {
       return worldBuildingAt(world, x, z);
     }, P, (x, z) => groundAt(world, x, z).y);
     if (hits > before) { sfx.impact('light', [hull.x, hull.y + 1.5, hull.z], [0, 1, 0], 0, 2, null); sfx.hitOnHull(); }
+    // the player's points: at zero the hull is destroyed and respawns at base; a carried flag goes back to its pole
+    if (hull.alive && hull.damage) {
+      hull.hp -= hull.damage; hull.damage = 0;
+      if (hull.hp <= 0) {
+        hull.alive = false; deaths++; respawnT = RESPAWN_S;
+        sfx.sentryDestroyed([hull.x, hull.y + 2, hull.z], 0);
+        if (ctf && ctf.carrying) { const f = ctf.carrying; f.carried = false; f.at = 'hostile'; ctf.carrying = null; const st = stands[1]; if (st) st.set(f.slot, 'flag', 'Raise'); if (carried) { carried.remove(); carried = null; } }
+        console.log(`[hull] destroyed (${deaths})`);
+      }
+    }
     simT += dt;
     if (arrivedAt < 0 && goalDist() <= ARRIVE_M) arrivedAt = simT;
   }
 
-  const logLine = () => `[world] t=${simT.toFixed(1)} hull=${hull.x.toFixed(1)},${hull.z.toFixed(1)} y=${world.heightAt(hull.x, hull.z).toFixed(2)} heading=${hull.heading.toFixed(0)} goal=${goalDist().toFixed(1)} tracking=${sentries.filter((s) => s.tracking).length} lobs=${tracers.filter((t) => t.kind === 'lob').length} hits=${hits} ammo=${hull.ammo} down=${squashed} sentriesDown=${sentries.filter((s) => !s.alive).length} crushed=${crushed} bodiesBroken=${bodiesBroken} power=${world.plates.map((p) => (powered(p.plate) ? 'on' : 'off')).join('/')} aboard=${rescue.aboard} rescued=${rescue.rescued} score=${rescue.score} camps=${camps.length} guards=${guards.map((g) => g.state + ':' + g.shots).join('/')} flag=${ctf ? (ctf.won ? 'won' : ctf.set ? 'set:' + Math.ceil(ctf.hold) : ctf.carrying ? 'carried' : 'theirs') : '-'} crewIn=${crews.reduce((n, c) => n + c.crew.walkers.filter((w) => w.alive && !crewFreeAt(c.plate, w.x, w.z, c.solid)).length, 0)}${arrivedAt >= 0 ? ' ARRIVED' : ''}`;
+  const logLine = () => `[world] t=${simT.toFixed(1)} hull=${hull.x.toFixed(1)},${hull.z.toFixed(1)} y=${world.heightAt(hull.x, hull.z).toFixed(2)} heading=${hull.heading.toFixed(0)} goal=${goalDist().toFixed(1)} tracking=${sentries.filter((s) => s.tracking).length} lobs=${tracers.filter((t) => t.kind === 'lob').length} hits=${hits} ammo=${hull.ammo} down=${squashed} sentriesDown=${sentries.filter((s) => !s.alive).length} crushed=${crushed} bodiesBroken=${bodiesBroken} power=${world.plates.map((p) => (powered(p.plate) ? 'on' : 'off')).join('/')} aboard=${rescue.aboard} rescued=${rescue.rescued} score=${rescue.score} camps=${camps.length} guards=${guards.map((g) => g.state + ':' + g.shots).join('/')} flag=${ctf ? (ctf.won ? 'won' : ctf.set ? 'set:' + Math.ceil(ctf.hold) + (ctf.paused ? 'P' : '') : ctf.carrying ? 'carried' : 'theirs') : '-'} hp=${hull.hp} deaths=${deaths} enemy=${enemy ? (enemy.alive ? `${enemy.state}:${enemy.hp}:${enemy.inside ? 'in' : 'out'}:${enemy.x.toFixed(0)},${enemy.z.toFixed(0)}` : 'dead') : '-'} crewIn=${crews.reduce((n, c) => n + c.crew.walkers.filter((w) => w.alive && !crewFreeAt(c.plate, w.x, w.z, c.solid)).length, 0)}${arrivedAt >= 0 ? ' ARRIVED' : ''}`;
 
   function sync() {
     const g = groundAt(world, hull.x, hull.z);
     const y = g.y;
     hull.y = y;
     hullObj.userData.setPose(hull, y + 0.3, g.normal);
+    hullObj.visible = hull.alive !== false;
     sfx.applyFeel(hullObj);
+    if (enemy) { enemyObj.visible = enemy.alive; if (enemy.alive) { const ge = groundAt(world, enemy.x, enemy.z); enemy.y = ge.y; enemyObj.userData.setPose(enemy, ge.y + 0.3, ge.normal); } }
     if (hullObj.userData.setAmmoDots) hullObj.userData.setAmmoDots(ammoDotsLit(hull.ammo, P));
     world.plates.forEach((p, pi) => {
       rigs[pi].syncBodies(bodies.filter((b) => b.plate === p.plate), p.ox, p.oz);
@@ -336,14 +382,15 @@ export function initWorldTab(root) {
       if (p.plate.power && powered(p.plate)) { const st = p.plate.pieces[p.plate.power.pieceIndex]; contacts.push({ x: (st.x + 1) * CELL_M + p.ox, z: (st.z + 1) * CELL_M + p.oz, side, kind: 'static' }); }
       for (const w of crews[pi].crew.walkers) if (w.alive) contacts.push({ x: w.x + p.ox, z: w.z + p.oz, side, kind: 'unit' });
     });
+    if (enemy && enemy.alive) contacts.push({ x: enemy.x, z: enemy.z, side: 'hostile', kind: 'static' });
     for (const c of camps) {
       for (const pr of c.o.props) contacts.push({ x: c.o.x + pr.dx, z: c.o.z + pr.dz, side: c.o.side, kind: 'static' });
       for (const w of c.crew.walkers) if (w.alive) contacts.push({ x: w.x, z: w.z, side: c.o.side, kind: 'unit' });
     }
     radar.paint(simT, hull, contacts);
     hud.textContent = mobileShell
-      ? `${ctf && ctf.won ? 'VICTORY · ' : ctf && ctf.set ? `SET: ${Math.ceil(ctf.hold)} s · ` : ctf && ctf.carrying ? 'FLAG: bring it home · ' : ''}goal ${goalDist().toFixed(0)} m${arrivedAt >= 0 ? ' · ARRIVED' : ''} · shells ${hull.ammo} · aboard ${rescue.aboard}/${RESCUE_TUNE.capacity} · rescued ${rescue.rescued} · score ${rescue.score} · hits ${hits} · crew down ${squashed}`
-      : `${ctf && ctf.won ? 'VICTORY · ' : ctf && ctf.set ? `SET COMPLETE: hold ${Math.ceil(ctf.hold)} s · ` : ctf && ctf.carrying ? `carrying the ${ctf.carrying.glyph} flag: bring it to our empty pole · ` : 'flags: take theirs, plant it on our empty pole · '}goal ${goalDist().toFixed(0)} m${arrivedAt >= 0 ? ` · ARRIVED at ${arrivedAt.toFixed(1)} s` : ''} · muzzle ${hull.elev.toFixed(0)} deg · range ${shotRangeFor(hull, P).toFixed(0)} m · hits ${hits} · shots ${hull.shots} · shells ${hull.ammo}/${P.ammoMax} · aboard ${rescue.aboard}/${RESCUE_TUNE.capacity} · rescued ${rescue.rescued} · score ${rescue.score} · breached ${breached} · crew down ${squashed} · sentries ${sentries.filter((s) => s.alive).length}/${sentries.length} · cam ${view.camera} · WASD drive · SPACE fire · SHIFT+W/S muzzle · 1-4 cameras · R regenerate`;
+      ? `${!hull.alive ? 'DESTROYED · ' : `hull ${hull.hp} · `}${ctf && ctf.won ? 'VICTORY · ' : ctf && ctf.set ? `SET: ${Math.ceil(ctf.hold)} s${ctf.paused ? ' PAUSED' : ''} · ` : ctf && ctf.carrying ? 'FLAG: bring it home · ' : ''}goal ${goalDist().toFixed(0)} m${arrivedAt >= 0 ? ' · ARRIVED' : ''} · shells ${hull.ammo} · aboard ${rescue.aboard}/${RESCUE_TUNE.capacity} · rescued ${rescue.rescued} · score ${rescue.score} · hits ${hits} · crew down ${squashed}`
+      : `${!hull.alive ? `DESTROYED: respawning ${Math.ceil(respawnT)} s · ` : ''}hull ${hull.hp}/${P.hullHp} · enemy ${enemy ? (enemy.alive ? `${enemy.hp} pts${enemy.inside ? ', INSIDE OUR BASE' : ''}` : `down, back in ${Math.ceil(enemy.respawnT)} s`) : '-'} · ${ctf && ctf.won ? 'VICTORY · ' : ctf && ctf.set ? `SET COMPLETE: hold ${Math.ceil(ctf.hold)} s${ctf.paused ? ' (PAUSED: enemy inside)' : ''} · ` : ctf && ctf.carrying ? `carrying the ${ctf.carrying.glyph} flag: bring it to our empty pole · ` : 'flags: take theirs, plant it on our empty pole · '}goal ${goalDist().toFixed(0)} m${arrivedAt >= 0 ? ` · ARRIVED at ${arrivedAt.toFixed(1)} s` : ''} · muzzle ${hull.elev.toFixed(0)} deg · range ${shotRangeFor(hull, P).toFixed(0)} m · hits ${hits} · shots ${hull.shots} · shells ${hull.ammo}/${P.ammoMax} · aboard ${rescue.aboard}/${RESCUE_TUNE.capacity} · rescued ${rescue.rescued} · score ${rescue.score} · breached ${breached} · crew down ${squashed} · sentries ${sentries.filter((s) => s.alive).length}/${sentries.length} · cam ${view.camera} · WASD drive · SPACE fire · SHIFT+W/S muzzle · 1-4 cameras · R regenerate`;
   }
 
   const regenerate = () => { plateParams.seed = (plateParams.seed + 1) % 1000000; gui.controllersRecursive().forEach((c) => c.updateDisplay()); build(); };

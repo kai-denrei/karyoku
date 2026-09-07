@@ -14,7 +14,7 @@
 // asks it too, with the walker's own radius, so nobody walks through a
 // container or the tank. Something that rolls onto a walker slowly shoves
 // them out (`escape`); fast, it squashes them (stepSquash).
-import { KIND, CELL_M, rotSide, DIRS, YARD_IDS, POWER } from './plate.js?v=110951bf';
+import { KIND, CELL_M, rotSide, DIRS, YARD_IDS, POWER } from './plate.js?v=7e146775';
 
 export const CREW_TUNE = {
   walk: 1.4, run: 4.6,      // m/s
@@ -130,7 +130,7 @@ export function keyAreas(plate) {
     }
   }
   // the road junctions: somewhere to be seen going, always reachable along a road
-  if (plate.roads && plate.roads.nodes) for (const key of plate.roads.nodes) { const bx = Math.floor(key / 1000), bz = key % 1000; push(bx * 2, bz * 2, 'road'); }
+  if (plate.roads && plate.roads.nodes) for (const key of plate.roads.nodes) { const bz = Math.floor(key / 1000), bx = key % 1000; push(bx * 2, bz * 2, 'road'); } // roadBlockKey packs the row first
   for (const g of plate.gates) {
     if (g.ring !== 'inner' && plate.inset > 0) continue;
     const [ox, oz] = DIRS[g.side];

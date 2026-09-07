@@ -2,9 +2,9 @@
 // as a table, a play or loop control per clip, a distance slider standing in
 // for the listener, and the bus faders. Calibration, and the list of what
 // is missing. Owns no game state; it speaks to the audio engine directly.
-import { makeAudio } from './audio.js?v=110951bf';
-import { SOUNDS, SENTRY_FIRE, DEFAULT_LEVELS } from './audiomanifest.js?v=110951bf';
-import { ELEMENTS, labRows, labSummary } from './soundlab.js?v=110951bf';
+import { makeAudio } from './audio.js?v=7e146775';
+import { SOUNDS, SENTRY_FIRE, DEFAULT_LEVELS } from './audiomanifest.js?v=7e146775';
+import { ELEMENTS, labRows, labSummary } from './soundlab.js?v=7e146775';
 
 const STATUS_WORD = { wired: 'wired', unwired: 'clip unused', missing: 'MISSING', nofile: 'NO FILE' };
 

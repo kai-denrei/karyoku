@@ -313,6 +313,32 @@ no build step, Node invariant suites).
   the tabs call `stand.setLive(true)` so the colours return); at zero the
   'win' event, the bonus and `won`. HUD: `SET COMPLETE: hold N s`; probe
   `flag=set:N`; `?ctfprobe=1&tick=40` ends `flag=won`.
+- THE ENEMY TANK (`enemy.js`, `test/enemy.mjs`; world only): always one,
+  red (`makeHullObject(PALETTE.hostile)`), spawned at its base's facing
+  gate; its path is the world road reversed, then our outer facing gate,
+  the inner gate behind it, that gate's road port and a `roadPath` (BFS
+  over `plate.roads.edges`) to the junction nearest our flag stand, then
+  the stand: state 'invade' → 'raid' (a 16 m circle round the stand).
+  `autopilotInput` drives it at 18 m/s; gates open for ANY hull
+  (`stepGates(gates, [hull, enemy])`); it fires straight shells
+  (`from: 'enemy'`) at the player within 70 m and 12 degrees of ahead.
+  It has 12 points, dies to the player's shells (2 each), our sentries
+  (1) and our drone (3), respawns at its gate after 8 s.
+- TWO HULLS in the rules: `stepTracers(tracers, [player, enemy], ...)`
+  counts hit EVENTS on the player (the HUD number) and points as
+  `damage` on whichever hull is struck; `from: -1` shells never hit the
+  player, `from: 'enemy'` shells only the player; lobs splash both.
+  Every base's sentries and drone target the OTHER side's tank.
+- HULL POINTS: `hull.hp` (`hullHp` 12); at zero the hull is destroyed
+  (blast), hidden 3 s, RESPAWNED AT BASE (world.spawn) with a full rack;
+  a carried flag returns to the enemy's pole. HUD: `hull N/12 · enemy N
+  pts, INSIDE OUR BASE`; probe `hp= deaths= enemy=state:hp:in|out:x,z`.
+- THE FIRST WIN CONDITION: both flags on our poles AND the 30 s hold runs
+  out → VICTORY; the hold PAUSES while the enemy is inside our inner ring
+  (`insideBase`, `stepCtf(..., paused)`; HUD says PAUSED). Roads' keys
+  pack the row first (`bz * 1000 + bx`): the crew's junction areas were
+  decoded transposed until now; `roadNodeCentre` is the one decoder.
+- The drone: `markT` 0.9, `cooldown` 1.6, `shellSpeed` 110.
 - THE RAM: `RAM_IDS` (the comms tower) take a round per hit at
   `ramSpeed` 10 m/s, once per touch (0.8 s, `pc.ramCool`), down the same
   D0..D3 ladder as shells (`stepRam(plate, hull, dt, tune)`, called

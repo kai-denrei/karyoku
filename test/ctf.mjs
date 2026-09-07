@@ -15,6 +15,7 @@ check('stopping by home\'s FIRE pole (the wrong slot) plants nothing', stepCtf(c
 const ev2 = stepCtf(c, { x: 9, z: 1, speed: 0 });
 check('stopping by home\'s empty power pole plants it: the set is complete, the hold starts', ev2.includes('plant') && c.set && !c.won && !c.carrying && poleState(c, 'home', 1) === 'flag' && c.hold === CTF_TUNE.holdS && c.score === 0);
 check('the hold counts down; nothing else happens meanwhile', stepCtf(c, { x: 306, z: 2, speed: 0 }, CTF_TUNE, 10).length === 0 && c.hold === CTF_TUNE.holdS - 10 && !c.won);
+check('with the enemy inside the base the hold stands still', stepCtf(c, { x: 0, z: 0, speed: 0 }, CTF_TUNE, 10, true).length === 0 && c.hold === CTF_TUNE.holdS - 10 && c.paused);
 const ev3 = stepCtf(c, { x: 0, z: 0, speed: 0 }, CTF_TUNE, CTF_TUNE.holdS);
 check('at the end of the hold: the win, the bonus, once', ev3.includes('win') && c.won && c.score === CTF_TUNE.winBonus && stepCtf(c, { x: 306, z: 2, speed: 0 }, CTF_TUNE, 5).length === 0);
 done();

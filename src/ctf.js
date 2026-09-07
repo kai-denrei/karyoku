@@ -28,11 +28,13 @@ const nearPole = (hull, stands, side, slot, tune) => stands[side] && stands[side
 
 // one step; returns events: 'capture' the frame the enemy flag is taken,
 // 'plant' (and won) the frame it goes up on the home pole
-export function stepCtf(ctf, hull, tune = CTF_TUNE, dt = 0) {
+// `paused`: the enemy is inside our base; the hold stands where it is
+export function stepCtf(ctf, hull, tune = CTF_TUNE, dt = 0, paused = false) {
   const out = [];
   if (ctf.won) return out;
   if (ctf.set) {
-    ctf.hold = Math.max(0, ctf.hold - dt);
+    ctf.paused = paused;
+    if (!paused) ctf.hold = Math.max(0, ctf.hold - dt);
     if (ctf.hold <= 0) { ctf.won = true; ctf.score += tune.winBonus; out.push('win'); }
     return out;
   }
