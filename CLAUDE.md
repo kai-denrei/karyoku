@@ -264,6 +264,10 @@ no build step, Node invariant suites).
   orientation; the tabs' body blocker includes `reservedAt`, so a shoved
   crate cannot stop on a doorstep. Test: every building's door opens
   onto free ground or road; the infirmary's doorstep is reserved.
+- `command_uplink` is GONE from the game entirely (operator, 2026-09-07: it
+  never displayed properly): the radome stand-in, its manifest entry, the
+  asset row, the modelled set and the command zone list. A 40k Stalheart
+  is in the works at the workshop to replace the 165k terraformer.
 - THE RAM: `RAM_IDS` (the comms tower) take a round per hit at
   `ramSpeed` 10 m/s, once per touch (0.8 s, `pc.ramCool`), down the same
   D0..D3 ladder as shells (`stepRam(plate, hull, dt, tune)`, called

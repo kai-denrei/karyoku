@@ -20,7 +20,7 @@
 ## NASA 3D Resources — space-colony stand-ins
 
 - **Files:** `assets/models/nasa/*.glb` (gantry, insight, ibex,
-  launcher, radome, cubesat), mapped to catalog roles in
+  launcher, cubesat), mapped to catalog roles in
   `assets/models/nasa/manifest.json`
 - **Source:** <https://github.com/nasa/NASA-3D-Resources> — Gantry, Habitat
   Demonstration Unit (part 1), InSight Cruise Lander (arm deployed),

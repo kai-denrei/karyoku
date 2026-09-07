@@ -20,4 +20,3 @@ prep cubesat  0.50
 prep launcher 0.60
 prep ibex     0.60
 prep habitat  1.0
-prep radome   1.0

@@ -52,7 +52,6 @@ export const CATALOG_SPEC = [
   { id: 'command_operations', name: 'Tactical operations annex', section: 'command', plot: [3, 3], ports: ['road'], note: 'Expandable operations wing connected by an enclosed walkway.' },
   { id: 'command_comms', name: 'Communications tower', section: 'command', plot: [2, 2], ports: ['road'], note: 'Communications backbone with a visible antenna silhouette.' },
   { id: 'command_server', name: 'Armored server vault', section: 'command', plot: [3, 2], ports: ['road'], note: 'Data storage with cooling and dual power-feed sockets.' },
-  { id: 'command_uplink', name: 'Orbital uplink dish', section: 'command', plot: [3, 3], ports: ['road'], note: 'Large sky-facing dish; reserve a clear overhead envelope.' },
   { id: 'command_beacon', name: 'Navigation and identity beacon', section: 'command', plot: [1, 1], ports: ['road'], note: 'Base identity landmark; place at a road or landing-zone boundary.' },
   { id: 'personnel_barracks', name: 'Barracks module', section: 'personnel', plot: [4, 3], ports: ['road'], note: 'Repeatable sleeping wing with two footpath entrances.' },
   { id: 'personnel_infirmary', name: 'Infirmary', section: 'personnel', plot: [4, 3], ports: ['road'], note: 'Medical wing with a separate patient-transfer entrance.' },

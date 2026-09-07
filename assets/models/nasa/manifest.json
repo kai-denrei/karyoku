@@ -6,20 +6,6 @@
   "source": "NASA 3D Resources (https://github.com/nasa/NASA-3D-Resources), free and without copyright; no insignia; decoded from Draco, simplified and meshopt-encoded by scripts/nasa-prep.sh",
   "assets": [
     {
-      "id": "command_uplink_d0",
-      "name": "Radome (Guam)",
-      "file": "radome.glb",
-      "plot_m": [
-        12,
-        12
-      ],
-      "fit": {
-        "span": 11,
-        "height": 14
-      },
-      "description": "A tracking-station radome stands in for the orbital uplink dish."
-    },
-    {
       "id": "logistics_crane_d0",
       "name": "Gantry",
       "file": "gantry.glb",

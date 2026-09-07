@@ -4,7 +4,7 @@ import { MODELLED } from '../src/plate.js';
 import { buildCatalog, splitId, PLACEHOLDER_HEIGHT_M, fileFor, fitFor, modelledIds, bodyDims, NASA_URL, HOUSE_URL, OUTPOST_URL, ASSEMBLY_URL, WAREHOUSE_URL, SOLAR_URL, TERRAFORMER_URL } from '../src/catalog.js';
 import { check, near, done } from './check.mjs';
 
-check('124 asset types', CATALOG_SPEC.length === 124, `got ${CATALOG_SPEC.length}`);
+check('123 asset types', CATALOG_SPEC.length === 123, `got ${CATALOG_SPEC.length}`);
 check('unique ids', new Set(CATALOG_SPEC.map((r) => r.id)).size === CATALOG_SPEC.length);
 check('every plot is two positive integers',
   CATALOG_SPEC.every((r) => r.plot.length === 2 && r.plot.every((n) => Number.isInteger(n) && n > 0)));
@@ -18,7 +18,7 @@ check('unknown id is undefined', specById('nope') === undefined);
 const manifest = JSON.parse(readFileSync(new URL('../assets/base-kit/manifest.json', import.meta.url), 'utf8'));
 const cat = buildCatalog(CATALOG_SPEC, manifest);
 
-check('catalog has every spec row', cat.size === 124);
+check('catalog has every spec row', cat.size === 123);
 check('splitId parses a state suffix', splitId('wall_standard_d2').base === 'wall_standard' && splitId('wall_standard_d2').state === 2);
 check('splitId without suffix is state 0', splitId('road_t').state === 0 && splitId('road_t').base === 'road_t');
 const wall = cat.get('wall_standard');
@@ -42,8 +42,7 @@ const nasa = JSON.parse(readFileSync(new URL('../assets/models/nasa/manifest.jso
 const cat2 = buildCatalog(CATALOG_SPEC, manifest, [{ manifest: nasa, base: NASA_URL }]);
 check('nasa manifest ids all exist in the spec', nasa.assets.every((a) => specById(splitId(a.id).base)));
 check('nasa plots match the spec', nasa.assets.every((a) => { const r = specById(splitId(a.id).base); return a.plot_m[0] === r.plot[0] * 4 && a.plot_m[1] === r.plot[1] * 4; }));
-check('the radome stands in for the uplink', cat2.get('command_uplink').placeholder === false && fileFor(cat2.get('command_uplink')) === NASA_URL + 'radome.glb');
-check('a nasa fit is carried', fitFor(cat2.get('command_uplink')).span === 11);
+check('a nasa fit is carried', fitFor(cat2.get('air_drone_pad')).span === 7.2);
 check('the kit still wins its own pieces', fileFor(cat2.get('wall_standard')) === 'assets/base-kit/wall_standard_d0.glb' && fitFor(cat2.get('wall_standard')) === null);
 check('fits stay inside the footprint', nasa.assets.every((a) => a.fit.span <= Math.min(a.plot_m[0], a.plot_m[1])));
 const house = JSON.parse(readFileSync(new URL('../assets/models/manifest.json', import.meta.url), 'utf8'));

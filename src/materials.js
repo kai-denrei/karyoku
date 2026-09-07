@@ -13,7 +13,7 @@
 // material's colour is once a map is bound. Five bakes for five rungs would
 // be five seconds and sixty megabytes for a distinction a multiplier makes.
 import * as THREE from '../vendor/three.module.js';
-import { bakeWeatheredMetal } from './weathered.js?v=cd096da1';
+import { bakeWeatheredMetal } from './weathered.js?v=5fd2b9fe';
 
 // Which preset each named surface wears, and how bright a rung it is. The
 // tints are the RING_REPAINT ladder's ratios (armour 0xc2c8ce down to

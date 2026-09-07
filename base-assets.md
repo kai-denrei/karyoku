@@ -77,7 +77,6 @@ All footprints below are **reserved plots in 4 m cells**, written X × Z. A 4 ×
 | `command_operations` | Tactical operations annex | 3 × 3 | Expandable operations wing connected by an enclosed walkway. |
 | `command_comms` | Communications tower | 2 × 2 | Communications backbone with a visible antenna silhouette. |
 | `command_server` | Armored server vault | 3 × 2 | Data storage with cooling and dual power-feed sockets. |
-| `command_uplink` | Orbital uplink dish | 3 × 3 | Large sky-facing dish; reserve a clear overhead envelope. |
 | `command_beacon` | Navigation and identity beacon | 1 × 1 | Base identity landmark; place at a road or landing-zone boundary. |
 
 ## Personnel and medical
