@@ -4,16 +4,16 @@
 import * as THREE from '../vendor/three.module.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { generatePlate, PLATE_KNOBS, makePlateParams, clampPlateParams, CELL_M } from './plate.js?v=e2c79438';
-import { CATALOG_SPEC } from './catalog-spec.js?v=e2c79438';
-import { buildCatalog, modelledIds, BASE_KIT_URL, NASA_URL, HOUSE_URL, OUTPOST_URL, ASSEMBLY_URL, WAREHOUSE_URL, SOLAR_URL } from './catalog.js?v=e2c79438';
-import { bustToken } from './glbmodels.js?v=e2c79438';
-import { applySpaceScene, makeStars, makeComposer, LOOK, LOOKS } from './looks.js?v=e2c79438';
-import { withParam } from './url.js?v=e2c79438';
-import { tickFps } from './fps.js?v=e2c79438';
-import { buildPlateGroup } from './plate-scene.js?v=e2c79438';
+import { generatePlate, PLATE_KNOBS, makePlateParams, clampPlateParams, CELL_M } from './plate.js?v=cd096da1';
+import { CATALOG_SPEC } from './catalog-spec.js?v=cd096da1';
+import { buildCatalog, modelledIds, BASE_KIT_URL, NASA_URL, HOUSE_URL, OUTPOST_URL, ASSEMBLY_URL, WAREHOUSE_URL, SOLAR_URL, TERRAFORMER_URL } from './catalog.js?v=cd096da1';
+import { bustToken } from './glbmodels.js?v=cd096da1';
+import { applySpaceScene, makeStars, makeComposer, LOOK, LOOKS } from './looks.js?v=cd096da1';
+import { withParam } from './url.js?v=cd096da1';
+import { tickFps } from './fps.js?v=cd096da1';
+import { buildPlateGroup } from './plate-scene.js?v=cd096da1';
 
-import { query } from './url.js?v=e2c79438';
+import { query } from './url.js?v=cd096da1';
 export { query };
 
 // The catalog, once: the manifest fetched and merged, or placeholders only
@@ -29,9 +29,10 @@ export function loadCatalog() {
   const assembly = get(`${ASSEMBLY_URL}manifest.json`).catch(() => null);
   const warehouse = get(`${WAREHOUSE_URL}manifest.json`).catch(() => null);
   const solar = get(`${SOLAR_URL}manifest.json`).catch(() => null);
+  const terraformer = get(`${TERRAFORMER_URL}manifest.json`).catch(() => null);
   // order matters: a later manifest wins — the outpost kit beats the NASA
   // stand-ins, the house casts beat both
-  const extras = async () => [{ manifest: await nasa, base: NASA_URL }, { manifest: await outpost, base: OUTPOST_URL }, { manifest: await assembly, base: ASSEMBLY_URL }, { manifest: await warehouse, base: WAREHOUSE_URL }, { manifest: await solar, base: SOLAR_URL }, { manifest: await house, base: HOUSE_URL }];
+  const extras = async () => [{ manifest: await nasa, base: NASA_URL }, { manifest: await outpost, base: OUTPOST_URL }, { manifest: await assembly, base: ASSEMBLY_URL }, { manifest: await warehouse, base: WAREHOUSE_URL }, { manifest: await solar, base: SOLAR_URL }, { manifest: await terraformer, base: TERRAFORMER_URL }, { manifest: await house, base: HOUSE_URL }];
   catalogP = get(`${BASE_KIT_URL}manifest.json`)
     .then(async (m) => ({ catalog: buildCatalog(CATALOG_SPEC, m, await extras()), error: null }))
     .catch(async (e) => ({ catalog: buildCatalog(CATALOG_SPEC, null, await extras()), error: e.message }));

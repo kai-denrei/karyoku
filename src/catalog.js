@@ -73,6 +73,7 @@ export const OUTPOST_URL = 'assets/outpost/';
 export const ASSEMBLY_URL = 'assets/assembly/';
 export const WAREHOUSE_URL = 'assets/warehouse/';
 export const SOLAR_URL = 'assets/solar/';
+export const TERRAFORMER_URL = 'assets/terraformer/';
 
 // A body's box in metres from its intact model's first collider (the
 // workshop authors one per prop), for the drive: the plot is the cell

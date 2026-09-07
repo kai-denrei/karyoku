@@ -73,6 +73,7 @@ All footprints below are **reserved plots in 4 m cells**, written X × Z. A 4 ×
 | ID | Individual asset | Plot | Function and placement logic |
 | --- | --- | --- | --- |
 | `command_hq` | Command nexus | 5 × 4 | Central command hub with roof sensor crown and protected entry. |
+| `terraformer_3000` | Terraformer (the Stalheart) | 12 × 14 | The 36 m planetary printer: rail portal, carriage, ram, reservoirs, a Terraforming_Cycle clip. A landmark for big plates only; 165k triangles, one per base. |
 | `command_operations` | Tactical operations annex | 3 × 3 | Expandable operations wing connected by an enclosed walkway. |
 | `command_comms` | Communications tower | 2 × 2 | Communications backbone with a visible antenna silhouette. |
 | `command_server` | Armored server vault | 3 × 2 | Data storage with cooling and dual power-feed sockets. |

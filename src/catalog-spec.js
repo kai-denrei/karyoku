@@ -48,6 +48,7 @@ export const CATALOG_SPEC = [
   { id: 'defense_radar', name: 'Folding radar array', section: 'defense', plot: [2, 2], ports: ['road'], note: 'Rotating or folding dish; belongs to the sensor network.' },
   { id: 'defense_interceptor', name: 'Interceptor drone nest', section: 'defense', plot: [2, 2], ports: ['road'], note: 'Small defensive drone garage; reserve its launch clearance.' },
   { id: 'command_hq', name: 'Command nexus', section: 'command', plot: [5, 4], ports: ['road'], note: 'Central command hub with roof sensor crown and protected entry.' },
+  { id: 'terraformer_3000', name: 'Terraformer (the Stalheart)', section: 'command', plot: [12, 14], ports: ['road'], note: 'The 36 m planetary printer: rail portal, carriage, ram, reservoirs, a Terraforming_Cycle clip. A landmark for big plates only; 165k triangles, one per base.' },
   { id: 'command_operations', name: 'Tactical operations annex', section: 'command', plot: [3, 3], ports: ['road'], note: 'Expandable operations wing connected by an enclosed walkway.' },
   { id: 'command_comms', name: 'Communications tower', section: 'command', plot: [2, 2], ports: ['road'], note: 'Communications backbone with a visible antenna silhouette.' },
   { id: 'command_server', name: 'Armored server vault', section: 'command', plot: [3, 2], ports: ['road'], note: 'Data storage with cooling and dual power-feed sockets.' },

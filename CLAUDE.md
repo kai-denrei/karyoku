@@ -264,6 +264,19 @@ no build step, Node invariant suites).
   orientation; the tabs' body blocker includes `reservedAt`, so a shoved
   crate cannot stop on a doorstep. Test: every building's door opens
   onto free ground or road; the infirmary's doorstep is reserved.
+- THE RAM: `RAM_IDS` (the comms tower) take a round per hit at
+  `ramSpeed` 10 m/s, once per touch (0.8 s, `pc.ramCool`), down the same
+  D0..D3 ladder as shells (`stepRam(plate, hull, dt, tune)`, called
+  before stepHull; the hull keeps half its speed). Three full-speed rams
+  are rubble. The drone's `cooldown` is 2.2 s, `markT` 1.4.
+- THE TERRAFORMER (`assets/terraformer/`, d0 and d3 only, 15 MB;
+  `terraformer_3000`, plot 12 x 14 cells, 165k tris, `Terraforming_Cycle`):
+  a LANDMARK with `minSide` 40 (the plate's interior short side in
+  cells), so only plates of about 60 cells and up hold it and a default
+  plate skips it without a warning; a LOOP_IDS rig (its own clone, the
+  clip looping, logged as `[loop] url tris clips`); battlezone edges at
+  55 degrees and dim (`BZ_OVERRIDES`). `command_hq` (the old 6k-tri cast,
+  5 x 4) stays the nexus on every plate.
 
 ## Outposts and the rescue (operator, 2026-09-07)
 - `world.outposts` (`WORLD_TUNE.outposts` 4, `OUTPOST_R` 14): camps on

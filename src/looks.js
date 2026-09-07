@@ -4,9 +4,9 @@
 // glow bleed. Everything visual that is not a model lives here, so a tab
 // asks for the look rather than owning a palette.
 import * as THREE from '../vendor/three.module.js';
-import { makeBloom } from './postfx.js?v=e2c79438';
-import { tintModel, addEdgeOutlines } from './glbmodels.js?v=e2c79438';
-import { query } from './url.js?v=e2c79438';
+import { makeBloom } from './postfx.js?v=cd096da1';
+import { tintModel, addEdgeOutlines } from './glbmodels.js?v=cd096da1';
+import { query } from './url.js?v=cd096da1';
 
 // TWO LOOKS. 'colony' is the Tron-and-TD-board look; 'battlezone' is the
 // 1980 vector display: black, one green, every shape an edge. `?look=`
@@ -79,6 +79,9 @@ export const BZ_EDGE_ANGLE = 28;
 // container authored for a vector look replaces it (noted in CLAUDE.md).
 export const BZ_OVERRIDES = {
   'container.glb': { angle: 60, color: G.dim, opacity: 0.5 },
+  // the terraformer is 165k triangles: at 28 degrees its edges are a haze; sparser and dimmer
+  'terraformer_3000_d0.glb': { angle: 55, color: G.dim, opacity: 0.6 },
+  'terraformer_3000_d3.glb': { angle: 55, color: G.dim, opacity: 0.6 },
 };
 export const bzStyleFor = (url) => (url ? BZ_OVERRIDES[url.split('/').pop()] : null) || { angle: BZ_EDGE_ANGLE, color: G.hi, opacity: 0.9 };
 

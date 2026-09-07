@@ -13,9 +13,9 @@
 // `rotation.y = -rot * PI/2`. Yaw is compass degrees, 0 = N, 90 = E.
 // Plate width and depth are EVEN, because roads are 2 x 2 pieces laid on
 // even coordinates and a gate's road port has to land on one.
-import { mulberry32 } from './rng.js?v=e2c79438';
-import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=e2c79438';
-import { specById } from './catalog-spec.js?v=e2c79438';
+import { mulberry32 } from './rng.js?v=cd096da1';
+import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=cd096da1';
+import { specById } from './catalog-spec.js?v=cd096da1';
 
 export const CELL_M = 4;
 
@@ -432,6 +432,8 @@ export const MODELLED = new Set([
   'command_comms', 'air_launchpad', 'industry_garage', 'logistics_container', 'research_specimen_crate', 'road_straight', 'utility_conduit',
   // the warehouse props (the armored container stands in as logistics_container) and the solar kit
   'cargo_crate', 'secure_case', 'fuel_barrel', 'pallet_stack', 'solar_power_station', 'solar_panel_rack',
+  // the terraformer: a landmark that only a big plate can hold
+  'terraformer_3000',
   // the assembly-line kit
   'robotic_assembly_line', 'robotic_arm', 'conveyor_module', 'control_platform', 'gantry_module', 'assembly_pallet',
   // house casts and NASA stand-ins
@@ -467,7 +469,10 @@ export const LANDMARK = 'personnel_infirmary';
 // ...then the assembly line, the industry kit's showpiece: 5 x 8 cells, and
 // with a two-cell lane it never fits an ordinary block, so it takes the
 // largest block left with a one-cell lane
-export const LANDMARKS = [{ id: 'personnel_infirmary', gap: null, landmark: true }, { id: 'robotic_assembly_line', gap: 1, landmark: false }];
+// `minSide`: the plate's interior must be at least this many cells on its
+// shorter side, else the landmark is skipped without a word (the
+// terraformer is 12 x 14 cells with a lane: a default plate cannot hold it)
+export const LANDMARKS = [{ id: 'personnel_infirmary', gap: null, landmark: true }, { id: 'terraformer_3000', gap: 1, landmark: false, minSide: 40 }, { id: 'robotic_assembly_line', gap: 1, landmark: false }];
 // Buildings a block may hold more than once. Everything else is one per block.
 // THE WAREHOUSE PROPS: the container, crate, case, barrel and pallet are
 // the yard's stock and the drive's BODIES (pushable, breakable). They pack
@@ -725,6 +730,7 @@ function packBlock(s, rng, block) {
 function stepLandmark(s, rng) {
   for (const lm of LANDMARKS) {
     if (!s.allowed.has(lm.id)) continue;
+    if (lm.minSide && Math.min(s.w, s.h) - 2 * s.inset < lm.minSide) continue;
     const def = { ...specById(lm.id), gapOverride: lm.gap };
     const blocks = s.blocks.filter((b) => b.zone !== 'command').sort((a, b) => b.cells.length - a.cells.length);
     let done = false;

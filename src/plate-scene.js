@@ -5,16 +5,16 @@
 // as clones with their YAW pivot exposed, and everything else as a labelled
 // placeholder box of its footprint.
 import * as THREE from '../vendor/three.module.js';
-import { KIND, CELL_M, ringCoverage, LANDMARK, dirOfYaw } from './plate.js?v=e2c79438';
-import { fileFor, fitFor, SECTION_COLOR, PLACEHOLDER_HEIGHT_M } from './catalog.js?v=e2c79438';
-import { LOB_FAMILIES, LOB_ELEV_DEG } from './drive.js?v=e2c79438';
-import { PALETTE, neonBox, BZ, styleForLook, bakeEdges } from './looks.js?v=e2c79438';
-import { prepFor, ladderTint, dressMetal } from './casts.js?v=e2c79438';
-import { tintModel } from './glbmodels.js?v=e2c79438';
-import { BODY_IDS } from './drive.js?v=e2c79438';
+import { KIND, CELL_M, ringCoverage, LANDMARK, dirOfYaw } from './plate.js?v=cd096da1';
+import { fileFor, fitFor, SECTION_COLOR, PLACEHOLDER_HEIGHT_M } from './catalog.js?v=cd096da1';
+import { LOB_FAMILIES, LOB_ELEV_DEG } from './drive.js?v=cd096da1';
+import { PALETTE, neonBox, BZ, styleForLook, bakeEdges } from './looks.js?v=cd096da1';
+import { prepFor, ladderTint, dressMetal } from './casts.js?v=cd096da1';
+import { tintModel } from './glbmodels.js?v=cd096da1';
+import { BODY_IDS } from './drive.js?v=cd096da1';
 // pieces whose model carries a looping clip: the assembly kit's machines
-export const LOOP_IDS = new Set(['robotic_assembly_line', 'robotic_arm', 'conveyor_module']);
-import { loadGlb, loadGlbWithClips, mergeByMaterial, fitModel } from './glbmodels.js?v=e2c79438';
+export const LOOP_IDS = new Set(['robotic_assembly_line', 'robotic_arm', 'conveyor_module', 'terraformer_3000']);
+import { loadGlb, loadGlbWithClips, mergeByMaterial, fitModel } from './glbmodels.js?v=cd096da1';
 
 const labelCache = new Map();
 function labelTexture(text) {
@@ -54,7 +54,7 @@ export function proto(url, pivots = [], fit = null, tint = null) {
     // painted over all of them. A faint emissive wash by side is all it gets.
     if (tint !== null && !BZ) {
       // ...and so does the research-outpost kit, from the same workshop
-      if (url.startsWith('assets/base-kit/') || url.startsWith('assets/outpost/') || url.startsWith('assets/warehouse/') || url.startsWith('assets/solar/')) tintModel(fitted, tint, { wash: 0.10 });
+      if (url.startsWith('assets/base-kit/') || url.startsWith('assets/outpost/') || url.startsWith('assets/warehouse/') || url.startsWith('assets/solar/') || url.startsWith('assets/terraformer/')) tintModel(fitted, tint, { wash: 0.10 });
       else { ladderTint(fitted, tint); dressMetal(fitted); }
     }
     return styleForLook(fitted, url);
@@ -321,6 +321,7 @@ export function buildPlateGroup({ plate, catalog, wallState = 0, showArcs = true
       pending.push(animProto(url).then((res) => {
         if (!res) { fallback(piece); return; }
         const obj = res.root.clone();
+        { let tris = 0; obj.traverse((o) => { if (o.isMesh && o.geometry) tris += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3; }); console.log(`[loop] ${url} tris=${Math.round(tris)} clips=${res.clips.map((c) => c.name).join(',') || 'none'}`); }
         if (!BZ) tintModel(obj, PALETTE.section[entry.section] || tint, { wash: 0.10 });
         placePiece(obj, piece);
         group.add(obj);

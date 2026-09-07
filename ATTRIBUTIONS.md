@@ -75,3 +75,5 @@ no longer in the repo.
 `assets/guard/` is the workshop's reckon-guard drone (jelaludo.github.io/SentryTowers_A6/reckon-guard), with its RotorSpin clip.
 
 `assets/flags/` is the workshop's ctf-flags kit (jelaludo.github.io/SentryTowers_A6/ctf-flags): six banner units, three poles and the capture socket, all vendored for later use.
+
+`assets/terraformer/` is the workshop's Terraformer 3000 (jelaludo.github.io/SentryTowers_A6/terraformer), intact and collapsed states only; the damaged pair (21 MB) is not vendored.
