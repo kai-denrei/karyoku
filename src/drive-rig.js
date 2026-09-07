@@ -2,12 +2,13 @@
 // the hull model with a stand-in until it lands, the key state, the tracer
 // meshes, and the two cameras. Rendering only; the rules are drive.js.
 import * as THREE from '../vendor/three.module.js';
-import { applySpaceScene, makeStars, makeComposer, PALETTE } from './looks.js?v=067e583d';
-import { castHull } from './casts.js?v=067e583d';
-import { styleForLook, BZ } from './looks.js?v=067e583d';
-import { STICK, stickVector, knobOffset } from './stick.js?v=067e583d';
-import { query } from './url.js?v=067e583d';
-import { loadGlb, mergeByMaterial } from './glbmodels.js?v=067e583d';
+import { applySpaceScene, makeStars, makeComposer, PALETTE } from './looks.js?v=b8f040a2';
+import { tickFps } from './fps.js?v=b8f040a2';
+import { castHull } from './casts.js?v=b8f040a2';
+import { styleForLook, BZ } from './looks.js?v=b8f040a2';
+import { STICK, stickVector, knobOffset } from './stick.js?v=b8f040a2';
+import { query } from './url.js?v=b8f040a2';
+import { loadGlb, mergeByMaterial, makeShellRack } from './glbmodels.js?v=b8f040a2';
 
 const HULL_URL = 'assets/models/mkcx2.glb';
 // The nodes that must keep moving through the merge, and the ones that
@@ -18,7 +19,20 @@ const HULL_URL = 'assets/models/mkcx2.glb';
 // reference's feel driver moves against each other — body up, skirt down,
 // emitters planted — so a lift-off reads as a lift-off.
 const HULL_LIFTERS = ['LiftEmitter_L1', 'LiftEmitter_L2', 'LiftEmitter_L3', 'LiftEmitter_R1', 'LiftEmitter_R2', 'LiftEmitter_R3'];
-const HULL_PIVOTS = ['Turret_Pivot', 'Barrel_Pivot', 'Secondary_L_Pivot', 'Secondary_R_Pivot', 'Secondary_Turrets', 'Hover_Gear', ...HULL_LIFTERS];
+const HULL_PIVOTS = ['Turret_Pivot', 'Barrel_Pivot', 'Secondary_L_Pivot', 'Secondary_R_Pivot', 'Secondary_Turrets', 'Hover_Gear', 'ShellRack_Mount', ...HULL_LIFTERS];
+
+// THE RACK: mkcx2 racks its shells in the rear deck, nine sockets. The
+// reference's dots sit flush on that deck; here each dot is THREE shells
+// (27 racked), lit while any of its three are left. Bright dots bloom a
+// little, which is the read from the chase camera.
+const RACK_LIT = BZ ? 0x9dffb0 : 0xdff6ff, RACK_DARK = 0x1a2028;
+function buildRack(merged, holder) {
+  const mount = merged.getObjectByName('ShellRack_Mount');
+  if (!mount) return;
+  const dots = makeShellRack(mount, { y: 0.13, dot: 0.15, gapX: 0.46, gapZ: 0.50, plate: null });
+  holder.userData.ammoDots = dots;
+  holder.userData.setAmmoDots = (lit) => dots.forEach((d, i) => { d.material.color.setHex(i < lit ? RACK_LIT : RACK_DARK); });
+}
 
 // The reference's hover rig, in three tiers: emitters planted, the skirt
 // settling by gearDrop, the body rising by rise — with the hull taking the
@@ -62,6 +76,7 @@ export function makeHullObject() {
     obj.remove(stub);
     const merged = mergeByMaterial(gltfScene, HULL_PIVOTS, HULL_DROP);
     obj.add(BZ ? styleForLook(merged) : castHull(merged, PALETTE.hull));
+    buildRack(merged, obj);
     buildHoverSplit(merged, obj);
     console.log('[drive] hull model loaded');
   });
@@ -279,7 +294,9 @@ export function makeMobileShell(root, keys, { onCamera = () => {} } = {}) {
 
 export function makeViewer(root) {
   const renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  // 1.5, not 2: the bloom chain is a full-frame cost and a 2x retina frame
+  // is nearly twice the pixels of a 1.5x one for no read at this scale
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
   root.appendChild(renderer.domElement);
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(50, 1, 0.5, 3000);
@@ -302,5 +319,5 @@ export function makeViewer(root) {
   }
   addEventListener('resize', resize);
   resize();
-  return { renderer, scene, camera, hud, notice, resize, render: () => post.render(), setGroups: (fn) => post.setGroups(fn), post };
+  return { renderer, scene, camera, hud, notice, resize, render: () => { post.render(); tickFps(performance.now(), renderer, scene); }, setGroups: (fn) => post.setGroups(fn), post };
 }

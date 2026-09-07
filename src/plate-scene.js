@@ -5,16 +5,16 @@
 // as clones with their YAW pivot exposed, and everything else as a labelled
 // placeholder box of its footprint.
 import * as THREE from '../vendor/three.module.js';
-import { KIND, CELL_M, ringCoverage, LANDMARK, dirOfYaw } from './plate.js?v=067e583d';
-import { fileFor, fitFor, SECTION_COLOR, PLACEHOLDER_HEIGHT_M } from './catalog.js?v=067e583d';
-import { LOB_FAMILIES, LOB_ELEV_DEG } from './drive.js?v=067e583d';
-import { PALETTE, neonBox, BZ, styleForLook, bakeEdges } from './looks.js?v=067e583d';
-import { prepFor, ladderTint, dressMetal } from './casts.js?v=067e583d';
-import { tintModel } from './glbmodels.js?v=067e583d';
-import { BODY_IDS } from './drive.js?v=067e583d';
+import { KIND, CELL_M, ringCoverage, LANDMARK, dirOfYaw } from './plate.js?v=b8f040a2';
+import { fileFor, fitFor, SECTION_COLOR, PLACEHOLDER_HEIGHT_M } from './catalog.js?v=b8f040a2';
+import { LOB_FAMILIES, LOB_ELEV_DEG } from './drive.js?v=b8f040a2';
+import { PALETTE, neonBox, BZ, styleForLook, bakeEdges } from './looks.js?v=b8f040a2';
+import { prepFor, ladderTint, dressMetal } from './casts.js?v=b8f040a2';
+import { tintModel } from './glbmodels.js?v=b8f040a2';
+import { BODY_IDS } from './drive.js?v=b8f040a2';
 // pieces whose model carries a looping clip: the assembly kit's machines
 export const LOOP_IDS = new Set(['robotic_assembly_line', 'robotic_arm', 'conveyor_module']);
-import { loadGlb, loadGlbWithClips, mergeByMaterial, fitModel } from './glbmodels.js?v=067e583d';
+import { loadGlb, loadGlbWithClips, mergeByMaterial, fitModel } from './glbmodels.js?v=b8f040a2';
 
 const labelCache = new Map();
 function labelTexture(text) {
@@ -150,6 +150,18 @@ const pieceMatrix = (piece) => {
   o.updateMatrix();
   return o.matrix.clone();
 };
+// a crushed piece whose kit has no rubble model: the same model pressed
+// flat (a tenth of its height) and tilted a little, its own way each time
+const crushedMatrix = (piece, index) => {
+  const o = new THREE.Object3D();
+  placePiece(o, piece);
+  const h = Math.sin(index * 12.9898) * 43758.5453, j = h - Math.floor(h);
+  o.rotation.x += (j - 0.5) * 0.16;
+  o.rotation.z += (j * 7 % 1 - 0.5) * 0.16;
+  o.scale.y = 0.1;
+  o.updateMatrix();
+  return o.matrix.clone();
+};
 
 // yaw 0 is N (-z): direction (sin yaw, -cos yaw)
 function arcWedge(st) {
@@ -246,14 +258,17 @@ export function buildPlateGroup({ plate, catalog, wallState = 0, showArcs = true
       if (!url) { if (piece.kind === KIND.SENTRY) { const obj = placeholderMesh(piece, entry); placePiece(obj, piece); next.push(obj); } continue; }
       const fit = fitOf(entry, state);
       const sectionTint = piece.kind === KIND.WALL ? tint : (PALETTE.section[entry.section] || tint);
-      const key = url + (fit ? JSON.stringify(fit) : '') + '#' + sectionTint;
-      if (!byKey.has(key)) byKey.set(key, { url, fit, tint: sectionTint, pieces: [] });
+      const flat = state >= 3 && !entry.states[3];
+      const key = url + (fit ? JSON.stringify(fit) : '') + '#' + sectionTint + (flat ? '#flat' : '');
+      if (!byKey.has(key)) byKey.set(key, { url, fit, tint: sectionTint, flat, pieces: [] });
       byKey.get(key).pieces.push(piece);
     }
     staticModels = byKey.size;
-    const loads = [...byKey.values()].map(({ url, fit, tint: t, pieces }) => proto(url, [], fit, t).then((root) => {
+    const loads = [...byKey.values()].map(({ url, fit, tint: t, flat, pieces }) => proto(url, [], fit, t).then((root) => {
       if (!root) return;
-      next.push(instanced(root, pieces, pieceMatrix));
+      const im = instanced(root, pieces, flat ? (piece) => crushedMatrix(piece, plate.pieces.indexOf(piece)) : pieceMatrix);
+      im.name = 'static';
+      next.push(im);
       if (pieces[0].id === LANDMARK) {
         // the Isolation Infirmary wears a cross on its roof, sized to the plot
         const top = new THREE.Box3().setFromObject(root).max.y + 0.15;
@@ -298,6 +313,7 @@ export function buildPlateGroup({ plate, catalog, wallState = 0, showArcs = true
           const mixer = new THREE.AnimationMixer(obj);
           const action = mixer.clipAction(clip);
           action.play();
+          obj.name = 'loop';
           loopRigs.push({ obj, mixer });
         }
       }));
@@ -311,6 +327,7 @@ export function buildPlateGroup({ plate, catalog, wallState = 0, showArcs = true
         const obj = root.clone();
         placePiece(obj, piece);
         group.add(obj);
+        obj.name = 'body';
         dynamic.set(pi, obj);
       }));
       continue;
@@ -333,6 +350,7 @@ export function buildPlateGroup({ plate, catalog, wallState = 0, showArcs = true
           action.play();
           mixer.update(0);
         }
+        obj.name = 'gate';
         gateRigs.push({ index: gi, obj, mixer, action, duration: clip ? clip.duration : 0 });
       }));
       continue;
@@ -352,6 +370,7 @@ export function buildPlateGroup({ plate, catalog, wallState = 0, showArcs = true
     pending.push(proto(sentryUrl(st.family, st.tier), ['YAW', 'PITCH', 'RECOIL'], { height: 4.5, maxSpan: 7 }, tint).then((root) => {
       if (!root) return;
       const inst = root.clone();
+      inst.name = 'sentry';
       const yaw = inst.getObjectByName('YAW') || inst;
       yaw.rotation.y = yawRotation(st.yawDeg);
       // a lobber holds its barrel up: the workshop applies elevation as a
@@ -370,6 +389,7 @@ export function buildPlateGroup({ plate, catalog, wallState = 0, showArcs = true
   // (everything under YAW) is knocked off its bearing and lies beside the
   // base on its side, barrel drooped, and the whole thing goes dark. The
   // tab stops turning the yaw node once it is broken.
+  group.name = 'plate';
   const breakSentry = (index) => { brokenSentries.add(index); wreck(index); };
   const wreck = (index) => {
     const r = sentryRigs.get(index);

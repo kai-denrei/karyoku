@@ -118,6 +118,32 @@ no build step, Node invariant suites).
   is two shell bursts (head 5.0, plinth 3.4) and `sentry_destroyed`.
   Probe: `?aim=sentry&fire=1&hold=1&elev=2&tick=6` logs `sentriesDown=1`
   and a `[wreck]` line with the head's box.
+- RUN OVER: `FLAT_IDS` (the pads) are floors: no block, shells and sight
+  pass. `CRUSH_IDS` (antenna, crate, pallet, radar, conduit, small props)
+  block until the hull drives into them at `crushSpeed` (3 m/s):
+  `stepCrush` (called BEFORE stepHull) sets state 3, `crushed`, and the
+  hull keeps 70% of its speed. A crushed piece whose kit has no rubble
+  model is drawn by `crushedMatrix`: the same model at a tenth of its
+  height, tilted. Probe: `crushed=`.
+- CREW SIDES: `crew.hostile` (the drive plate's crew; the world's plate B)
+  is not shoved by the hull (`hullAt` passed to `stepCrew`) and is
+  squashed at `squashSpeedEnemy` 0.4 m/s inside `squashMEnemy`; the home
+  crew keeps the shove and the 2 m/s threshold.
+- THE RUMBLE: `sfx.body(key, moved, dist, dt)` per body per frame; a
+  moving body loops `container_rumble` (the operator's clip, low-passed
+  at 650 Hz, -7 dB, mono, 21.9 s) from a RANDOM offset (audio.js `offset`
+  option), follows distance, fades 0.35 s after it stops. `b.moved` is set
+  by `stepBodies`.
+- THE RACK: `hull.ammo` (27, `ammoMax`), `fireHull` refuses at 0 and sets
+  `hull.empty` for the click (`laser_click`); nine dots on the model's
+  `ShellRack_Mount` (`makeShellRack`, kept as a pivot), `ammoDotsLit` =
+  ceil(ammo / 3). `?ammo=N` for probes. No resupply yet.
+- FPS AND PERF: `#fps` in the nav (`fps.js`, `tickFps` from every loop);
+  `?perf=1` logs calls/tris/objects every 2 s with a by-group breakdown
+  (renderer.info.autoReset off so the composer's passes add up). At
+  120 x 90 cells: ~430 band containers as separate unmerged corrugated
+  models were 5.5k objects and most of 50 M triangles a frame. Pixel
+  ratio capped at 1.5. Bodies want instancing and a lighter container.
 - World: plate A is HOME (gates open, sentries silent), plate B is HOSTILE
   (gates shut, sentries live) — you breach B through its wall.
 - Probes: `#drive?seed=7&tick=4&fire=1&hold=1&aim=wall` shoots the wall

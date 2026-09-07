@@ -8,7 +8,8 @@ html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg);
 #tabbar button { background: none; border: 1px solid var(--line); color: var(--fg);
   padding: 3px 10px; font: inherit; cursor: pointer; }
 #tabbar button.active { border-color: var(--accent); color: var(--accent); }
-#tabbar .build { margin-left: auto; color: var(--dim); }
+#tabbar .fps { margin-left: auto; color: var(--dim); min-width: 5em; text-align: right; }
+#tabbar .build { color: var(--dim); }
 main { position: absolute; top: 36px; left: 0; right: 0; bottom: 0; }
 .tab { position: absolute; inset: 0; display: none; }
 .tab.active { display: block; }

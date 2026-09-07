@@ -14,7 +14,7 @@
 // asks it too, with the walker's own radius, so nobody walks through a
 // container or the tank. Something that rolls onto a walker slowly shoves
 // them out (`escape`); fast, it squashes them (stepSquash).
-import { KIND, CELL_M, rotSide, DIRS } from './plate.js?v=067e583d';
+import { KIND, CELL_M, rotSide, DIRS } from './plate.js?v=b8f040a2';
 
 export const CREW_TUNE = {
   walk: 1.4, run: 4.6,      // m/s
@@ -29,6 +29,10 @@ export const CREW_TUNE = {
   softH: 1.9,               // ...and no higher than this (the suit's crown)
   splashR: 3.0,             // a shell or lob landing this close kills
   squashSpeed: 2.0,         // m/s the hull must be doing
+  // the ENEMY's crew is not shoved aside by the hull: a creeping hull rolls
+  // over them, and a little speed is enough. Home crews keep the shove.
+  squashSpeedEnemy: 0.4,
+  squashMEnemy: 1.0,
 };
 export const SUIT = 0xff7a1a; // orange, every one of them
 
@@ -171,13 +175,16 @@ export function makeCrew(plate, n, rng, tune = CREW_TUNE, solid = null) {
 
 // One step. `threat` is an enemy hull's position in plate metres, or null.
 // `solid(x, z)` is what the cells do not know: bodies and the hull.
-export function stepCrew(crew, plate, dt, rng, threat = null, tune = CREW_TUNE, solid = null) {
+// `hullAt(x, z)` is the hull alone: a HOSTILE crew (crew.hostile) is not
+// shoved by it, only by containers, so the hull can roll over them.
+export function stepCrew(crew, plate, dt, rng, threat = null, tune = CREW_TUNE, solid = null, hullAt = null) {
   const { walkers, areas } = crew;
   for (const w of walkers) {
     if (!w.alive) continue;
     // something rolled onto this walker (a slow hull, a pushed container):
     // shove them to the nearest free ground and let them pick again
-    if (solid && !crewFreeAt(plate, w.x, w.z, solid)) {
+    const underHull = hullAt && hullAt(w.x, w.z);
+    if (solid && !(crew.hostile && underHull) && !crewFreeAt(plate, w.x, w.z, solid)) {
       const e = escape(plate, w, solid, tune);
       if (e) { w.x = e.x; w.z = e.z; w.target = null; w.wait = 0.3; w.moving = false; }
     }
@@ -241,10 +248,12 @@ export function splashHits(crew, x, z, tune = CREW_TUNE) {
 // squashed this step, marked dead, for the splash.
 export function stepSquash(crew, hull, hullR, tune = CREW_TUNE) {
   const out = [];
-  if (Math.abs(hull.speed || 0) < tune.squashSpeed) return out;
+  const need = crew.hostile ? tune.squashSpeedEnemy : tune.squashSpeed;
+  const reach = hullR + (crew.hostile ? tune.squashMEnemy : tune.squashM);
+  if (Math.abs(hull.speed || 0) < need) return out;
   for (const w of crew.walkers) {
     if (!w.alive) continue;
-    if (Math.hypot(hull.x - w.x, hull.z - w.z) <= hullR + tune.squashM) { w.alive = false; w.moving = false; out.push(w); }
+    if (Math.hypot(hull.x - w.x, hull.z - w.z) <= reach) { w.alive = false; w.moving = false; out.push(w); }
   }
   return out;
 }

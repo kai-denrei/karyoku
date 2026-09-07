@@ -101,4 +101,22 @@ check('sometimes they run', ran > 0 && ran < movingFrames * 0.6, `ran ${ran} of 
   check('a landing kills everyone in its splash, once', killed.length === 1 && killed[0] === b && !b.alive && splashHits(c6, b.x, b.z).length === 0);
   check('a landing well away kills no one', splashHits(c6, b.x + 20, b.z + 20).length === 0);
 }
+// ENEMY crews are rolled over, home crews are shoved
+{
+  const home = makeCrew(plate, 1, mulberry32(4));
+  const w = home.walkers[0];
+  const creeper = { x: w.x + 0.5, z: w.z, heading: 0, speed: 1 };
+  const under = (x, z) => hullCovers(creeper, x, z);
+  stepCrew(home, plate, 1 / 60, mulberry32(5), null, CREW_TUNE, under, under);
+  check('a home walker under a creeping hull is shoved clear', w.alive && crewFreeAt(plate, w.x, w.z, under));
+  check('...and a creeping hull does not squash them', stepSquash(home, creeper, 2).length === 0);
+  const enemy = makeCrew(plate, 1, mulberry32(4));
+  enemy.hostile = true;
+  const e = enemy.walkers[0];
+  const creeper2 = { x: e.x + 0.5, z: e.z, heading: 0, speed: 1 };
+  const under2 = (x, z) => hullCovers(creeper2, x, z);
+  stepCrew(enemy, plate, 1 / 60, mulberry32(5), null, CREW_TUNE, under2, under2);
+  check('an enemy walker under a creeping hull stays put', e.alive && !crewFreeAt(plate, e.x, e.z, under2));
+  check('...and the creeping hull squashes them', stepSquash(enemy, creeper2, 2).length === 1 && !e.alive);
+}
 done();

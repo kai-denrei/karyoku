@@ -4,11 +4,11 @@
 // which round, how the engine bed follows the throttle, where a shell's
 // impact goes and which way it faces, how far a machine's hum carries.
 import * as THREE from '../vendor/three.module.js';
-import { makeAudio } from './audio.js?v=067e583d';
-import { SENTRY_FIRE, DEATH_KEYS } from './audiomanifest.js?v=067e583d';
-import { makeImpactBurst, IMPACT_TUNE, orientImpact } from './impactfx.js?v=067e583d';
-import { PALETTE, BZ } from './looks.js?v=067e583d';
-import { makeTankFeel, stepTankFeel, landTankFeel, fireTankFeel, applyTankFeel } from './tankfeel.js?v=067e583d';
+import { makeAudio } from './audio.js?v=b8f040a2';
+import { SENTRY_FIRE, DEATH_KEYS } from './audiomanifest.js?v=b8f040a2';
+import { makeImpactBurst, IMPACT_TUNE, orientImpact } from './impactfx.js?v=b8f040a2';
+import { PALETTE, BZ } from './looks.js?v=b8f040a2';
+import { makeTankFeel, stepTankFeel, landTankFeel, fireTankFeel, applyTankFeel } from './tankfeel.js?v=b8f040a2';
 
 // the impact set is authored for a 4-unit wall; a shell on a 4 m cell
 // wants about this much of it
@@ -63,6 +63,9 @@ export function makeSfx(scene) {
   let thruster = null, level = 0, idle = 0, running = false;
   const feel = makeTankFeel();
   const hums = new Map();   // key -> { h: loop handle | null, e: loop handle | null }
+  const rumbles = new Map(); // body key -> { h: loop handle | null, still: seconds since it last moved }
+  const RUMBLE_REACH = 50;   // m — a shoved container is silent past this
+  const RUMBLE_HOLD = 0.35;  // s still before the rumble fades out
   const fx = [];            // impact groups with userData.tick(dt) -> alive
   // the impacts' colours: the reference's warm sparks in colony, one green in battlezone
   const colors = BZ
@@ -97,6 +100,7 @@ export function makeSfx(scene) {
     // write the lift, the rock, the vibration and the recoil onto the hull
     applyFeel(hullObj) { applyTankFeel(hullObj, feel); },
     fire() { audio.play('tank_main'); fireTankFeel(feel); },
+    empty() { audio.play('laser_click'); },
     sentryFired(family, dist) { audio.play(SENTRY_FIRE[family] || 'tower_single', { dist }); },
     hitOnHull() { audio.play('impact_hit'); },
     // a machine's beds, kept by key, gain by distance from the listener
@@ -108,6 +112,23 @@ export function makeSfx(scene) {
       if (m.h) m.h.set(g, 1);
     },
     clearMachines() { for (const m of hums.values()) if (m.h) m.h.stop(); hums.clear(); },
+    // a body's rumble: starts the frame it moves, from a random point in
+    // the sample (the operator's option B: no bookkeeping of where each
+    // one left off), follows the listener's distance, loops past the end,
+    // and fades once it has been still for RUMBLE_HOLD
+    body(key, moving, dist, dt) {
+      let r = rumbles.get(key);
+      if (moving) {
+        if (!r) { r = { h: null, still: 0 }; rumbles.set(key, r); }
+        r.still = 0;
+        if (!r.h) r.h = audio.loop('container_rumble', { gain: 0.001, offset: (seed++ % 97) / 97 * 20 });
+      } else if (r) {
+        r.still += dt;
+        if (r.still >= RUMBLE_HOLD) { if (r.h) r.h.stop(0.4); rumbles.delete(key); return; }
+      }
+      if (r && r.h) r.h.set(Math.max(0, 1 - dist / RUMBLE_REACH), 1);
+    },
+    clearBodies() { for (const r of rumbles.values()) if (r.h) r.h.stop(); rumbles.clear(); },
     // a hit: the recipe at the point, facing along the normal, sized for the
     // board; and its sound, faded by distance from the listener
     impact(recipe, point, normal, dist, size = SHELL_SIZE, sound = 'impact_shell') {

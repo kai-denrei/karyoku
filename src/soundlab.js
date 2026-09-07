@@ -15,12 +15,13 @@ export const ELEMENTS = [
     { event: 'engine bed while moving (gain and rate follow speed)', key: 'tank_thruster', wired: true, loop: true },
     { event: 'engine stop: hydraulics set it down', key: 'tank_spool_down', wired: true },
     { event: 'main gun fires', key: 'tank_main', wired: true },
+    { event: 'trigger pulled on an empty rack: the click', key: 'laser_click', wired: true },
     { event: 'secondary guns fire', key: 'tank_secondary', wired: false },
     { event: 'shell casings ejected', key: 'tank_shells', wired: false },
     { event: 'hit by a sentry round', key: 'impact_hit', wired: true },
     { event: 'destroyed', key: 'tank_destroyed', wired: false },
     { event: 'idle bed (engine running, not moving)', key: 'tank_engine', wired: false, loop: true },
-    { event: 'pushing a container', key: null, want: 'metal scrape, low, sustained while the push lasts' },
+    { event: 'pushing a container (the container itself rumbles)', key: 'container_rumble', wired: true, loop: true },
     { event: 'scraping a wall', key: null, want: 'short metallic grind on contact' },
     { event: 'muzzle elevation change', key: null, want: 'faint servo tick per step' },
   ] },
@@ -66,13 +67,13 @@ export const ELEMENTS = [
     { event: 'footsteps', key: null, want: 'probably none: too many walkers, too faint at camera range' },
   ] },
   { id: 'containers', label: 'Containers', events: [
-    { event: 'shoved and sliding', key: null, want: 'metal on concrete scrape while it moves' },
+    { event: 'shoved and sliding (random start point, loops, fades when still)', key: 'container_rumble', wired: true, loop: true },
     { event: 'hit by a shell (no damage)', key: null, want: 'hollow steel ring' },
   ] },
   { id: 'ui', label: 'Interface', events: [
     { event: 'camera switch', key: null, want: 'small click, ui bus' },
     { event: 'regenerate base', key: null, want: 'none, or a soft chime' },
-    { event: 'laser click (reference leftover)', key: 'laser_click', wired: false },
+
   ] },
   { id: 'ambient', label: 'World', events: [
     { event: 'colony wind bed', key: null, want: 'thin wind, barely there, lifts with camera height' },

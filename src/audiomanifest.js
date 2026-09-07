@@ -52,6 +52,10 @@ export const SOUNDS = {
   enemy_die_b: { file: `${A}/enemy_die_b.mp3`, bus: 'tank', gain: 0.60, maxVoices: 3, minInterval: 0.04, rateJitter: 0.12 },
   enemy_die_c: { file: `${A}/enemy_die_c.mp3`, bus: 'tank', gain: 0.60, maxVoices: 3, minInterval: 0.04, rateJitter: 0.12 },
 
+  // --- a container being shoved: the operator's rumble, low-passed and
+  // quiet, looped from a random point so two never move in step ----------
+  container_rumble: { file: `${A}/container_rumble.mp3`, bus: 'ambient', gain: 0.30, maxVoices: 3, minInterval: 0, rateJitter: 0 },
+
   // --- the assembly line: a faint hydraulic bed per machine ------------------
   // (an electric hum built from a dial-up master was cut: it read as a modem)
   assembly_hydraulics: { file: `${A}/assembly_hydraulics.mp3`, bus: 'ambient', gain: 0.30, maxVoices: 3, minInterval: 0, rateJitter: 0 },

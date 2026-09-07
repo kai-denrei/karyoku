@@ -11,8 +11,8 @@
 // THE ANTI-AIMBOT NUMBERS are yawRate and the arc: a sentry cannot point
 // outside its arc, and inside it turns at yawRate, so a hull that crosses
 // the arc fast, or stays in the blind sector, is never fired on.
-import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=067e583d';
-import { KIND, CELL_M, wrapDeg, dirOfYaw, DIRS, yawOfSide, rotSide } from './plate.js?v=067e583d';
+import { makeParams, clampParams, formatKnobs, knobProblems } from './knobs.js?v=b8f040a2';
+import { KIND, CELL_M, wrapDeg, dirOfYaw, DIRS, yawOfSide, rotSide } from './plate.js?v=b8f040a2';
 
 export const DRIVE_TUNE = {
   speed: 12,        // m/s forward
@@ -26,6 +26,7 @@ export const DRIVE_TUNE = {
   tolerance: 3,     // deg on-target
   cooldown: 0.9,    // s between rounds
   sentryHits: 3,    // hull rounds that break a sentry
+  crushSpeed: 3,    // m/s: at this speed the hull flattens a CRUSH_IDS piece it drives into
   fireCells: 9,     // engagement range, cells
   tracerSpeed: 40,  // m/s
   hitR: 2.4,        // m, a tracer this close to the hull centre is a hit
@@ -48,6 +49,8 @@ export const DRIVE_TUNE = {
   gravity: 9.8,
   elevMin: -5, elevMax: 45, elevRate: 25, elevDefault: 6,
   muzzleY: 2.2,     // m above the hull's ground
+  ammoMax: 27,      // shells racked: nine sockets on the deck, three shells each
+  shellsPerDot: 3,
 };
 export const LOB_FAMILIES = new Set(['mortar', 'howitzer']);
 export const LOB_ELEV_DEG = 55;
@@ -64,6 +67,7 @@ export const DRIVE_KNOBS = [
   { key: 'tolerance', label: 'tolerance (deg)', group: 'sentries', min: 0.5, max: 15, step: 0.5 },
   { key: 'cooldown', label: 'cooldown (s)', group: 'sentries', min: 0.1, max: 5, step: 0.1 },
   { key: 'sentryHits', label: 'rounds to break one', group: 'sentries', min: 1, max: 9, step: 1 },
+  { key: 'crushSpeed', label: 'crush speed (m/s)', group: 'hull', min: 0.5, max: 12, step: 0.5 },
   { key: 'fireCells', label: 'range (cells)', group: 'sentries', min: 2, max: 20, step: 1 },
   { key: 'tracerSpeed', label: 'tracer speed (m/s)', group: 'sentries', min: 5, max: 120, step: 5 },
   { key: 'hitR', label: 'hit radius (m)', group: 'sentries', min: 0.5, max: 6, step: 0.1 },
@@ -80,6 +84,8 @@ export const DRIVE_KNOBS = [
   { key: 'elevRate', label: 'muzzle rate (deg/s)', group: 'gun', min: 5, max: 90, step: 5 },
   { key: 'elevDefault', label: 'muzzle default (deg)', group: 'gun', min: -5, max: 45, step: 1 },
   { key: 'muzzleY', label: 'muzzle height (m)', group: 'gun', min: 0.5, max: 5, step: 0.1 },
+  { key: 'ammoMax', label: 'shells racked', group: 'gun', min: 3, max: 27, step: 3 },
+  { key: 'shellsPerDot', label: 'shells per rack dot', group: 'gun', min: 1, max: 9, step: 1 },
 ];
 export const makeDriveParams = (src = DRIVE_TUNE) => makeParams(DRIVE_KNOBS, src);
 export const clampDriveParams = (p, src) => clampParams(DRIVE_KNOBS, p, src);
@@ -94,7 +100,7 @@ const toCell = (m) => Math.floor(m / CELL_M);
 
 // --- hull ------------------------------------------------------------------
 export function makeHull(x, z, heading = 0, tune = DRIVE_TUNE) {
-  return { x, z, heading, speed: 0, vx: 0, vz: 0, cool: 0, shots: 0, elev: tune.elevDefault, y: 0 };
+  return { x, z, heading, speed: 0, vx: 0, vz: 0, cool: 0, shots: 0, elev: tune.elevDefault, y: 0, ammo: tune.ammoMax };
 }
 
 // Turn, then move along the heading. The move is accepted when the four
@@ -130,10 +136,15 @@ export function stepHull(hull, input, dt, blocked, tune = DRIVE_TUNE) {
 // Fire the main gun: a shell from the muzzle, 4 m ahead and muzzleY up,
 // leaving at shotSpeed along the heading and `elev` degrees above the
 // ground — a ballistic round from here on. Null while the gun is cooling.
+// null when cooling or EMPTY; `hull.empty` is true for the frame a dry
+// trigger was pulled, so a tab can click at the player
 export function fireHull(hull, tune = DRIVE_TUNE) {
+  hull.empty = false;
   if (hull.cool > 0) return null;
+  if ((hull.ammo ?? tune.ammoMax) <= 0) { hull.empty = true; hull.cool = 0.25; return null; }
   hull.cool = tune.shotCooldown;
   hull.shots++;
+  hull.ammo = (hull.ammo ?? tune.ammoMax) - 1;
   const [dx, dz] = dirOfYaw(hull.heading);
   const e = (hull.elev ?? tune.elevDefault) * Math.PI / 180;
   const vh = tune.shotSpeed * Math.cos(e);
@@ -144,6 +155,10 @@ export function fireHull(hull, tune = DRIVE_TUNE) {
 
 // Where a shell fired now would land on flat ground at the hull's height —
 // the aiming read for the HUD.
+// the rack's read: dots lit for the shells left, one per shellsPerDot,
+// a part-used group still lit (the last dot goes dark with the last shell)
+export const ammoDotsLit = (ammo, tune = DRIVE_TUNE) => Math.max(0, Math.ceil(ammo / tune.shellsPerDot));
+
 export function shotRangeFor(hull, tune = DRIVE_TUNE) {
   const e = (hull.elev ?? tune.elevDefault) * Math.PI / 180;
   const v = tune.shotSpeed, g = tune.gravity, h = tune.muzzleY;
@@ -226,6 +241,7 @@ function bodyFits(b, x, z, bodies, blocked) {
 export function stepBodies(bodies, hull, blocked, tune = DRIVE_TUNE) {
   let moved = 0;
   for (const b of bodies) {
+    b.moved = false;
     const [lx, lz] = toLocal(b, hull.x, hull.z);
     const cx = Math.max(-b.hw, Math.min(b.hw, lx)), cz = Math.max(-b.hd, Math.min(b.hd, lz));
     const [px, pz] = toWorld(b, cx, cz);
@@ -238,7 +254,7 @@ export function stepBodies(bodies, hull, blocked, tune = DRIVE_TUNE) {
       nx = -dx * Math.sign(hull.speed || 1); nz = -dz * Math.sign(hull.speed || 1); d = 0;
     } else { nx /= d; nz /= d; }
     const pen = tune.hullR - d + 0.02;
-    if (bodyFits(b, b.x - nx * pen, b.z - nz * pen, bodies, blocked)) { b.x -= nx * pen; b.z -= nz * pen; moved++; }
+    if (bodyFits(b, b.x - nx * pen, b.z - nz * pen, bodies, blocked)) { b.x -= nx * pen; b.z -= nz * pen; b.moved = true; moved++; }
     else { hull.x += nx * pen; hull.z += nz * pen; hull.vx = 0; hull.vz = 0; }
   }
   return moved;
@@ -250,16 +266,24 @@ export function stepBodies(bodies, hull, blocked, tune = DRIVE_TUNE) {
 // the lane is metric — 4 m either side of the axis — and the rest of the
 // gate's three cells are the towers, which always block.
 export const GATE_LANE_HALF_M = 4;
+// FLAT pieces are floors: the hull drives over a pad, shells fly over it,
+// it hides nothing. CRUSH pieces are small things a hull at crushSpeed
+// flattens by driving into them (state 3, rubble, driveable after).
+export const FLAT_IDS = new Set(['air_launchpad', 'air_drone_pad']);
+export const CRUSH_IDS = new Set(['field_signal', 'research_specimen_crate', 'assembly_pallet', 'defense_radar', 'utility_conduit',
+  'prop_antenna', 'prop_lamp', 'prop_banner', 'defense_searchlight', 'field_sensor', 'fence_sensor']);
+const pieceAt = (plate, cx, cz) => plate.pieces[plate.owner[cz * plate.w + cx]] || null;
 export function blockedAt(plate, gates, x, z) {
   const cx = toCell(x), cz = toCell(z);
   const k = cellKind(plate, cx, cz);
   if (k < 0) return false;
-  if (k === KIND.WALL || k === KIND.BUILDING) {
-    // a wall or building shot down to D3 is rubble: driveable
-    const pc = plate.pieces[plate.owner[cz * plate.w + cx]];
-    return !(pc && pc.state >= 3);
+  if (k === KIND.WALL || k === KIND.BUILDING || k === KIND.PROP) {
+    // a wall or building shot down to D3 is rubble: driveable; a pad is a floor
+    const pc = pieceAt(plate, cx, cz);
+    if (pc && (pc.state >= 3 || FLAT_IDS.has(pc.id))) return false;
+    return true;
   }
-  if (k === KIND.SENTRY || k === KIND.PROP) return true;
+  if (k === KIND.SENTRY) return true;
   if (k === KIND.GATE) {
     const pi = plate.owner[cz * plate.w + cx];
     const g = gates.find((gg) => gg.pieceIndex === pi);
@@ -290,6 +314,31 @@ export function damageAt(plate, x, z, destructible = defaultDestructible) {
   pc.hp = 0;
   pc.state++;
   return pc;
+}
+
+// THE CRUSH. Before the hull moves, look a little ahead of its nose (and
+// its two front corners): a CRUSH piece there, with the hull at crushSpeed,
+// goes straight to state 3 and the hull loses a third of its speed to the
+// crunch. Returns the pieces flattened this step, for the effect and the
+// redraw. Cells stay BUILDING/PROP, so walkers still avoid the debris.
+export function stepCrush(plate, hull, tune = DRIVE_TUNE) {
+  const out = [];
+  if (Math.abs(hull.speed || 0) < tune.crushSpeed) return out;
+  const [fx, fz] = dirOfYaw(hull.heading);
+  const s = Math.sign(hull.speed || 1), r = tune.hullR + 0.5;
+  const rx = -fz, rz = fx;
+  for (const [ax, az] of [[0, 0], [rx * 1.4, rz * 1.4], [-rx * 1.4, -rz * 1.4]]) {
+    const px = hull.x + fx * r * s + ax, pz = hull.z + fz * r * s + az;
+    const cx = toCell(px), cz = toCell(pz);
+    const k = cellKind(plate, cx, cz);
+    if (k !== KIND.BUILDING && k !== KIND.PROP) continue;
+    const pc = pieceAt(plate, cx, cz);
+    if (!pc || pc.state >= 3 || !CRUSH_IDS.has(pc.id) || out.includes(pc)) continue;
+    pc.state = 3; pc.hp = 0; pc.crushed = true;
+    out.push(pc);
+  }
+  if (out.length) hull.speed *= 0.7;
+  return out;
 }
 
 // --- gates -------------------------------------------------------------------
@@ -360,7 +409,7 @@ export function losClear(plate, ax, az, bx, bz) {
     const cx = toCell(ax + (bx - ax) * t), cz = toCell(az + (bz - az) * t);
     if (cellKind(plate, cx, cz) !== KIND.BUILDING) continue;
     const pc = plate.pieces[plate.owner[cz * plate.w + cx]];
-    if (!pc || pc.state < 3) return false; // rubble no longer hides anything
+    if (!pc || (pc.state < 3 && !FLAT_IDS.has(pc.id))) return false; // rubble and pads hide nothing
   }
   return true;
 }
@@ -480,7 +529,7 @@ export function solidHeightAt(plate, x, z, sentries = null) {
   const k = cellKind(plate, toCell(x), toCell(z));
   if (k === KIND.WALL) return SOLID_HEIGHT.wall;
   if (k === KIND.GATE) return SOLID_HEIGHT.gate;
-  if (k === KIND.BUILDING) return SOLID_HEIGHT.building;
+  if (k === KIND.BUILDING) { const pc = pieceAt(plate, toCell(x), toCell(z)); return pc && FLAT_IDS.has(pc.id) ? 0.3 : SOLID_HEIGHT.building; }
   if (k === KIND.SENTRY) { const s = sentries && sentryAt(plate, sentries, x, z); return s && !s.alive ? SOLID_HEIGHT.wreck : SOLID_HEIGHT.sentry; }
   if (k === KIND.PROP) return SOLID_HEIGHT.prop;
   return 0;

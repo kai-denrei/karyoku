@@ -1,6 +1,6 @@
 import { generatePlate, makePlateParams, PLATE_TUNE, KIND, CELL_M, blindCells } from '../src/plate.js';
 import { DRIVE_TUNE, driveKnobProblems, makeHull, stepHull, blockedAt, makeGates, stepGates, spawnFor,
-  makeSentries, stepSentries, losClear, stepTracers, buildingAt, bearingTo, lobHeight, LOB_FAMILIES, fireHull, rayStop, damageAt, autopilotInput, makeBodies, stepBodies, bodyAt, BODY_IDS, hitsPerState, shotRangeFor, solidHeightAt, sentryAt, damageSentryAt, SOLID_HEIGHT } from '../src/drive.js';
+  makeSentries, stepSentries, losClear, stepTracers, buildingAt, bearingTo, lobHeight, LOB_FAMILIES, fireHull, rayStop, damageAt, autopilotInput, makeBodies, stepBodies, bodyAt, BODY_IDS, hitsPerState, shotRangeFor, solidHeightAt, sentryAt, damageSentryAt, SOLID_HEIGHT, stepCrush, FLAT_IDS, CRUSH_IDS, ammoDotsLit } from '../src/drive.js';
 import { check, near, done } from './check.mjs';
 
 check('knob table is sound', driveKnobProblems().length === 0, driveKnobProblems().join('; '));
@@ -330,5 +330,41 @@ for (let seed = 1; seed <= 50; seed++) {
   let liveShots = 0;
   for (let i = 0; i < 300; i++) liveShots += stepSentries([live], h, 1 / 60, () => true).length;
   check('...while the same sentry alive would have', liveShots > 0);
+}
+// RUN OVER: pads are floors, small things are crushed at speed
+{
+  let found = null;
+  for (let seed = 1; seed <= 30 && !found; seed++) {
+    const p = generatePlate(makePlateParams({ ...PLATE_TUNE, seed }));
+    const pads = p.pieces.filter((pc) => FLAT_IDS.has(pc.id)), smalls = p.pieces.filter((pc) => CRUSH_IDS.has(pc.id));
+    if (pads.length && smalls.length) found = { p, pad: pads[0], small: smalls[0], seed };
+  }
+  check('some default plate has a pad and something small to test on', Boolean(found), found ? `seed ${found.seed}` : 'none in 1..30');
+  if (found) {
+    const { p, pad, small } = found;
+    const g = makeGates(p);
+    const px = (pad.x + pad.pw / 2) * CELL_M, pz = (pad.z + pad.ph / 2) * CELL_M;
+    check('a pad does not block the hull, a shell clears it, sight crosses it', !blockedAt(p, g, px, pz) && solidHeightAt(p, px, pz) < 1 && losClear(p, px, pz - 2, px, pz + 2));
+    const sx = (small.x + small.pw / 2) * CELL_M, sz = (small.z + small.ph / 2) * CELL_M;
+    check('a small thing blocks the hull while it stands', blockedAt(p, g, sx, sz));
+    const slow = makeHull(sx, sz + 3.2, 0); slow.speed = 1;
+    check('a slow hull against it crushes nothing', stepCrush(p, slow, DRIVE_TUNE).length === 0 && small.state === 0);
+    const fast = makeHull(sx, sz + 3.2, 0); fast.speed = 8;
+    const got = stepCrush(p, fast, DRIVE_TUNE);
+    check('a fast hull flattens it and loses speed', got.length === 1 && got[0] === small && small.state === 3 && small.crushed && near(fast.speed, 8 * 0.7));
+    check('flattened, it no longer blocks', !blockedAt(p, g, sx, sz));
+    check('and it is not crushed twice', stepCrush(p, fast, DRIVE_TUNE).length === 0);
+  }
+}
+// THE RACK: 27 shells, nine dots of three
+{
+  const h = makeHull(100, 100, 0);
+  check('a fresh hull racks the full load', h.ammo === DRIVE_TUNE.ammoMax && ammoDotsLit(h.ammo) === 9);
+  let fired = 0;
+  for (let i = 0; i < 40; i++) { h.cool = 0; if (fireHull(h)) fired++; }
+  check('it fires exactly the rack and then clicks', fired === 27 && h.ammo === 0 && h.empty === true);
+  check('dots: 27 lights nine, 25 lights nine, 24 lights eight, 1 lights one, 0 lights none', ammoDotsLit(27) === 9 && ammoDotsLit(25) === 9 && ammoDotsLit(24) === 8 && ammoDotsLit(1) === 1 && ammoDotsLit(0) === 0);
+  const k = makeHull(0, 0, 0); k.ammo = 2; k.cool = 0;
+  check('a live shot clears the empty flag', fireHull(k) !== null && k.empty === false && k.ammo === 1);
 }
 done();

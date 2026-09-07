@@ -4,15 +4,16 @@
 import * as THREE from '../vendor/three.module.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { generatePlate, PLATE_KNOBS, makePlateParams, clampPlateParams, CELL_M } from './plate.js?v=067e583d';
-import { CATALOG_SPEC } from './catalog-spec.js?v=067e583d';
-import { buildCatalog, modelledIds, BASE_KIT_URL, NASA_URL, HOUSE_URL, OUTPOST_URL, ASSEMBLY_URL } from './catalog.js?v=067e583d';
-import { bustToken } from './glbmodels.js?v=067e583d';
-import { applySpaceScene, makeStars, makeComposer, LOOK, LOOKS } from './looks.js?v=067e583d';
-import { withParam } from './url.js?v=067e583d';
-import { buildPlateGroup } from './plate-scene.js?v=067e583d';
+import { generatePlate, PLATE_KNOBS, makePlateParams, clampPlateParams, CELL_M } from './plate.js?v=b8f040a2';
+import { CATALOG_SPEC } from './catalog-spec.js?v=b8f040a2';
+import { buildCatalog, modelledIds, BASE_KIT_URL, NASA_URL, HOUSE_URL, OUTPOST_URL, ASSEMBLY_URL } from './catalog.js?v=b8f040a2';
+import { bustToken } from './glbmodels.js?v=b8f040a2';
+import { applySpaceScene, makeStars, makeComposer, LOOK, LOOKS } from './looks.js?v=b8f040a2';
+import { withParam } from './url.js?v=b8f040a2';
+import { tickFps } from './fps.js?v=b8f040a2';
+import { buildPlateGroup } from './plate-scene.js?v=b8f040a2';
 
-import { query } from './url.js?v=067e583d';
+import { query } from './url.js?v=b8f040a2';
 export { query };
 
 // The catalog, once: the manifest fetched and merged, or placeholders only
@@ -108,6 +109,6 @@ export function initPlateTab(root) {
     if (error) { notice.textContent = `base-kit manifest unavailable, placeholders only (${error})`; notice.hidden = false; }
     build();
   });
-  renderer.setAnimationLoop(() => { controls.update(); post.render(); });
+  renderer.setAnimationLoop((now) => { controls.update(); post.render(); tickFps(now, renderer, scene); });
   return { resize };
 }

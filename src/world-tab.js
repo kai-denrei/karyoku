@@ -5,19 +5,19 @@
 import * as THREE from '../vendor/three.module.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import GUI from '../vendor/lil-gui.esm.js';
-import { makePlateParams, clampPlateParams, PLATE_KNOBS } from './plate.js?v=067e583d';
-import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, stepGates, stepSentries, stepTracers, fireHull, damageAt, autopilotInput, makeBodies, stepBodies, bodyAt, shotRangeFor, solidHeightAt, SOLID_HEIGHT, damageSentryAt } from './drive.js?v=067e583d';
-import { WORLD_KNOBS, makeWorldParams, clampWorldParams, makeWorld, worldBlocked, worldBuildingAt, worldLosFor, worldSentries, worldGates, terrainNormal, splitQuad, groundAt } from './world.js?v=067e583d';
-import { PALETTE, terrainMeshes, floraMeshes, LOOK, LOOKS } from './looks.js?v=067e583d';
-import { withParam } from './url.js?v=067e583d';
-import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=067e583d';
-import { query, loadCatalog } from './plate-tab.js?v=067e583d';
-import { modelledIds } from './catalog.js?v=067e583d';
-import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS, makeMobileShell, mobileShell } from './drive-rig.js?v=067e583d';
-import { makeSfx } from './sfx.js?v=067e583d';
-import { makeCrew, stepCrew, stepSquash, shotHits, splashHits, hullCovers, crewFreeAt, CREW_TUNE } from './crew.js?v=067e583d';
-import { makeCrewScene } from './crew-scene.js?v=067e583d';
-import { mulberry32 } from './rng.js?v=067e583d';
+import { makePlateParams, clampPlateParams, PLATE_KNOBS } from './plate.js?v=b8f040a2';
+import { DRIVE_KNOBS, makeDriveParams, clampDriveParams, makeHull, stepHull, stepGates, stepSentries, stepTracers, fireHull, damageAt, autopilotInput, makeBodies, stepBodies, bodyAt, shotRangeFor, solidHeightAt, SOLID_HEIGHT, damageSentryAt, stepCrush, ammoDotsLit } from './drive.js?v=b8f040a2';
+import { WORLD_KNOBS, makeWorldParams, clampWorldParams, makeWorld, worldBlocked, worldBuildingAt, worldLosFor, worldSentries, worldGates, terrainNormal, splitQuad, groundAt } from './world.js?v=b8f040a2';
+import { PALETTE, terrainMeshes, floraMeshes, LOOK, LOOKS } from './looks.js?v=b8f040a2';
+import { withParam } from './url.js?v=b8f040a2';
+import { buildPlateGroup, yawRotation, setGateOpen } from './plate-scene.js?v=b8f040a2';
+import { query, loadCatalog } from './plate-tab.js?v=b8f040a2';
+import { modelledIds } from './catalog.js?v=b8f040a2';
+import { makeViewer, makeHullObject, makeKeys, makeTracerPool, followCamera, CAMERA_KEYS, makeMobileShell, mobileShell } from './drive-rig.js?v=b8f040a2';
+import { makeSfx } from './sfx.js?v=b8f040a2';
+import { makeCrew, stepCrew, stepSquash, shotHits, splashHits, hullCovers, crewFreeAt, CREW_TUNE } from './crew.js?v=b8f040a2';
+import { makeCrewScene } from './crew-scene.js?v=b8f040a2';
+import { mulberry32 } from './rng.js?v=b8f040a2';
 
 const ARRIVE_M = 8;
 
@@ -44,7 +44,7 @@ export function initWorldTab(root) {
   // what a shot can damage: anything the catalog has damaged models for
   const destructible = (pc) => { const e = catalog && catalog.get(pc.id); return !!(e && e.states[1] && e.states[3]); };
   const CREW_N = Number(q.get('crew') || 5);
-  let hits = 0, simT = 0, lastLog = 0, arrivedAt = -1, lastDt = 0.016, breached = 0, squashed = 0;
+  let hits = 0, simT = 0, lastLog = 0, arrivedAt = -1, lastDt = 0.016, breached = 0, squashed = 0, crushed = 0;
 
   function build() {
     if (group) scene.remove(group);
@@ -75,13 +75,15 @@ export function initWorldTab(root) {
       // solid to this plate's crew, in plate metres: the world's bodies shifted in, and the hull
       const solid = (x, z) => bodyAt(bodies, x + p.ox, z + p.oz) || (hull && hullCovers({ x: hull.x - p.ox, z: hull.z - p.oz, heading: hull.heading }, x, z));
       const crew = makeCrew(p.plate, CREW_N, crewRng, CREW_TUNE, solid);
-      const g = new THREE.Group(); rigs[pi].group.add(g);
+      crew.hostile = p.hostile; // the enemy's crew is rolled over; home's is shoved aside
+      const g = new THREE.Group(); g.name = 'crew'; rigs[pi].group.add(g);
       return { plate: p.plate, p, crew, solid, scene: makeCrewScene(g, crew) };
     });
-    squashed = 0;
+    squashed = 0; crushed = 0; sfx.clearBodies();
     tracers = [];
     hits = 0; simT = 0; lastLog = 0; arrivedAt = -1; breached = 0;
     hull = makeHull(world.spawn.x, world.spawn.z, world.spawn.heading);
+    if (q.get('ammo') !== null) hull.ammo = Number(q.get('ammo')); // a probe's rack
     camera.userData.placed = false;
     console.log(`[world] quads ${world.mesh.quads.length} road ${world.road.quads.length} trees ${world.trees.length} rocks ${world.rocks.length} warnings ${world.warnings.length}`);
     window.__drive = { hull, gates, sentries, tracers, get hits() { return hits; } };
@@ -90,15 +92,25 @@ export function initWorldTab(root) {
   const goalDist = () => Math.hypot(hull.x - world.goal.x, hull.z - world.goal.z);
 
   function step(dt, input) {
+    world.plates.forEach((p, pi) => {
+      const local = { x: hull.x - p.ox, z: hull.z - p.oz, heading: hull.heading, speed: hull.speed };
+      for (const pc of stepCrush(p.plate, local, P)) {
+        hull.speed = local.speed; crushed++;
+        const cx = (pc.x + pc.pw / 2) * CELL_M + p.ox, cz = (pc.z + pc.ph / 2) * CELL_M + p.oz;
+        sfx.impact('shell', [cx, groundAt(world, cx, cz).y + 0.6, cz], [0, 1, 0], 0, 2.4, 'impact_rubble');
+        rigs[pi].rebuild();
+      }
+    });
     stepHull(hull, input, dt, (x, z) => worldBlocked(world, x, z), P);
     stepBodies(bodies, hull, (x, z) => worldBlocked(world, x, z), P);
+    bodies.forEach((b, i) => sfx.body(i, b.moved, Math.hypot(b.x - hull.x, b.z - hull.z), dt));
     // a crew fears the hull only on the hostile plate; a hull squashes anyone, anywhere
     for (const c of crews) {
       const local = { x: hull.x - c.p.ox, z: hull.z - c.p.oz, heading: hull.heading, speed: hull.speed };
-      stepCrew(c.crew, c.plate, dt, crewRng, c.p.hostile ? local : null, CREW_TUNE, c.solid);
+      stepCrew(c.crew, c.plate, dt, crewRng, c.p.hostile ? local : null, CREW_TUNE, c.solid, (x, z) => hullCovers(local, x, z));
       for (const w of stepSquash(c.crew, local, P.hullR)) { squashed++; sfx.softHit([w.x + c.p.ox, groundAt(world, w.x + c.p.ox, w.z + c.p.oz).y + 0.6, w.z + c.p.oz], 0); }
     }
-    if (input.fire) { const shot = fireHull(hull, P); if (shot) { tracers.push(shot); sfx.fire(); } }
+    if (input.fire) { const shot = fireHull(hull, P); if (shot) { tracers.push(shot); sfx.fire(); } else if (hull.empty) sfx.empty(); }
     sfx.engine(hull.speed, P.speed, dt);
     // every gate opens for the hull, both rings, both plates (operator: for
     // now); only the hostile plate's sentries fire
@@ -159,7 +171,7 @@ export function initWorldTab(root) {
     if (arrivedAt < 0 && goalDist() <= ARRIVE_M) arrivedAt = simT;
   }
 
-  const logLine = () => `[world] t=${simT.toFixed(1)} hull=${hull.x.toFixed(1)},${hull.z.toFixed(1)} y=${world.heightAt(hull.x, hull.z).toFixed(2)} heading=${hull.heading.toFixed(0)} goal=${goalDist().toFixed(1)} tracking=${sentries.filter((s) => s.tracking).length} lobs=${tracers.filter((t) => t.kind === 'lob').length} hits=${hits} down=${squashed} sentriesDown=${sentries.filter((s) => !s.alive).length} crewIn=${crews.reduce((n, c) => n + c.crew.walkers.filter((w) => w.alive && !crewFreeAt(c.plate, w.x, w.z, c.solid)).length, 0)}${arrivedAt >= 0 ? ' ARRIVED' : ''}`;
+  const logLine = () => `[world] t=${simT.toFixed(1)} hull=${hull.x.toFixed(1)},${hull.z.toFixed(1)} y=${world.heightAt(hull.x, hull.z).toFixed(2)} heading=${hull.heading.toFixed(0)} goal=${goalDist().toFixed(1)} tracking=${sentries.filter((s) => s.tracking).length} lobs=${tracers.filter((t) => t.kind === 'lob').length} hits=${hits} ammo=${hull.ammo} down=${squashed} sentriesDown=${sentries.filter((s) => !s.alive).length} crushed=${crushed} crewIn=${crews.reduce((n, c) => n + c.crew.walkers.filter((w) => w.alive && !crewFreeAt(c.plate, w.x, w.z, c.solid)).length, 0)}${arrivedAt >= 0 ? ' ARRIVED' : ''}`;
 
   function sync() {
     const g = groundAt(world, hull.x, hull.z);
@@ -167,6 +179,7 @@ export function initWorldTab(root) {
     hull.y = y;
     hullObj.userData.setPose(hull, y + 0.3, g.normal);
     sfx.applyFeel(hullObj);
+    if (hullObj.userData.setAmmoDots) hullObj.userData.setAmmoDots(ammoDotsLit(hull.ammo, P));
     world.plates.forEach((p, pi) => {
       p.sentries.forEach((s, i) => { const node = rigs[pi].sentryYaws.get(i); if (node) node.rotation.y = yawRotation(s.yaw); });
       for (const gr of rigs[pi].gateRigs) { const g = p.gates[gr.index]; if (g) setGateOpen(gr, g.open); }
@@ -182,8 +195,8 @@ export function initWorldTab(root) {
     pool.sync(tracers, (x, z) => world.heightAt(x, z), lastDt, P.splashR);
     followCamera(camera, controls, hull, y, view.camera, lastDt, (x, z) => groundAt(world, x, z).y, { cx: world.size / 2, cz: world.size / 2, span: world.size }, (x, z) => worldBlocked(world, x, z));
     hud.textContent = mobileShell
-      ? `goal ${goalDist().toFixed(0)} m${arrivedAt >= 0 ? ' · ARRIVED' : ''} · muzzle ${hull.elev.toFixed(0)} · range ${shotRangeFor(hull, P).toFixed(0)} m · hits ${hits} · breached ${breached} · crew down ${squashed}`
-      : `goal ${goalDist().toFixed(0)} m${arrivedAt >= 0 ? ` · ARRIVED at ${arrivedAt.toFixed(1)} s` : ''} · muzzle ${hull.elev.toFixed(0)} deg · range ${shotRangeFor(hull, P).toFixed(0)} m · hits ${hits} · shots ${hull.shots} · breached ${breached} · crew down ${squashed} · sentries ${sentries.filter((s) => s.alive).length}/${sentries.length} · cam ${view.camera} · WASD drive · SPACE fire · SHIFT+W/S muzzle · 1-4 cameras · R regenerate`;
+      ? `goal ${goalDist().toFixed(0)} m${arrivedAt >= 0 ? ' · ARRIVED' : ''} · muzzle ${hull.elev.toFixed(0)} · range ${shotRangeFor(hull, P).toFixed(0)} m · shells ${hull.ammo} · hits ${hits} · breached ${breached} · crew down ${squashed}`
+      : `goal ${goalDist().toFixed(0)} m${arrivedAt >= 0 ? ` · ARRIVED at ${arrivedAt.toFixed(1)} s` : ''} · muzzle ${hull.elev.toFixed(0)} deg · range ${shotRangeFor(hull, P).toFixed(0)} m · hits ${hits} · shots ${hull.shots} · shells ${hull.ammo}/${P.ammoMax} · breached ${breached} · crew down ${squashed} · sentries ${sentries.filter((s) => s.alive).length}/${sentries.length} · cam ${view.camera} · WASD drive · SPACE fire · SHIFT+W/S muzzle · 1-4 cameras · R regenerate`;
   }
 
   const regenerate = () => { plateParams.seed = (plateParams.seed + 1) % 1000000; gui.controllersRecursive().forEach((c) => c.updateDisplay()); build(); };

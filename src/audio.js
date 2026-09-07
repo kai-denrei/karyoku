@@ -17,10 +17,10 @@
 //    total. A failed fetch or decode logs once and that key becomes a
 //    permanent no-op for the session; the game keeps running silent.
 
-import { makeMixState, distanceGain, admit, addVoice, dropVoice } from './audiomix.js?v=067e583d';
-import { SOUNDS, BUSES, DEFAULT_LEVELS, GLOBAL_VOICE_CAP, DISTANCE_K } from './audiomanifest.js?v=067e583d';
-import { mulberry32 } from './rng.js?v=067e583d';
-import { gateStep } from './audiogate.js?v=067e583d';
+import { makeMixState, distanceGain, admit, addVoice, dropVoice } from './audiomix.js?v=b8f040a2';
+import { SOUNDS, BUSES, DEFAULT_LEVELS, GLOBAL_VOICE_CAP, DISTANCE_K } from './audiomanifest.js?v=b8f040a2';
+import { mulberry32 } from './rng.js?v=b8f040a2';
+import { gateStep } from './audiogate.js?v=b8f040a2';
 
 const STORE_KEY = 'ssg.audio.levels';
 const STEAL_FADE = 0.03; // s — a hard cut mid-waveform is an audible click
@@ -582,11 +582,13 @@ export function makeAudio(opts = {}) {
       src.buffer = buf;
       src.loop = looping;
       src.playbackRate.value = rate;
+      // `offset` starts partway into the sample (a long bed picked up mid-way)
+      const off = Math.max(0, Math.min(buf.duration - 0.05, o.offset ?? 0));
       gain = ctx.createGain();
       gain.gain.value = g;
       src.connect(gain);
       gain.connect(busGain[spec.bus] ?? master);
-      src.start();
+      src.start(0, off);
     } catch {
       return null;
     }
