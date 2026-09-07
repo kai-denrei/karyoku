@@ -4,6 +4,30 @@ Newest first. Each entry: what landed, then how it works, for programmers.
 Decisions and dead ends in more detail live in `.deban/` (local, not
 published).
 
+## 8b1cc57 — one scene render, and the freeze
+
+THE FREEZE. Felling the power station in the world stopped the game: the
+power-down block in the world tab's step called a distance helper
+declared later in the same function (a `const` in its dead zone) and used
+the cell size without importing it, so from that frame on every frame
+threw before it rendered. Both fixed; `?killpower=N` fells plate N's
+station after two seconds and the probe line keeps coming with `power=off`.
+
+ONE RENDER, NOT TWO. The reference's per-group bloom rendered the scene
+twice a frame: once with every colour scaled by its group's weight (the
+bloom source) and once plain. On a 120-cell plate that doubled five
+thousand draw calls, and it swept every material twice a frame. The
+weight now rides in the ALPHA of the one plain render: an opaque
+material's opacity is written to the target's alpha untouched (nothing
+blends an opaque draw), so opacity is the weight and costs nothing
+visible; the bloom source is rgb times alpha in one full-screen pass;
+transparent materials are set to leave the destination alpha alone and
+inherit the weight of whatever they are drawn over, so a wall's edges glow
+like the wall and the tank's like the tank. Weights are swept into the
+materials every thirty frames for objects that arrived since. Three
+composers now: base (with MSAA), bloom, final. At 120 x 90 the draw calls
+went from 5.5k to 2.3k and the triangles from 35 M to 14 M a frame.
+
 ## 7d52ad2 — five cues from the operator's clips
 
 The hull now reports two things the sound layer hangs on: `bump`, the
