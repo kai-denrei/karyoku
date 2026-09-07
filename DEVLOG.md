@@ -4,6 +4,20 @@ Newest first. Each entry: what landed, then how it works, for programmers.
 Decisions and dead ends in more detail live in `.deban/` (local, not
 published).
 
+## 7d52ad2 — five cues from the operator's clips
+
+The hull now reports two things the sound layer hangs on: `bump`, the
+speed it was doing when a solid stopped it dead this step (a slide along
+a wall is not a bump), and `elevating`, whether the muzzle actually moved
+(held at a stop it did not). The bump plays the wall clip with gain
+following the speed; elevating loops the muffled gears while the key is
+held. A body touched at any real speed reports `touched` once per half
+second, and the tab plays ONE thud out of twelve: the operator's thud file
+holds a dozen, found by silence detection, and audio.js learned
+`duration` beside `offset` so a voice can play a slice. A camera change
+clicks like a cassette deck's stop button, and a sentry round on the hull
+is the metal-hit clip now. The lab counts 35 wired, 6 unused, 16 missing.
+
 ## eacf40d — the power compound, the warehouse yards, and tiles you can hide
 
 THE POWER. Every base now has a walled compound at its centre: an 8 x 6
