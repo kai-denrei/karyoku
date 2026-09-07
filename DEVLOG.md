@@ -4,6 +4,45 @@ Newest first. Each entry: what landed, then how it works, for programmers.
 Decisions and dead ends in more detail live in `.deban/` (local, not
 published).
 
+## eacf40d — the power compound, the warehouse yards, and tiles you can hide
+
+THE POWER. Every base now has a walled compound at its centre: an 8 x 6
+ring of the kit's wall with one vehicle gate toward the block's road, and
+inside it the solar kit's power station (2 x 2 cells) at the back with
+three panel racks. It is laid first, into the block nearest the plate's
+centre, so the rest of the plate packs around it; the gate's approach is
+reserved foundation, because yard stock packs with no gap and the first
+cut boxed the gate in on a dozen seeds. The scene strings a sagging cable
+from the station's roof to every sentry's head. Three hull rounds put the
+station at D3, and `powered(plate)` goes false: every sentry stops
+tracking and firing, the cables go dark, the heads droop and dim. A
+narrow plate (interior under 14 cells) skips the compound silently; the
+assembly line loses its block to the compound on two default seeds and
+the test now allows three of fifty.
+
+THE WAREHOUSE. The workshop's crates, secure cases, fuel barrels, pallet
+stacks and armored container replace every container and box we had: the
+armored container is `logistics_container` now (plot 2 x 1, the old
+corrugated cast and the outpost's container are gone), the other four are
+new ids in the yards and the band. All five are BODIES: the drive shoves
+them, and now breaks them. A shell steps a body one state (the container
+two rounds a state), a ram at crush speed does the same once per touch,
+and state 3 is death: debris, not solid, drawn as the kit's destroyed
+model. A barrel dies like a sentry. Body boxes come from the kit's own
+colliders rather than the plot.
+
+FEWER TRIANGLES. The perf probe named the cost at 120 x 90 cells: 430
+separate corrugated containers, 486 antenna stand-ins from the prop rate,
+780 wall segments, and a composer that renders the scene twice. Bodies
+are instanced now (one InstancedMesh per part per model and state, the
+matrices rewritten for whoever moved, battlezone edges rebaked); the
+static and body layers are instanced per 128 m TILE as well, and
+`rig.cull` hides tiles, sentries, loop rigs and walkers farther than 260 m
+from the camera (the overview sees all); props are capped at six a block.
+Objects at 120 x 90 went from 11.2k to about 3k and triangles from 61 M
+to 35 M in the colony look. The composer's double render and the 95k
+triangle astronaut are the next levers.
+
 ## 7f77bd7 — sentries break, and stay broken
 
 Three hull rounds on a sentry's socket break it (`sentryHits`, a knob).
